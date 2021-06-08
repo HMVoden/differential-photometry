@@ -1,13 +1,16 @@
 import numpy as np
 import pandas as pd
 import astropy.units as u
+import logging
 
 from pathlib import Path, PurePath
-from numpy import sqrt
+from numpy import float64, sqrt
 from astropy.timeseries import BoxLeastSquares, TimeSeries
 from astropy.time import Time, TimeDelta
 from feets.preprocess import remove_noise
 from feets import FeatureSpace
+from scipy.stats import chisquare
+
 
 def subtract_all_magnitudes(magnitudes: np.ndarray) -> np.ndarray:
     """For each star inputted into this function, this will take that star column, remove it from the dataset
@@ -45,12 +48,12 @@ def normalize(data: np.ndarray) -> np.ndarray:
     normalized = (data-data_min)/(data_max - data_min)
     return normalized
 
-def normalize_median(data: np.ndarray) -> np.ndarray:
+def normalize_to_median(data: np.ndarray) -> np.ndarray:
     """ Takes a dataset and brings the median to 1"""
     median = np.median(data)
     return data/median
 
-def box_model_data(data: np.ndarray, uncertainties: np.ndarray, timeline: Time = None) -> np.ndarray:
+def model_box_data(data: np.ndarray, uncertainties: np.ndarray, timeline: Time = None) -> np.ndarray:
     """ Takes a dataset with uncertainties and a timeline, applies a box least squares model to it,
     then filters the data by if the number of transits is equal to one, approximating a dip or increase
     in the magnitude of the target star over time.
@@ -76,24 +79,45 @@ def box_model_data(data: np.ndarray, uncertainties: np.ndarray, timeline: Time =
         uncertainty = uncertainties[i]
         model = BoxLeastSquares(timeline, sample, uncertainty)
         periodogram = model.autopower(durations, frequency_factor=15)
-        index = np.argmax(periodogram.power)
+        index = np.argmax(periodogram.power) #The best option for a transit
         period = periodogram.period[index]
         t0 = periodogram.transit_time[index]
         duration = periodogram.duration[index]
         stats = model.compute_stats(period, duration, t0)
-        model_fit = model.model(timeline, period, duration, t0)
+        model_fit = model.model(timeline, period, duration, t0) # For graphing
 
-        if(stats['transit_times'].size == 1):
+        if(stats['transit_times'].size == 1): # Filter
             result = {'name': i,
                     'best_fit_values': {'index': index, 'period': period, 'transit_time':t0, 'duration': duration},
                     'data': sample,
                     'uncertainty': uncertainty,
                     'stats': stats,
                     'fitted_model': model_fit,
-                    'time': timeline}
+                    'time': timeline} # Data construct for ease of use.
             accumulated_results.append(result)
     
     return np.array(accumulated_results)
+
+def model_chi_squared(data: np.ndarray, timeline: Time, uncertainties: np.ndarray) -> list:
+    """ Cleans up data, normalizes data to unity and determines if 
+    there's sufficient deviation from the median value via a chi squared test.
+    Filters if chi squared result is greater than 2
+    
+    Keyword arguments:
+    data          -- a dataset of magnitudes for a sequence of stars, one star per row.
+    timeline      -- the time from beginning to end of the data collection, not unique per star
+    uncertainties -- error in the magnitudes
+    """
+    
+    result = []
+    for i, sample in enumerate(data):
+        uncertainty = uncertainties[i]
+        _, sample, uncertainty = remove_noise(timeline, sample, uncertainty, error_limit=3, std_limit=5)
+        data_points = sample.shape[0]-1
+        expect = np.mean(sample)
+        chi = chisquare(sample, expect, ddof=data_points)
+        result.append(chi[0])
+    return np.array(result)
 
 def calculate_all_feets_indices(data: np.ndarray, timeline: Time, uncertainties: np.ndarray) -> list:
     """ Runs through an entire set of datasets and calculates every 
@@ -123,7 +147,7 @@ def extract_data(filename: str) -> pd.DataFrame:
     Keyword arguments:
     filename -- the name of the file to be opened and read
     """
-    # Gives us a clean and workable dataframe
+
     data_path = PurePath(filename)
     if data_path.suffix == '.xlsx': # This way we can ignore if it's a csv or excel file
         df = pd.read_excel(data_path)
@@ -136,7 +160,7 @@ def extract_data(filename: str) -> pd.DataFrame:
     # As a possible improvement to this script.
     extracted_column_names = df.columns
     intersection = np.intersect1d(desired_column_names, extracted_column_names) #Finds common column names
-    return df[intersection] # Returns only column names we want.
+    return clean_stars_data(df[intersection])
 
 def extract_samples_stars(dataframe: pd.DataFrame) -> int:
     """Determines and returns the number of different star samples and number of stars as integers"""
@@ -147,3 +171,34 @@ def extract_samples_stars(dataframe: pd.DataFrame) -> int:
         num_stars = dataframe['name'].nunique()
     samples = int(rows/num_stars)
     return num_stars, samples
+
+def clean_stars_data(dataframe: pd.DataFrame) -> pd.DataFrame:
+    """Ensures that the columns mag, error, error_t and either obj or name are present.
+    Then makes sure that the mag, error and error_t are viable and in the right format.
+    Removes all stars with any mag value of "Flux<0"
+    
+    Keyword Arguments:
+    dataframe -- A pandas dataframe containing the proper column names
+    """
+    required_columns = ['mag', 'error', 'error_t']
+    for col in required_columns:
+        if col not in dataframe.columns:
+            raise KeyError("ERROR: Unable to continue program, missing critical column: {0}".format(col))
+    if 'name' not in dataframe.columns and 'obj' not in dataframe.columns:
+        raise KeyError("""ERROR: Unable to continue program, 
+                    missing name/object columns for number of star
+                    calculations""")
+    
+    datatypes = dataframe.dtypes
+    if not isinstance(datatypes['mag'], float64): # Could make this apply to error and error_t too
+        logging.warning("column {0} is not a numerical type, attempting to fix".format("mag"))
+        bad_mags = dataframe[(dataframe.mag == "Flux<0")] # First instance of bad data
+        if 'name' in dataframe.columns:
+            stars_removed = bad_mags.name.unique()
+            star_rows = dataframe[(dataframe['name'].isin(stars_removed))]
+        if 'obj' in dataframe.columns:
+            stars_removed = bad_mags.obj.unique()
+            star_rows = dataframe[(dataframe['obj'].isin(stars_removed))]
+        logging.warning("removing star(s) {0} from dataset".format(stars_removed))
+        dataframe = dataframe.drop(index=star_rows.index)
+    return dataframe
