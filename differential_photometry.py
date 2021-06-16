@@ -54,7 +54,7 @@ if 'jd' in df.columns:
     timeline = df['jd'].unique()
     df['jd'] = pd.to_datetime(df['jd'], origin='julian', unit='D')
 else:
-    timeline = np.linspace(0, samples*EXPOSURE_TIME, samples)
+    timeline = np.linspace(0, num_samples*EXPOSURE_TIME, num_samples)
 
 adm, au = m.calculate_differential_photometry(magnitudes=df['mag'],
                                               error=df['error'],
@@ -103,7 +103,7 @@ non_varying_error = non_varying['error'].to_numpy(dtype='float64').reshape(
 average_error = np.sum(non_varying_error**2, axis=1)/num_stars
 
 weight = 1/average_error**2
-degree = 8
+degree = 3
 
 test_mag = non_varying_mags.transpose()[0]
 test_error = non_varying_error.transpose()[0]
@@ -126,16 +126,13 @@ general_parameters['c0'] = 0
 new_model = models.Chebyshev1D(
     degree=degree, domain=copied_domain, **general_parameters)
 
+y = m.normalize_to_median(new_model(non_varying['jd'].unique()))
+
 plt.figure()
 plt.plot(non_varying['jd'].unique(), test_mag, label='data')
-plt.plot(non_varying['jd'].unique(), (test_mag -
-         new_model(non_varying['jd'].unique())), label='modified data')
+plt.plot(non_varying['jd'].unique(), (test_mag - y), label='modified data')
 plt.legend()
 
-test = detrend(test_mag)
-
-plt.figure()
-plt.plot(non_varying['jd'].unique(), test)
 
 # Step 3, remove trend from non-varying stars
 
