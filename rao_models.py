@@ -12,27 +12,6 @@ import rao_stats as stat
 importlib.reload(stat)
 
 
-def reduced_chi_square(data: np.ndarray, uncertainties: np.ndarray, timeline: Time) -> list:
-    """ Cleans up data, normalizes data to unity and determines if 
-    there's sufficient deviation from the median value via a chi squared test.
-    TODO Filters if chi squared result is greater than 2
-
-    Keyword arguments:
-    data          -- a dataset of magnitudes for a sequence of stars, one star per row.
-    timeline      -- the time from beginning to end of the data collection, not unique per star
-    uncertainties -- error in the magnitudes
-    """
-
-    result = []
-    for i, sample in enumerate(data):
-        dof = sample.shape[0]-1  # -1 since we're using the mean
-        sigma = uncertainties[i]
-        mean = stat.weighted_mean(sample, sigma)
-        chi = np.sum(((sample-mean)**2/sigma**2))/dof
-        result.append(chi)
-    return np.array(result)
-
-
 def box_least_squares(data: np.ndarray, uncertainties: np.ndarray, timeline: Time = None) -> np.ndarray:
     """ Takes a dataset with uncertainties and a timeline, applies a box least squares model to it,
     then filters the data by if the number of transits is equal to one, approximating a dip or increase
