@@ -1,11 +1,9 @@
 import logging
-from pathlib import Path, PurePath
+from pathlib import PurePath
 
-import altair as alt
 import astropy.units as u
 import numpy as np
 import pandas as pd
-from scipy.stats import chisquare
 
 
 def extract_data(filename: str) -> pd.DataFrame:

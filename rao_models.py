@@ -9,8 +9,6 @@ from scipy.stats import chisquare
 
 import rao_stats as stat
 
-importlib.reload(stat)
-
 
 def box_least_squares(data: np.ndarray, uncertainties: np.ndarray, timeline: Time = None) -> np.ndarray:
     """ Takes a dataset with uncertainties and a timeline, applies a box least squares model to it,

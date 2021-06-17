@@ -2,16 +2,18 @@ from pathlib import Path
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
 
 def plot_and_save_all_4_grid(dataframe: pd.DataFrame, output_filename: str):
     """Takes a pandas dataframe that contains raw magnitude, time as julian date, average magnitude and error, then generates plots for every single star with these values side by side.
 
-    Args:
-        dataframe (pd.DataFrame): Dataframe with magnitude, time, average magnitudes and all errors
-        output_filename (str): Desired filename prefix
+    Parameters
+    ----------
+    dataframe : pd.DataFrame
+        A dataframe containing raw magnitude, a time column, average magnitude and errors for magnitudes, with a star's name
+    output_filename : str
+        the desired filename that will be prepended onto the star's
     """
     stars = dataframe['name'].unique()
     for star in stars:

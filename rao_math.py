@@ -6,8 +6,6 @@ from feets.preprocess import remove_noise
 
 import rao_utilities as util
 
-importlib.reload(util)
-
 
 def calculate_all_feets_indices(data: np.ndarray, timeline: Time, uncertainties: np.ndarray) -> list:
     """ Runs through an entire set of datasets and calculates every 
@@ -72,28 +70,12 @@ def calculate_all_uncertainties(errors: np.ndarray) -> np.ndarray:
 
 
 def calculate_timeseries_differential_magnitude(target: np.ndarray, reference: np.ndarray) -> np.ndarray:
-    """Calculates a single timeseries differential magnitude
-
-    Args:
-        target (np.ndarray): The 'target star' in the differential calculation
-        reference (np.ndarray): The other star's timeseries, ordered by new time in every column
-
-    Returns:
-        np.ndarray: Differential magnitude
-    """
+    """Calculates a single timeseries differential magnitude"""
     return reference.transpose() - target
 
 
 def calculate_timeseries_differential_uncertainty(target: np.ndarray, reference: np.ndarray) -> np.ndarray:
-    """Calculates a single timeseries differential magnitude uncertainty
-
-    Args:
-        target (np.ndarray): The 'target star' error in the differential calculation
-        reference (np.ndarray): The other star's errors, ordered by new time in every column
-
-    Returns:
-        np.ndarray: Uncertainty in differential magnitude
-    """
+    """Calculates a single timeseries differential magnitude uncertainty """
     return np.sqrt(target**2 + reference.transpose()**2)
 
 
