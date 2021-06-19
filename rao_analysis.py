@@ -128,7 +128,7 @@ def detrend_dataset(df: pd.DataFrame, trend: np.ndarray) -> pd.DataFrame:
     data_with_trend = df['mag'].to_numpy(dtype='float64').reshape(
         num_samples, num_stars)
 
-    data_detrended = data_with_trend.transpose() - trend
+    data_detrended = data_with_trend.transpose() / trend
     # reshape to re-insert into dataframe
     data_detrended = data_detrended.transpose().reshape(num_samples *
                                                         num_stars, 1)

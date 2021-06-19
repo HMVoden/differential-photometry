@@ -43,7 +43,18 @@ def extract_data(filename: str) -> pd.DataFrame:
 
 
 def extract_samples_stars(dataframe: pd.DataFrame) -> int:
-    """Determines and returns the number of different star samples and number of stars as integers"""
+    """Determines and returns the number of different star samples and number of stars as integers
+
+    Parameters
+    ----------
+    dataframe : pd.DataFrame
+        dataframe containing all stars with a unique name
+
+    Returns
+    -------
+    int, int
+        number of stars, number of samples of those stars
+    """
     rows = dataframe.shape[0]
     if 'obj' in dataframe.columns:  # Since this is what we normally see in the .csvs
         num_stars = dataframe['obj'].nunique()

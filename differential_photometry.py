@@ -5,6 +5,7 @@ from pathlib import PurePath
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import importlib
 
 from feets import ExtractorWarning
 
@@ -15,14 +16,16 @@ import rao_plotting as plot
 import rao_stats as stat
 import rao_utilities as util
 
+importlib.reload(m)
+
 
 # CONSTANTS ============================================================================
 # FILENAME = 'data/data.csv'
-# FILENAME = 'data/M3_raw01_Photometry25-47-59.csv'
+FILENAME = 'data/M3_raw01_Photometry25-47-59.csv'
 # FILENAME = 'data/M3_raw02_Photometry25-47-59.csv'
 # FILENAME = 'data/M3_raw03_Photometry28-47-55.csv'
 # FILENAME = 'data/M3_raw04_Photometry35-47-55.csv'
-FILENAME = 'data/M3_raw01_Photometry28_47_55_may_29.csv'
+# FILENAME = 'data/M3_raw01_Photometry28_47_55_may_29.csv'
 # FILENAME = 'data/M3_2nights_rawPhotometry.csv'
 # FILENAME = 'data/M3_night_1.xlsx'
 # FILENAME = 'data/M3_night_2.xlsx'
@@ -69,12 +72,18 @@ df['average_uncertainties'] = au
 
 # Step 1, find obvious varying stars
 varying, non_varying = analysis.find_varying_stars(df)
-degree = 4
-# Step 2, find trend in non-varying stars
-trend = analysis.find_polynomial_trend(varying, polynomial_degree=degree)
-plt.figure()
-plt.plot(timeline, trend)
-# Step 3, remove trend from non-varying stars
+
+df = m.calculate_varying(non_varying, varying)
+
+# df = m.calculate_varying(non_varying, varying)
+# varying.to_excel('test.xlsx')
+
+# degree = 8
+# # Step 2, find trend in non-varying stars
+# trend = analysis.find_polynomial_trend(varying, polynomial_degree=degree)
+# plt.figure()
+# plt.plot(timeline, trend)
+# # Step 3, remove trend from non-varying stars
 # if not analysis.is_trend_constant(trend, degree):
 #     detrended = analysis.detrend_dataset(non_varying, trend)
 
@@ -90,6 +99,4 @@ plt.plot(timeline, trend)
 # plot.plot_and_save_all_4_grid(varying, ("varying/varying_" + file.stem))
 # plot.plot_and_save_all_4_grid(
 #     non_varying, ("non_varying/non_varying_" + file.stem))
-# plot.plot_and_save_all_4_grid(df, file.stem)
-
-# %%
+plot.plot_and_save_all_4_grid(df, file.stem)
