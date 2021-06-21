@@ -1,5 +1,6 @@
 # %%
 import warnings
+import logging
 from pathlib import PurePath
 
 import matplotlib.pyplot as plt
@@ -15,8 +16,15 @@ import rao_models as model
 import rao_plotting as plot
 import rao_stats as stat
 import rao_utilities as util
+import rao_data as data
+import rao_differential_photometry as diff
 
 importlib.reload(m)
+importlib.reload(util)
+importlib.reload(analysis)
+importlib.reload(data)
+importlib.reload(diff)
+importlib.reload(plot)
 
 
 # CONSTANTS ============================================================================
@@ -40,51 +48,39 @@ warnings.filterwarnings("ignore", category=ExtractorWarning)
 # I moved everything into different python modules since this was getting extremely large
 
 # CALCULATION ============================================================================
+logging.basicConfig()
+logging.getLogger().setLevel(logging.WARNING)
 file = PurePath(FILENAME)
 
-df = util.extract_data(FILENAME)
+df = data.extract(FILENAME)
 bad_rows = df[df['name'] == 'M3-12']
 # TODO write code that cleans insufficient datasets like M3-12 here
 df = df.drop(index=bad_rows.index)
 
-num_stars, num_samples = util.extract_samples_stars(df)
+num_stars, num_samples = data.extract_samples_stars(df)
 
 if 'jd' in df.columns:
     timeline = df['jd'].unique()
-    df['jd'] = pd.to_datetime(df['jd'], origin='julian', unit='D')
+    df['time'] = pd.to_datetime(df['jd'], origin='julian', unit='D')
 else:
     timeline = np.linspace(0, num_samples*EXPOSURE_TIME, num_samples)
 
-adm, au = m.calculate_differential_photometry(magnitudes=df['mag'],
-                                              error=df['error'],
-                                              num_stars=num_stars,
-                                              num_samples=num_samples)
-
-df['average_diff_mags'] = adm
-df['average_uncertainties'] = au
-
-# box_model_results = model.box_least_squares(average_diff_mags, average_uncertainties, timeline=timeline)
-
-# # Data export for Dr. Langill
-# indices_of_stars = [ sub['name'] for sub in box_model_results]
-# original_data_filtered = df.iloc[indices_of_stars]
-# original_data_filtered.to_excel('Stars_with_varying_light.xlsx')
-
 # Step 1, find obvious varying stars
-varying, non_varying = analysis.find_varying_stars(df)
+non_varying, varying = analysis.find_varying_stars(df)
 
-df = m.calculate_varying(non_varying, varying)
+df = diff.calculate_differential_photometry(non_varying, varying)
 
-# df = m.calculate_varying(non_varying, varying)
+non_varying = df[df['varying'] == False]
+varying = df[df['varying'] == True]
+
 # varying.to_excel('test.xlsx')
 
 # degree = 8
-# # Step 2, find trend in non-varying stars
-# trend = analysis.find_polynomial_trend(varying, polynomial_degree=degree)
-# plt.figure()
-# plt.plot(timeline, trend)
-# # Step 3, remove trend from non-varying stars
-# if not analysis.is_trend_constant(trend, degree):
+# Step 2, find trend in non-varying stars
+trend = analysis.find_biweight_trend(non_varying)
+
+# Step 3, remove trend from non-varying stars
+# if not analysis.is_trend_constant(trend):
 #     detrended = analysis.detrend_dataset(non_varying, trend)
 
 #     # Step 4, verify all non-varying stars are non-varying
@@ -96,7 +92,9 @@ df = m.calculate_varying(non_varying, varying)
 #         detrended_non_varying, ("detrended_non_varying_" + file.stem))
 #     plot.plot_and_save_all_4_grid(
 #         detrended_varying, ("detrended_varying_" + file.stem))
-# plot.plot_and_save_all_4_grid(varying, ("varying/varying_" + file.stem))
-# plot.plot_and_save_all_4_grid(
-#     non_varying, ("non_varying/non_varying_" + file.stem))
-plot.plot_and_save_all_4_grid(df, file.stem)
+plot.plot_and_save_all_4_grid(varying, ("varying/varying_" + file.stem))
+plot.plot_and_save_all_4_grid(
+    non_varying, ("non_varying/non_varying_" + file.stem))
+# plot.plot_and_save_all_4_grid(df, file.stem)
+
+# %%

@@ -4,7 +4,10 @@ from math import isclose
 import numpy as np
 import pandas as pd
 from astropy.modeling import fitting, models
+from astropy.stats import sigma_clip
+from wotan import flatten
 
+import rao_data as data
 import rao_stats as stat
 import rao_utilities as util
 
@@ -22,23 +25,26 @@ def find_varying_stars(df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         Two dataframes, first contains all the varying stars and second contains all the non-varying stars
     """
-    num_stars, num_samples = util.extract_samples_stars(df)
 
-    logging.debug(
-        "finding variable stars in dataframe with %s stars and %s samples", num_stars, num_samples)
     df['varying'] = False  # Add metadata to dataframe
     df['chisquared'] = 0.0
 
     stars = df['name'].unique()
-    mags = df['mag'].to_numpy(dtype='float64').reshape(
-        num_samples, num_stars).transpose()
-    errors = df['error'].to_numpy(dtype='float64').reshape(
-        num_samples, num_stars).transpose()
+    time = df['jd'].unique()
+    window = time.mean()/4
+    columns = ['mag', 'error']
+
+    arranged_cols = util.arrange_time_star(df, columns)
+
+    mags = arranged_cols['mag'].transpose()
+    errors = arranged_cols['error'].transpose()
+
     all_chi = []
     for i, sample in enumerate(mags):
+        sample = sigma_clip(sample, sigma_upper=6, sigma_lower=20)
         error = errors[i]
         chi = stat.reduced_chi_square(sample, error)
-        if chi > 7.0:
+        if chi > 10.0:
             df.loc[df['name'] == stars[i], 'varying'] = True
             df.loc[df['name'] == stars[i], 'chisquared'] = chi
         else:
@@ -52,7 +58,7 @@ def find_varying_stars(df: pd.DataFrame) -> pd.DataFrame:
     logging.info("Number of stars found to be varying: %s",
                  varying['name'].nunique())
 
-    return varying, non_varying
+    return non_varying, varying
 
 
 def find_polynomial_trend(df: pd.DataFrame, polynomial_degree: int = 8) -> np.ndarray:
@@ -70,7 +76,7 @@ def find_polynomial_trend(df: pd.DataFrame, polynomial_degree: int = 8) -> np.nd
     np.ndarray
         The trend, hovering around 0, that has been found in an entire averaged dataset
     """
-    num_stars, num_samples = util.extract_samples_stars(df)
+    num_stars, num_samples = data.extract_samples_stars(df)
 
     degree = polynomial_degree
 
@@ -122,16 +128,12 @@ def detrend_dataset(df: pd.DataFrame, trend: np.ndarray) -> pd.DataFrame:
     pd.DataFrame
         The original dataframe with the magnitudes detrended
     """
-    num_stars, num_samples = util.extract_samples_stars(df)
 
     # get data and organize it properly by time = row, column = star
-    data_with_trend = df['mag'].to_numpy(dtype='float64').reshape(
-        num_samples, num_stars)
-
-    data_detrended = data_with_trend.transpose() / trend
+    data_with_trend = util.arrange_time_star(df, ['mag'])['mag']
+    data_detrended = data_with_trend.transpose() - trend
     # reshape to re-insert into dataframe
-    data_detrended = data_detrended.transpose().reshape(num_samples *
-                                                        num_stars, 1)
+    data_detrended = util.arrange_for_dataframe(df, data_detrended)[0]
     return df.assign(mag=data_detrended)
 
 
@@ -156,3 +158,34 @@ def is_trend_constant(trend: np.ndarray, parameters_fit: int = None) -> bool:
         trend, expected=0, parameters_estimated=parameters_fit)
     is_constant = isclose(chisquared, 1, abs_tol=0.2)  # expected very close
     return is_constant
+
+
+def find_biweight_trend(df: pd.DataFrame):
+    required_cols = ['mag', 'error']
+    non_varying = util.arrange_time_star(df, required_cols)
+    mag = non_varying['mag']
+    error = non_varying['error']
+    N = mag[0].shape[0]
+
+    timeline = df['jd'].unique()
+    time = (timeline - timeline.min())
+    window = time.max()/4
+
+    average = np.average(mag, axis=1)
+    av_error = np.sum(error**2, axis=1)/N
+
+    w_avg = stat.weighted_mean(average, av_error)
+
+    _, trend = flatten(
+        time,
+
+        average,
+        method='biweight',
+        window_length=window,
+        edge_cutoff=window/2,
+        return_trend=True,
+        cval=5.0
+    )
+    logging.info('Biweight trend was found to be %r', trend)
+
+    return (trend-w_avg)
