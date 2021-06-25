@@ -45,7 +45,18 @@ def extract(filename: str) -> pd.DataFrame:
     extracted_column_names = df.columns
     # Finds common column names
     intersection = np.intersect1d(desired_column_names, extracted_column_names)
-    return clean_stars_data(df[intersection])
+    df = clean_stars_data(df[intersection])
+    # names index for future use
+    df.index.name = 'index'
+    if 'jd' in df.columns:
+        df['time'] = pd.to_datetime(df['jd'], origin='julian', unit='D')
+    unique_years = df['time'].dt.year.unique()
+    unique_months = df['time'].dt.month.unique()
+    unique_days = df['time'].dt.day.unique()
+    logging.info("Number of days found in dataset: %s", len(unique_days))
+    logging.info("Number of months found in dataset: %s", len(unique_months))
+    logging.info("Number of years found in dataset: %s", len(unique_years))
+    return df
 
 
 def extract_samples_stars(dataframe: pd.DataFrame) -> int:
@@ -62,10 +73,7 @@ def extract_samples_stars(dataframe: pd.DataFrame) -> int:
         number of stars, number of samples of those stars
     """
     rows = dataframe.shape[0]
-    if 'obj' in dataframe.columns:  # Since this is what we normally see in the .csvs
-        num_stars = dataframe['obj'].nunique()
-    elif 'name' in dataframe.columns:  # Backup in case of other Mira data
-        num_stars = dataframe['name'].nunique()
+    num_stars = dataframe['name'].nunique()
     samples = int(rows/num_stars)
     return num_stars, samples
 
@@ -85,9 +93,9 @@ def clean_stars_data(dataframe: pd.DataFrame) -> pd.DataFrame:
     for col in required_columns:
         if col not in dataframe.columns:
             raise KeyError(
-                "ERROR: Unable to continue program, missing critical column: {0}".format(col))
+                "Unable to continue program, missing critical column: {0}".format(col))
     if 'name' not in dataframe.columns and 'obj' not in dataframe.columns:
-        raise KeyError("""ERROR: Unable to continue program, 
+        raise KeyError("""Unable to continue program, 
                     missing name/object columns for number of star
                     calculations""")
 
@@ -107,3 +115,30 @@ def clean_stars_data(dataframe: pd.DataFrame) -> pd.DataFrame:
         dataframe['mag'] = pd.to_numeric(dataframe['mag'])
 
     return dataframe
+
+
+def remove_incomplete_sets(df):
+    row_counts = df['name'].value_counts()
+    # most common value
+    row_mode = row_counts.mode()[0]
+    bad_stars = row_counts[row_counts != row_mode].index.values
+    if len(bad_stars) > 0:
+        logging.warning(
+            "Stars have been found without sufficient amount of information"
+        )
+        logging.warning(
+            "Removing star(s) {0} from dataset".format(*bad_stars)
+        )
+        star_rows = df[df['name'].isin(bad_stars)]
+        df = df.drop(index=star_rows.index)
+    return df
+
+
+def split_on_new_days(df):
+
+    results = df.groupby([df['time'].dt.day,
+                         df['time'].dt.month,
+                         df['time'].dt.year],
+                         sort=True)
+    logging.debug("Dataset split into %s days", len(results))
+    return results

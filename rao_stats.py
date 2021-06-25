@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def weighted_mean(sample: np.ndarray, uncertainty: np.ndarray = None):
+def weighted_mean(sample, uncertainty=None):
     """Calculates the weighted mean with uncertainty of a data series as a numpy array
 
     Args:
@@ -18,7 +18,7 @@ def weighted_mean(sample: np.ndarray, uncertainty: np.ndarray = None):
     return values_weighted/weight
 
 
-def reduced_chi_square(data: np.ndarray, uncertainty: np.ndarray = None, expected: np.ndarray = None, parameters_estimated: int = None) -> np.float64:
+def reduced_chi_square(data: np.ndarray, uncertainty=None, expected=None, parameters_estimated=None):
     """ Calculates reduced chi squared versus hypothesis that dataset follows its weighted mean.
 
     Keyword arguments:
@@ -33,10 +33,10 @@ def reduced_chi_square(data: np.ndarray, uncertainty: np.ndarray = None, expecte
         variance = np.var(data, ddof=1)
     if expected is None:
         parameters_estimated += 1
-        expected = weighted_mean(data, uncertainty)
-    dof = data.shape[0] - parameters_estimated
+        expected = np.median(data)
     if uncertainty is not None:
         variance = uncertainty**2
 
+    dof = data.shape[0] - parameters_estimated
     chi = np.sum(((data-expected)**2/variance))/dof
     return chi

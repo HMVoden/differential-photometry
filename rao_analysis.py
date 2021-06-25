@@ -31,7 +31,6 @@ def find_varying_stars(df: pd.DataFrame) -> pd.DataFrame:
 
     stars = df['name'].unique()
     time = df['jd'].unique()
-    window = time.mean()/4
     columns = ['mag', 'error']
 
     arranged_cols = util.arrange_time_star(df, columns)
@@ -44,7 +43,7 @@ def find_varying_stars(df: pd.DataFrame) -> pd.DataFrame:
         sample = sigma_clip(sample, sigma_upper=6, sigma_lower=20)
         error = errors[i]
         chi = stat.reduced_chi_square(sample, error)
-        if chi > 10.0:
+        if chi >= 4.0:
             df.loc[df['name'] == stars[i], 'varying'] = True
             df.loc[df['name'] == stars[i], 'chisquared'] = chi
         else:
@@ -53,7 +52,7 @@ def find_varying_stars(df: pd.DataFrame) -> pd.DataFrame:
 
     varying = df[df['varying'] == True]  # Split by varying and non-varying.
     non_varying = df[df['varying'] == False]
-    logging.debug("Chi squared of all stars %r: ", dict(zip(stars, all_chi)))
+    # logging.debug("Chi squared of all stars %r: ", dict(zip(stars, all_chi)))
     logging.info("Number of stars processed: %s", len(stars))
     logging.info("Number of stars found to be varying: %s",
                  varying['name'].nunique())
@@ -169,7 +168,7 @@ def find_biweight_trend(df: pd.DataFrame):
 
     timeline = df['jd'].unique()
     time = (timeline - timeline.min())
-    window = time.max()/4
+    window = time.max()/10
 
     average = np.average(mag, axis=1)
     av_error = np.sum(error**2, axis=1)/N
@@ -178,11 +177,10 @@ def find_biweight_trend(df: pd.DataFrame):
 
     _, trend = flatten(
         time,
-
         average,
         method='biweight',
         window_length=window,
-        edge_cutoff=window/2,
+        # edge_cutoff=window/4,
         return_trend=True,
         cval=5.0
     )

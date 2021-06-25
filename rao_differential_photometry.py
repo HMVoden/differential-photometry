@@ -129,7 +129,4 @@ def calculate_differential_photometry(df: pd.DataFrame, varying: pd.DataFrame = 
     reference = reference.assign(**average)
     frames.append(reference)
 
-    df = pd.concat(frames,
-                   join="outer")
-
-    return df
+    return pd.concat(frames, join="outer")

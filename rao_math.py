@@ -43,3 +43,12 @@ def normalize_to_median(data: np.ndarray) -> np.ndarray:
     """ Takes a dataset and brings the median to 1"""
     median = np.median(data)
     return data/median
+
+
+def timeseries_largest_range(**data):
+    result = []
+    for d in data.values():
+        d = np.abs(d)
+        max_variation = (d.max(axis=1) - d.min(axis=1)).max()
+        result.append(max_variation)
+    return dict(zip(data.keys(), result))
