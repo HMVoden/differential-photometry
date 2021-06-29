@@ -13,12 +13,14 @@ def weighted_mean(sample, uncertainty=None):
     """
     if uncertainty is None:
         uncertainty = 1  # now it is just a calculation of the mean
-    weight = np.sum(1/uncertainty**2)
-    values_weighted = np.sum(sample/uncertainty**2)
-    return values_weighted/weight
+    weight = np.sum(1 / uncertainty ** 2)
+    values_weighted = np.sum(sample / uncertainty ** 2)
+    return values_weighted / weight
 
 
-def reduced_chi_square(data: np.ndarray, uncertainty=None, expected=None, parameters_estimated=None):
+def reduced_chi_square(
+    data, uncertainty=None, expected=None, parameters_estimated=None
+):
     """ Calculates reduced chi squared versus hypothesis that dataset follows its weighted mean.
 
     Keyword arguments:
@@ -33,10 +35,10 @@ def reduced_chi_square(data: np.ndarray, uncertainty=None, expected=None, parame
         variance = np.var(data, ddof=1)
     if expected is None:
         parameters_estimated += 1
-        expected = np.median(data)
+        expected = np.average(data, weights=uncertainty)
     if uncertainty is not None:
-        variance = uncertainty**2
+        variance = uncertainty ** 2
 
     dof = data.shape[0] - parameters_estimated
-    chi = np.sum(((data-expected)**2/variance))/dof
+    chi = np.sum(((data - expected) ** 2 / variance)) / dof
     return chi

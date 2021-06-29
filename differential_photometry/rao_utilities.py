@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-import rao_data as data
+import differential_photometry.rao_data as data
 
 
 def arrange_iterables(row: int, col: int, iterables):
@@ -74,5 +74,5 @@ def arrange_for_dataframe(df: pd.DataFrame, *arrays):
         a = np.asanyarray(a)
         # Easier to pass into arrange function
         to_arrange.append(a.transpose())
-    
+
     return arrange_iterables(dataframe_length, 1, to_arrange)

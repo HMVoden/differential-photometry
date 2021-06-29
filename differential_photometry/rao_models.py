@@ -7,10 +7,12 @@ from astropy.timeseries import BoxLeastSquares
 from feets.preprocess import remove_noise
 from scipy.stats import chisquare
 
-import rao_stats as stat
+import differential_photometry.rao_stats as stat
 
 
-def box_least_squares(data: np.ndarray, uncertainties: np.ndarray, timeline: Time = None) -> np.ndarray:
+def box_least_squares(
+    data: np.ndarray, uncertainties: np.ndarray, timeline: Time = None
+) -> np.ndarray:
     """ Takes a dataset with uncertainties and a timeline, applies a box least squares model to it,
     then filters the data by if the number of transits is equal to one, approximating a dip or increase
     in the magnitude of the target star over time.
@@ -23,16 +25,16 @@ def box_least_squares(data: np.ndarray, uncertainties: np.ndarray, timeline: Tim
     """
     if timeline is None:
         samples = data.shape[1]
-        time = np.arange(0,  samples, 1)*u.second
+        time = np.arange(0, samples, 1) * u.second
         # to push it to a single giant tophat
-        time_middle = np.median(time)-(5*u.second)
+        time_middle = np.median(time) - (5 * u.second)
         # Tuning durations affects runtime and how many tophats/boxes appear
-        durations = np.linspace(time_middle/5, time_middle, 15)
+        durations = np.linspace(time_middle / 5, time_middle, 15)
     else:
         # Getting the effective exposure time
         deltaTime = timeline - timeline[0]
-        time_middle = np.median(deltaTime) - 0.05*np.median(deltaTime)
-        durations = np.linspace(time_middle/5, time_middle, 15)
+        time_middle = np.median(deltaTime) - 0.05 * np.median(deltaTime)
+        durations = np.linspace(time_middle / 5, time_middle, 15)
     accumulated_results = []
 
     for i, sample in enumerate(data):
@@ -45,12 +47,12 @@ def box_least_squares(data: np.ndarray, uncertainties: np.ndarray, timeline: Tim
         duration = periodogram.duration[index]
         stats = model.compute_stats(period, duration, t0)
         model_fit = model.model(timeline, period, duration, t0)  # For graphing
-        result = {'fitted_model': model_fit}
+        result = {"fitted_model": model_fit}
 
-        if(stats['transit_times'].size == 1):  # Filter
-            result['varying'] = True
+        if stats["transit_times"].size == 1:  # Filter
+            result["varying"] = True
         else:
-            result['varying'] = False
+            result["varying"] = False
         accumulated_results.append(result)
 
     return np.array(accumulated_results)
