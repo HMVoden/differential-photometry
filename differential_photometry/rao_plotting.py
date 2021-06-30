@@ -9,16 +9,26 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import toml
 
 import differential_photometry.rao_data as data
 import differential_photometry.rao_math as math
 import differential_photometry.rao_stats as stats
 import differential_photometry.rao_utilities as util
 
+# Get config information
+plot_config = toml.load("config/plotting.toml")
+seaborn_config = plot_config["seaborn"]
+magnitude_config = plot_config["magnitude"]
+differential_magnitude_config = plot_config["differential_magnitude"]
+bar_error_config = plot_config["error"]["bar"]
+fill_error_config = plot_config["error"]["fill"]
 
-def plot_and_save_all(
-    df: pd.DataFrame, *saving, plot_type="magnitude", uniform_y_axis=False
-):
+
+def plot_and_save_all(df: pd.DataFrame,
+                      plot_type="magnitude",
+                      uniform_y_axis=False,
+                      **saving):
     """Takes a pandas dataframe that contains raw magnitude, time as julian date, average magnitude and error, then generates plots for every single star with these values side by side.
 
     Parameters
@@ -28,28 +38,31 @@ def plot_and_save_all(
     output_filename : str
         the desired filename that will be prepended onto the star's
     """
-
+    sns.set_palette(seaborn_config["palette"])
+    sns.set_style(seaborn_config["style"])
+    sns.set_context(seaborn_config["context"])
     if plot_type == "magnitude":
         star_frames = df.groupby("name", sort=False)
         raw_diff_magnitudes(
-            star_frames, *saving, uniform_y_axis=uniform_y_axis,
+            star_frames,
+            **saving,
+            uniform_y_axis=uniform_y_axis,
         )
 
 
-def raw_diff_magnitudes(star_frames, *saving, uniform_y_axis=False):
+def raw_diff_magnitudes(star_frames, uniform_y_axis=False, **saving):
     if uniform_y_axis == True:
         columns = ["mag", "average_diff_mags"]
         max_variation = math.timeseries_largest_range(
-            **util.arrange_time_star(star_frames, columns)
-        )
+            **util.arrange_time_star(star_frames, columns))
 
         mag_max_variation = max_variation["mag"] / 3
         diff_max_variation = max_variation["average_diff_mags"] / 3
         # Divide by 3 to keep most data in viewing range
-        logging.debug("Maximum raw magnitude variation is: %s", mag_max_variation)
-        logging.debug(
-            "Maximum differential magnitude variation is: %s", diff_max_variation
-        )
+        logging.debug("Maximum raw magnitude variation is: %s",
+                      mag_max_variation)
+        logging.debug("Maximum differential magnitude variation is: %s",
+                      diff_max_variation)
     else:
         mag_max_variation = None
         diff_max_variation = None
@@ -59,14 +72,14 @@ def raw_diff_magnitudes(star_frames, *saving, uniform_y_axis=False):
     # Save or return
     with ProcessPoolExecutor(max_workers=4) as executor:
         if saving is not None:
-            kw = np.array_str(np.arange(0, len(saving)))
-            kwargs = dict(zip(kw, saving))
             plot_function = partial(
                 create_4x1_raw_diff_plot,
                 mag_max_variation=mag_max_variation,
                 diff_max_variation=diff_max_variation,
             )
-            saving_function = partial(save_plots, plot_function=plot_function, **kwargs)
+            saving_function = partial(save_plots,
+                                      plot_function=plot_function,
+                                      **saving)
             # for name, frame in star_frames:
             #     saving_function([name, frame])
             list(executor.map(saving_function, star_frames, chunksize=16))
@@ -79,8 +92,6 @@ def raw_diff_magnitudes(star_frames, *saving, uniform_y_axis=False):
 
 
 def save_plots(data, plot_function, **saving_settings):
-    sns.set_theme(style="darkgrid", context="paper")
-    sns.set_palette("deep")
     logging.info("Plotting and saving %s", data[0])
     output_file = Path.cwd()  # current directory
     output_file = output_file.joinpath(*saving_settings.values())
@@ -96,8 +107,6 @@ def save_plots(data, plot_function, **saving_settings):
 
 
 def show_plots(data, plot_function):
-    sns.set_theme(style="darkgrid", context="paper")
-    sns.set_palette("deep")
     logging.info("Plotting and showing %s", data[0])
     fig = plot_function(data[1])
     fig.show()
@@ -105,11 +114,16 @@ def show_plots(data, plot_function):
     return
 
 
-def create_4x1_raw_diff_plot(star, mag_max_variation=None, diff_max_variation=None):
+def create_4x1_raw_diff_plot(star,
+                             mag_max_variation=None,
+                             diff_max_variation=None):
     day_frames = star.groupby("d_m_y")
     days = len(day_frames)
     star_name = star["name"].unique()[0]
-    fig, axes = plt.subplots(nrows=4, ncols=days, figsize=(5 * days, 15), sharex=False)
+    fig, axes = plt.subplots(nrows=4,
+                             ncols=days,
+                             figsize=(5 * days, 15),
+                             sharex=False)
     if days == 1:
         axes = np.array(axes)
     axes = np.asanyarray(axes).transpose()
@@ -124,27 +138,19 @@ def create_4x1_raw_diff_plot(star, mag_max_variation=None, diff_max_variation=No
             day_ax = axes
 
         # Raw Magnitude
-        plot_line_scatter(
-            x=frame["time"],
-            y=frame["mag"],
-            error=frame["error"],
-            xlabel="Julian Date",
-            ylabel="Raw Magnitude",
-            axes=day_ax[:2],
-            color="darkgreen",
-            yrange=mag_max_variation,
-        )
+        plot_line_scatter(x=frame["time"],
+                          y=frame["mag"],
+                          error=frame["error"],
+                          axes=day_ax[:2],
+                          yrange=mag_max_variation,
+                          **magnitude_config)
         # Differential Magnitude
-        plot_line_scatter(
-            x=frame["time"],
-            y=frame["average_diff_mags"],
-            error=frame["average_uncertainties"],
-            xlabel="Julian Date",
-            ylabel="Average Differential Magnitude",
-            axes=day_ax[2:],
-            color="orange",
-            yrange=diff_max_variation,
-        )
+        plot_line_scatter(x=frame["time"],
+                          y=frame["average_diff_mags"],
+                          error=frame["average_uncertainties"],
+                          axes=day_ax[2:],
+                          yrange=diff_max_variation,
+                          **differential_magnitude_config)
         day_ax[0].set_title(str(day))
 
         # end day loop
@@ -166,7 +172,14 @@ def create_4x1_raw_diff_plot(star, mag_max_variation=None, diff_max_variation=No
     return fig
 
 
-def plot_line_scatter(x, y, ylabel, xlabel, error, axes, color="blue", yrange=None):
+def plot_line_scatter(x,
+                      y,
+                      ylabel,
+                      xlabel,
+                      error,
+                      axes,
+                      color="blue",
+                      yrange=None):
     # For the fill between error bars
     error_plus = y + error
     error_neg = y - error
@@ -175,11 +188,10 @@ def plot_line_scatter(x, y, ylabel, xlabel, error, axes, color="blue", yrange=No
         "x": x,
         "y1": error_plus,
         "y2": error_neg,
-        "alpha": 0.45,
-        "label": "Error",
         "color": color,
+        **fill_error_config
     }
-    error_settings = {"x": x, "fmt": "none", "color": "black", "capsize": 1}
+    error_settings = {"x": x, **bar_error_config}
 
     sns.lineplot(ax=axes[0], x=x, y=y, ci=None, color=color)
     axes[0].fill_between(**fill_between)

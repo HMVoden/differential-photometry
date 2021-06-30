@@ -1,0 +1,22 @@
+[seaborn]
+palette = "deep"
+context = "paper"
+style = "darkgrid"
+
+[magnitude]
+xlabel = "Julian Date"
+ylabel = "Raw Magnitude"
+color = "darkgreen"
+
+[differential_magnitude]
+xlabel = "Julian Date"
+ylabel = "Average Differential Magnitude"
+color = "orange"
+
+[error.bar]
+fmt = "none"
+color = "black"
+capsize = 1
+[error.fill]
+alpha = 0.45
+label = "Error"

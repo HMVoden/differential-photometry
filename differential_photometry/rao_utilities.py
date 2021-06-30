@@ -76,3 +76,51 @@ def arrange_for_dataframe(df: pd.DataFrame, *arrays):
         to_arrange.append(a.transpose())
 
     return arrange_iterables(dataframe_length, 1, to_arrange)
+
+
+def correct_offset(df: pd.DataFrame) -> pd.DataFrame:
+
+    non_varying = df[df["varying"] == False]
+    # Probably close to what it 'really' is across all days,
+    # more data points will make it closer to real mean.
+    true_mean = non_varying.groupby("name").agg({
+        "mag": "mean",
+        "average_diff_mags": "mean"
+    })
+    # Individual day means to find offset
+    day_star_mean = non_varying.groupby(["d_m_y", "name"]).agg({
+        "mag":
+        "mean",
+        "average_diff_mags":
+        "mean"
+    })
+    offset = day_star_mean.sub(true_mean, axis="index").reset_index()
+    # Median of offsets to prevent huge outliers from mucking with data
+    per_day_offset = offset.groupby("d_m_y").median().reset_index()
+    # rename so merge doesn't go wonky
+    per_day_offset = per_day_offset.rename(
+        columns={
+            "mag": "mag_offset",
+            "average_diff_mags": "diff_mag_offset"
+        })
+    df_corrected = df.copy()
+    df_corrected = df_corrected.merge(per_day_offset,
+                                      left_on="d_m_y",
+                                      right_on="d_m_y",
+                                      how="inner")
+    df_corrected["mag"] = df_corrected["mag"] - df_corrected["mag_offset"]
+    df_corrected["average_diff_mags"] = df_corrected[
+        "average_diff_mags"] - df_corrected["diff_mag_offset"]
+
+    return df_corrected
+
+
+def flag_variable(df: pd.DataFrame) -> pd.DataFrame:
+    stars = df.groupby("name")
+    updated_frames = []
+    for name, star_frame in stars:
+        if star_frame["varying"].any():
+            star_frame = star_frame.assign(varying=True)
+        updated_frames.append(star_frame)
+
+    return pd.concat(updated_frames, join="outer")
