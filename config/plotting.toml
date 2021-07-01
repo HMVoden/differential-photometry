@@ -2,11 +2,16 @@
 palette = "deep"
 context = "paper"
 style = "darkgrid"
+font = 'sans-serif'
+font_scale = 1
+color_codes = true
+#rc =  # overrides for above
+# see https://seaborn.pydata.org/generated/seaborn.set_theme.html#seaborn.set_theme
 
 [magnitude]
 xlabel = "Julian Date"
 ylabel = "Raw Magnitude"
-color = "darkgreen"
+color = "purple"
 
 [differential_magnitude]
 xlabel = "Julian Date"
@@ -18,5 +23,17 @@ fmt = "none"
 color = "black"
 capsize = 1
 [error.fill]
-alpha = 0.45
+alpha = 0.45 # How seethrough the fill lines are
 label = "Error"
+
+# Where we put the output
+# Each entry corresponds to a new folder
+# Order matters
+[output.base]
+directory = "output"
+[output.corrected]
+corrected = "corrected"
+[output.non_varying]
+non_varying = "non_varying"
+[output.varying]
+varying = "varying"

@@ -4,15 +4,5 @@ time_execution = true
 [input]
 directory = "data"
 
-# Where we put the output
-[output.base]
-directory = "output"
-[output.non_varying]
-non_varying = "non_varying"
-[output.varying]
-varying = "varying"
-[output.corrected]
-corrected = "corrected"
-
 [logging]
 enabled = true

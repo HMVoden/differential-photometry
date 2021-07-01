@@ -1,7 +1,11 @@
+import logging
+
 import numpy as np
 import pandas as pd
 
-import differential_photometry.rao_data as data
+import differential_photometry.analysis as analysis
+import differential_photometry.data as data
+import differential_photometry.differential_photometry as diff
 
 
 def arrange_iterables(row: int, col: int, iterables):
@@ -96,7 +100,7 @@ def correct_offset(df: pd.DataFrame) -> pd.DataFrame:
     })
     offset = day_star_mean.sub(true_mean, axis="index").reset_index()
     # Median of offsets to prevent huge outliers from mucking with data
-    per_day_offset = offset.groupby("d_m_y").median().reset_index()
+    per_day_offset = offset.groupby("d_m_y").mean().reset_index()
     # rename so merge doesn't go wonky
     per_day_offset = per_day_offset.rename(
         columns={
@@ -111,6 +115,7 @@ def correct_offset(df: pd.DataFrame) -> pd.DataFrame:
     df_corrected["mag"] = df_corrected["mag"] - df_corrected["mag_offset"]
     df_corrected["average_diff_mags"] = df_corrected[
         "average_diff_mags"] - df_corrected["diff_mag_offset"]
+    df_corrected["corrected"] = True
 
     return df_corrected
 
@@ -124,3 +129,18 @@ def flag_variable(df: pd.DataFrame) -> pd.DataFrame:
         updated_frames.append(star_frame)
 
     return pd.concat(updated_frames, join="outer")
+
+
+def find_varying_diff_calc(df: pd.DataFrame,
+                           method: str = "chisquared",
+                           threshold: int = 4) -> pd.DataFrame:
+    day = df["d_m_y"].unique()
+    logging.info("Processing day %s", day)
+    df = analysis.find_varying_stars(df, method, threshold)
+    return diff.calculate_differential_photometry(df)
+
+
+def split_on(df: pd.DataFrame, split_on: str):
+    false_df = df[df[split_on] == False]
+    true_df = df[df[split_on] == True]
+    return false_df, true_df

@@ -129,6 +129,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Profiling
+profiles/
+
 # Extra files
 *.pdf
 *.xlsx
@@ -137,3 +140,4 @@ dmypy.json
 *.jpeg
 *.jpg
 *.html
+working.toml

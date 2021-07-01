@@ -2,7 +2,9 @@ import logging
 import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
+from os import PathLike
 from pathlib import Path
+from typing import Callable
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -11,10 +13,10 @@ import pandas as pd
 import seaborn as sns
 import toml
 
-import differential_photometry.rao_data as data
-import differential_photometry.rao_math as math
-import differential_photometry.rao_stats as stats
-import differential_photometry.rao_utilities as util
+import differential_photometry.config as config
+import differential_photometry.math_utils as math
+import differential_photometry.stats as stats
+import differential_photometry.utilities as util
 
 # Get config information
 plot_config = toml.load("config/plotting.toml")
@@ -26,38 +28,17 @@ fill_error_config = plot_config["error"]["fill"]
 
 
 def plot_and_save_all(df: pd.DataFrame,
-                      plot_type="magnitude",
-                      uniform_y_axis=False,
-                      **saving):
-    """Takes a pandas dataframe that contains raw magnitude, time as julian date, average magnitude and error, then generates plots for every single star with these values side by side.
-
-    Parameters
-    ----------
-    dataframe : pd.DataFrame
-        A dataframe containing raw magnitude, a time column, average magnitude and errors for magnitudes, with a star's name
-    output_filename : str
-        the desired filename that will be prepended onto the star's
-    """
-    sns.set_palette(seaborn_config["palette"])
-    sns.set_style(seaborn_config["style"])
-    sns.set_context(seaborn_config["context"])
-    if plot_type == "magnitude":
-        star_frames = df.groupby("name", sort=False)
-        raw_diff_magnitudes(
-            star_frames,
-            **saving,
-            uniform_y_axis=uniform_y_axis,
-        )
-
-
-def raw_diff_magnitudes(star_frames, uniform_y_axis=False, **saving):
-    if uniform_y_axis == True:
+                      uniform_y_axis: bool = False,
+                      split: bool = False):
+    to_plot = []
+    if uniform_y_axis is True:
         columns = ["mag", "average_diff_mags"]
         max_variation = math.timeseries_largest_range(
-            **util.arrange_time_star(star_frames, columns))
+            **util.arrange_time_star(df, columns))
 
         mag_max_variation = max_variation["mag"] / 3
         diff_max_variation = max_variation["average_diff_mags"] / 3
+
         # Divide by 3 to keep most data in viewing range
         logging.debug("Maximum raw magnitude variation is: %s",
                       mag_max_variation)
@@ -66,20 +47,39 @@ def raw_diff_magnitudes(star_frames, uniform_y_axis=False, **saving):
     else:
         mag_max_variation = None
         diff_max_variation = None
+    if split is True:
+        non_varying, varying = util.split_on(df, "varying")
+        to_plot.append(non_varying)
+        to_plot.append(varying)
+    else:
+        to_plot.append(df)
+    #end ifs
+    for frame in to_plot:
+        star_frames = frame.groupby("name", sort=False)
+        raw_diff_magnitudes(star_frames,
+                            mag_max_variation=mag_max_variation,
+                            diff_max_variation=diff_max_variation,
+                            save=True)
+
+
+def raw_diff_magnitudes(star_frames: pd.DataFrame,
+                        mag_max_variation: float = None,
+                        diff_max_variation: float = None,
+                        save: bool = False):
 
     mpl = mp.log_to_stderr()
     mpl.setLevel(logging.DEBUG)
     # Save or return
+    # Mulitprocess to speed up awful plotting code
     with ProcessPoolExecutor(max_workers=4) as executor:
-        if saving is not None:
+
+        if save is True:
             plot_function = partial(
                 create_4x1_raw_diff_plot,
                 mag_max_variation=mag_max_variation,
                 diff_max_variation=diff_max_variation,
             )
-            saving_function = partial(save_plots,
-                                      plot_function=plot_function,
-                                      **saving)
+            saving_function = partial(save_plots, plot_function=plot_function)
             # for name, frame in star_frames:
             #     saving_function([name, frame])
             list(executor.map(saving_function, star_frames, chunksize=16))
@@ -88,25 +88,50 @@ def raw_diff_magnitudes(star_frames, uniform_y_axis=False, **saving):
             #     show_plots(group)
             # list(map(show_plots, star_frames))
             list(executor.map(show_plots, star_frames, chunksize=16))
-            # pass
+        # pass
 
 
-def save_plots(data, plot_function, **saving_settings):
+def save_plots(data: pd.DataFrame, plot_function):
+    # Needs to be set here so each worker
+    # Has the same settings
+    sns.set_theme(**seaborn_config)
     logging.info("Plotting and saving %s", data[0])
-    output_file = Path.cwd()  # current directory
-    output_file = output_file.joinpath(*saving_settings.values())
+    output_file = generate_output_path(data[1])
     if not output_file.exists():
-        logging.info("Creating directory %s", output_file.parent)
-        output_file.mkdir(parents=True)
+        logging.info("Creating directory %s", output_file)
+        output_file.mkdir(parents=True, exist_ok=True)
     output_file = output_file.joinpath(data[0] + ".png")
-    logging.info("Output file: %s", output_file)
+    logging.debug("Output file: %s", output_file)
     fig = plot_function(data[1])
     fig.savefig(fname=output_file, transparent=False, bbox_inches="tight")
     plt.close(fig)
     return
 
 
+def generate_output_path(data: pd.DataFrame) -> PathLike:
+    columns = data.columns
+    output_path = Path.cwd()  # current directory of script
+    dataset = Path(toml.load("config/working.toml")["current_file"])
+    target_cluster = dataset.stem.split("_")[0]
+    output_path = output_path.joinpath(*plot_config['output']['base'].values())
+    output_path = output_path.joinpath(target_cluster)  # Target of interest
+    output_path = output_path.joinpath(dataset.stem)  # Filename loaded in
+    if "corrected" in columns:
+        output_path = output_path.joinpath(
+            *plot_config['output']['corrected'].values())
+    if data["varying"].any() == True:
+        output_path = output_path.joinpath(
+            *plot_config['output']['varying'].values())
+    else:
+        output_path = output_path.joinpath(
+            *plot_config['output']['non_varying'].values())
+    return output_path
+
+
 def show_plots(data, plot_function):
+    # Needs to be set here so each worker
+    # Has the same settings
+    sns.set_theme(**seaborn_config)
     logging.info("Plotting and showing %s", data[0])
     fig = plot_function(data[1])
     fig.show()
@@ -127,11 +152,11 @@ def create_4x1_raw_diff_plot(star,
     if days == 1:
         axes = np.array(axes)
     axes = np.asanyarray(axes).transpose()
-
+    # This is a bad code smell, very slow.
     for i, frame_dict in enumerate(day_frames):
         frame = frame_dict[1]
         day = frame_dict[0]
-        logging.info("Graphing star day %s", day)
+        logging.debug("Graphing star day %s", day)
         if days > 1:
             day_ax = axes[i]
         else:

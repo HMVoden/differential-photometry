@@ -6,12 +6,11 @@ from astropy.time import Time
 from feets import FeatureSpace
 from feets.preprocess import remove_noise
 
-import differential_photometry.rao_utilities as util
+import differential_photometry.utilities as util
 
 
-def calculate_all_feets_indices(
-    data: np.ndarray, timeline: Time, uncertainties: np.ndarray
-) -> list:
+def calculate_all_feets_indices(data: np.ndarray, timeline: Time,
+                                uncertainties: np.ndarray) -> list:
     """ Runs through an entire set of datasets and calculates every 
     single feature detailed in the FEETS featurelist that's relevant to time, magnitude and error
 
@@ -24,9 +23,11 @@ def calculate_all_feets_indices(
     result = []  # Easier to append to a list
     for i, sample in enumerate(data):
         uncertainty = uncertainties[i]
-        time, sample, uncertainty = remove_noise(
-            timeline, sample, uncertainty, error_limit=3, std_limit=5
-        )
+        time, sample, uncertainty = remove_noise(timeline,
+                                                 sample,
+                                                 uncertainty,
+                                                 error_limit=3,
+                                                 std_limit=5)
         lc = (time, sample, uncertainty)
         feature_space = FeatureSpace(data=["time", "magnitude", "error"])
         features, values = feature_space.extract(*lc)

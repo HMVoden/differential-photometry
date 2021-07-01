@@ -1,13 +1,7 @@
-import importlib
-
 import astropy.units as u
 import numpy as np
 from astropy.time import Time
 from astropy.timeseries import BoxLeastSquares
-from feets.preprocess import remove_noise
-from scipy.stats import chisquare
-
-import differential_photometry.rao_stats as stat
 
 
 def box_least_squares(data: np.ndarray,

@@ -7,14 +7,14 @@ from astropy.modeling import fitting, models
 from astropy.stats import sigma_clip
 from wotan import flatten
 
-import differential_photometry.rao_data as data
-import differential_photometry.rao_stats as stat
-import differential_photometry.rao_utilities as util
+import differential_photometry.data as data
+import differential_photometry.stats as stat
+import differential_photometry.utilities as util
 
 
-def find_varying_stars(
-    df: pd.DataFrame, method="chisquared", threshold=4.0
-) -> pd.DataFrame:
+def find_varying_stars(df: pd.DataFrame,
+                       method="chisquared",
+                       threshold=4.0) -> pd.DataFrame:
     """Uses a reduced chi-squared test on a dataframe's data to find varying stars in that data
 
     Parameters
@@ -27,26 +27,44 @@ def find_varying_stars(
     pd.DataFrame
         Two dataframes, first contains all the varying stars and second contains all the non-varying stars
     """
-    df[method] = 0.0
+    if method == "chisquared":
+        stat_function = stat.reduced_chi_square
     stars = df.groupby("name")
-    for _, data in stars:
-        sample = sigma_clip(data["mag"], sigma=4, masked=True)
-        error = np.ma.array(data["error"], mask=sample.mask)
-        test_statistic = stat.reduced_chi_square(data=sample, uncertainty=error)
-        data[method] = test_statistic
-        df.update(data)
+
+    test_statistic = stars.apply(
+        func=sigma_clip_test,
+        data_name="mag",
+        error_name="error",
+        stat_func=stat_function).rename(method).reset_index()
+
+    df = pd.merge(df, test_statistic, how="left", on="name")
+    # for _, data in stars:
+    #     sample = sigma_clip(data["mag"], sigma=4, masked=True)
+    #     error = np.ma.array(data["error"], mask=sample.mask)
+    #     test_statistic = stat.reduced_chi_square(data=sample,
+    #                                              uncertainty=error)
+    #     data[method] = test_statistic
+    #     df.update(data)
 
     df["varying"] = df[method] >= threshold
     varying = df[df["varying"] == True]
-    non_varying = df[df["varying"] == False]
 
     logging.info("Number of stars processed: %s", len(stars))
-    logging.info("Number of stars found to be varying: %s", varying["name"].nunique())
+    logging.info("Number of stars found to be varying: %s",
+                 varying["name"].nunique())
 
-    return non_varying, varying
+    return df
 
 
-def find_polynomial_trend(df: pd.DataFrame, polynomial_degree: int = 8) -> np.ndarray:
+def sigma_clip_test(df: pd.DataFrame, data_name: str, error_name: str,
+                    stat_func) -> pd.DataFrame:
+    sample = sigma_clip(df[data_name], sigma=4, masked=True)
+    error = np.ma.array(df[error_name], mask=sample.mask)
+    return stat_func(sample, error)
+
+
+def find_polynomial_trend(df: pd.DataFrame,
+                          polynomial_degree: int = 8) -> np.ndarray:
     """Calculates a Chebyshev polynomial on top of averaged data of a dataset to find a trend in the entire dataset
 
     Parameters
@@ -72,18 +90,16 @@ def find_polynomial_trend(df: pd.DataFrame, polynomial_degree: int = 8) -> np.nd
     )
 
     # get data and organize it properly by time = row, column = star
-    non_varying_mags = (
-        df["mag"].to_numpy(dtype="float64").reshape(num_samples, num_stars)
-    )
-    non_varying_error = (
-        df["error"].to_numpy(dtype="float64").reshape(num_samples, num_stars)
-    )
+    non_varying_mags = (df["mag"].to_numpy(dtype="float64").reshape(
+        num_samples, num_stars))
+    non_varying_error = (df["error"].to_numpy(dtype="float64").reshape(
+        num_samples, num_stars))
 
     average_mag = np.average(non_varying_mags, axis=1)
-    average_error = np.sum(non_varying_error ** 2, axis=1) / num_stars
+    average_error = np.sum(non_varying_error**2, axis=1) / num_stars
 
     timeline = df["jd"].unique()  # Our x-axis
-    weight = 1 / average_error ** 2  # Uncertainty weighting
+    weight = 1 / average_error**2  # Uncertainty weighting
 
     fit = fitting.LinearLSQFitter()  # Assuming linear dataset
     # Chebyshev seems to work better than polynomial
@@ -91,14 +107,15 @@ def find_polynomial_trend(df: pd.DataFrame, polynomial_degree: int = 8) -> np.nd
     fitted_poly = fit(model=poly, x=timeline, y=average_mag, weights=weight)
 
     # Get calculated parameters from model
-    general_parameters = dict(zip(fitted_poly.param_names, fitted_poly.parameters))
+    general_parameters = dict(
+        zip(fitted_poly.param_names, fitted_poly.parameters))
     logging.debug("Parameters in found trend: %r", general_parameters)
     # Set y-intercept to 0 so that trend hovers around 0
     general_parameters["c0"] = 0
 
-    dataset_trend = models.Chebyshev1D(
-        degree=degree, domain=fitted_poly.domain, **general_parameters
-    )
+    dataset_trend = models.Chebyshev1D(degree=degree,
+                                       domain=fitted_poly.domain,
+                                       **general_parameters)
 
     return dataset_trend(timeline)  # return trend around 0
 
@@ -144,9 +161,9 @@ def is_trend_constant(trend: np.ndarray, parameters_fit: int = None) -> bool:
     """
     if parameters_fit is None:
         parameters_fit = 0
-    chisquared = stat.reduced_chi_square(
-        data=trend, expected=0, parameters_estimated=parameters_fit
-    )
+    chisquared = stat.reduced_chi_square(data=trend,
+                                         expected=0,
+                                         parameters_estimated=parameters_fit)
     is_constant = isclose(chisquared, 1, abs_tol=0.2)  # expected very close
     logging.info("Chisquared for trend found to be %s", chisquared)
     return is_constant
@@ -164,7 +181,7 @@ def find_biweight_trend(df: pd.DataFrame):
     window = time.max() / 10
 
     average = np.average(mag, axis=1)
-    av_error = np.sum(error ** 2, axis=1) / N
+    av_error = np.sum(error**2, axis=1) / N
 
     w_avg = stat.weighted_mean(average, av_error)
 
