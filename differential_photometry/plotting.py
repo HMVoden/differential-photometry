@@ -13,7 +13,6 @@ import pandas as pd
 import seaborn as sns
 import toml
 
-import differential_photometry.config as config
 import differential_photometry.math_utils as math
 import differential_photometry.stats as stats
 import differential_photometry.utilities as util
@@ -35,11 +34,11 @@ def plot_and_save_all(df: pd.DataFrame,
         columns = ["mag", "average_diff_mags"]
         max_variation = math.timeseries_largest_range(
             **util.arrange_time_star(df, columns))
+        mag_max_variation = max_variation["mag"] / 2
+        diff_max_variation = max_variation["average_diff_mags"] / 2
 
-        mag_max_variation = max_variation["mag"] / 3
-        diff_max_variation = max_variation["average_diff_mags"] / 3
-
-        # Divide by 3 to keep most data in viewing range
+        # Divide by 2 to keep most data in viewing range as
+        # this encompasses the entire range (half above, half below)
         logging.debug("Maximum raw magnitude variation is: %s",
                       mag_max_variation)
         logging.debug("Maximum differential magnitude variation is: %s",
@@ -66,8 +65,8 @@ def raw_diff_magnitudes(star_frames: pd.DataFrame,
                         mag_max_variation: float = None,
                         diff_max_variation: float = None,
                         save: bool = False):
-
     mpl = mp.log_to_stderr()
+
     mpl.setLevel(logging.DEBUG)
     # Save or return
     # Mulitprocess to speed up awful plotting code
@@ -142,6 +141,17 @@ def show_plots(data, plot_function):
 def create_4x1_raw_diff_plot(star,
                              mag_max_variation=None,
                              diff_max_variation=None):
+    if mag_max_variation != None and differential_magnitude_config != None:
+        mag_mean = np.average(star["mag"], weights=(1 / star["error"]**2))
+        diff_mean = np.average(star["average_diff_mags"],
+                               weights=(1 / star["average_uncertainties"]**2))
+        mag_lim = (mag_mean - mag_max_variation, mag_mean + mag_max_variation)
+        diff_lim = (diff_mean - diff_max_variation,
+                    diff_mean + diff_max_variation)
+    else:
+        mag_lim = None
+        diff_lim = None
+    #end if
     day_frames = star.groupby("d_m_y")
     days = len(day_frames)
     star_name = star["name"].unique()[0]
@@ -167,14 +177,14 @@ def create_4x1_raw_diff_plot(star,
                           y=frame["mag"],
                           error=frame["error"],
                           axes=day_ax[:2],
-                          yrange=mag_max_variation,
+                          yrange=mag_lim,
                           **magnitude_config)
         # Differential Magnitude
         plot_line_scatter(x=frame["time"],
                           y=frame["average_diff_mags"],
                           error=frame["average_uncertainties"],
                           axes=day_ax[2:],
-                          yrange=diff_max_variation,
+                          yrange=diff_lim,
                           **differential_magnitude_config)
         day_ax[0].set_title(str(day))
 
@@ -182,11 +192,10 @@ def create_4x1_raw_diff_plot(star,
     if days > 1:
         for col in axes:
             col[0].get_shared_x_axes().join(*col)
-        if mag_max_variation is None and diff_max_variation is None:
-            for row in axes.transpose():
-                row[0].get_shared_y_axes().join(*row)
-            for ax in axes.flat:
-                ax.label_outer()
+        for row in axes.transpose():
+            row[0].get_shared_y_axes().join(*row)
+        for ax in axes.flat:
+            ax.label_outer()
     else:
         axes[0].get_shared_x_axes().join(*axes)
 
@@ -227,5 +236,4 @@ def plot_line_scatter(x,
         ax.set_ylabel(ylabel)
         ax.legend()
         if yrange is not None:
-            mean = stats.weighted_mean(y, error)
-            ax.set_ylim((mean - yrange), (mean + yrange))
+            ax.set_ylim(yrange)

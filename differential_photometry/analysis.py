@@ -14,7 +14,9 @@ import differential_photometry.utilities as util
 
 def find_varying_stars(df: pd.DataFrame,
                        method="chisquared",
-                       threshold=4.0) -> pd.DataFrame:
+                       threshold=4.0,
+                       null="accept",
+                       clip=False) -> pd.DataFrame:
     """Uses a reduced chi-squared test on a dataframe's data to find varying stars in that data
 
     Parameters
@@ -27,26 +29,32 @@ def find_varying_stars(df: pd.DataFrame,
     pd.DataFrame
         Two dataframes, first contains all the varying stars and second contains all the non-varying stars
     """
+    stars = df.groupby("name")
+    error_name = None
     if method == "chisquared":
         stat_function = stat.reduced_chi_square
-    stars = df.groupby("name")
+        error_name = "error"
+    if method == "adfuller":
+        stat_function = stat.augmented_dfuller
+    if method == "kpss":
+        stat_function = stat.kpss
+    if method == "zastat":
+        stat_function = stat.zastat
+    if method == "adf_gls":
+        stat_function = stat.adf_gls
 
     test_statistic = stars.apply(
-        func=sigma_clip_test,
+        func=stat_runner,
         data_name="mag",
-        error_name="error",
+        error_name=error_name,
+        clip=clip,
         stat_func=stat_function).rename(method).reset_index()
 
     df = pd.merge(df, test_statistic, how="left", on="name")
-    # for _, data in stars:
-    #     sample = sigma_clip(data["mag"], sigma=4, masked=True)
-    #     error = np.ma.array(data["error"], mask=sample.mask)
-    #     test_statistic = stat.reduced_chi_square(data=sample,
-    #                                              uncertainty=error)
-    #     data[method] = test_statistic
-    #     df.update(data)
-
-    df["varying"] = df[method] >= threshold
+    if null == "accept":
+        df["varying"] = df[method] >= threshold
+    else:
+        df["varying"] = df[method] <= threshold
     varying = df[df["varying"] == True]
 
     logging.info("Number of stars processed: %s", len(stars))
@@ -56,11 +64,30 @@ def find_varying_stars(df: pd.DataFrame,
     return df
 
 
-def sigma_clip_test(df: pd.DataFrame, data_name: str, error_name: str,
-                    stat_func) -> pd.DataFrame:
-    sample = sigma_clip(df[data_name], sigma=4, masked=True)
-    error = np.ma.array(df[error_name], mask=sample.mask)
-    return stat_func(sample, error)
+def stat_runner(
+    df: pd.DataFrame,
+    data_name: str,
+    stat_func,
+    error_name: str = None,
+    clip: bool = False,
+):
+    if clip == True:
+        return sigma_clip_test(df, data_name, stat_func, error_name)
+    if error_name is not None:
+        return stat_func(df[data_name], df[error_name])
+    else:
+        return stat_func(df[data_name])
+
+
+def sigma_clip_test(df: pd.DataFrame,
+                    data_name: str,
+                    stat_func,
+                    error_name: str = None) -> pd.DataFrame:
+    sample = sigma_clip(df[data_name], sigma=3, masked=True)
+    if error_name is not None:
+        error = np.ma.array(df[error_name], mask=sample.mask)
+        return stat_func(sample, error)
+    return stat_func(sample)
 
 
 def find_polynomial_trend(df: pd.DataFrame,

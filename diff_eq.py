@@ -16,7 +16,7 @@ import differential_photometry.models as model
 import differential_photometry.plotting as plot
 import differential_photometry.stats as stat
 import differential_photometry.utilities as util
-import differential_photometry.config as config
+# import differential_photometry.config as config
 
 importlib.reload(util)
 importlib.reload(analysis)
@@ -69,13 +69,27 @@ if __name__ == "__main__":
     # Find obviously varying stars
     # perform differential photometry on them
     # Drop=True to prevent index error with Pandas
-    df = days.apply(util.find_varying_diff_calc,
-                    threshold=5).reset_index(drop=True)
+    df = days.apply(
+        util.find_varying_diff_calc,
+        method="adf_gls",
+        threshold=0.05,  # p-value
+        null="accept",  # reject or accept null
+        clip=False).reset_index(drop=True)
 
     # Set all sets of varying stars, so that we can properly graph them
     df = util.flag_variable(df)
     # Correct for any offset found in the data
     df_corrected = util.correct_offset(df)
+
+    # TODO make function and use natsort on this
+    # df_corrected.sort_values(by=["time", "name"], axis="index", inplace=True)
+    # df[df["varying"] == True].to_excel((file.stem + "_varying.xlsx"))
+    # df[df["varying"] == False].to_excel((file.stem + "_non_varying.xlsx"))
+    # df_corrected[df_corrected["varying"] == True].to_excel(
+    #     (file.stem + "_varying_offset.xlsx"))
+    # df_corrected[df_corrected["varying"] == False].to_excel(
+    #     (file.stem + "_non_varying_offset.xlsx"))
+
     # Timing for my edification
     if app_config["time_execution"] == True:
         pre_graph_time = time.time()
@@ -84,8 +98,8 @@ if __name__ == "__main__":
 
     logging.info("Starting graphing")
 
-    plot.plot_and_save_all(df=df, uniform_y_axis=True, split=True)
-    plot.plot_and_save_all(df=df_corrected, uniform_y_axis=True, split=True)
+    # plot.plot_and_save_all(df=df, uniform_y_axis=True, split=True)
+    # plot.plot_and_save_all(df=df_corrected, uniform_y_axis=True, split=True)
 
     logging.info("Finished graphing")
     if app_config["time_execution"] == True:

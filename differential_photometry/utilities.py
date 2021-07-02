@@ -123,7 +123,7 @@ def correct_offset(df: pd.DataFrame) -> pd.DataFrame:
 def flag_variable(df: pd.DataFrame) -> pd.DataFrame:
     stars = df.groupby("name")
     updated_frames = []
-    for name, star_frame in stars:
+    for _, star_frame in stars:
         if star_frame["varying"].any():
             star_frame = star_frame.assign(varying=True)
         updated_frames.append(star_frame)
@@ -133,10 +133,12 @@ def flag_variable(df: pd.DataFrame) -> pd.DataFrame:
 
 def find_varying_diff_calc(df: pd.DataFrame,
                            method: str = "chisquared",
-                           threshold: int = 4) -> pd.DataFrame:
+                           threshold: int = 4,
+                           null="accept",
+                           clip=False) -> pd.DataFrame:
     day = df["d_m_y"].unique()
     logging.info("Processing day %s", day)
-    df = analysis.find_varying_stars(df, method, threshold)
+    df = analysis.find_varying_stars(df, method, threshold, null, clip)
     return diff.calculate_differential_photometry(df)
 
 

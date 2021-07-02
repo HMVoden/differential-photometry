@@ -15,6 +15,9 @@ feets = "^0.4"
 matplotlib = "^3.4.2"
 seaborn = "^0.11.1"
 toml = "^0.10.2"
+statsmodels = "^0.12.2"
+arch = "^4.19"
+natsort = "^7.1.1"
 
 [tool.poetry.dev-dependencies]
 
