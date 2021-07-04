@@ -7,15 +7,26 @@ from astropy.timeseries import BoxLeastSquares
 def box_least_squares(data: np.ndarray,
                       uncertainties: np.ndarray,
                       timeline: Time = None) -> np.ndarray:
-    """ Takes a dataset with uncertainties and a timeline, applies a box least squares model to it,
+    """Takes a dataset with uncertainties and a timeline, applies a box least squares model to it,
     then filters the data by if the number of transits is equal to one, approximating a dip or increase
     in the magnitude of the target star over time.
+    
+    Early work, needs refactoring.
 
-    This is a naive approach to the problem, and does not have a great success rate.
-    Keyword arguments:
-    data          -- a dataset of magnitudes for a sequence of stars, one star per row.
-    timeline      -- the time from beginning to end of the data collection, not unique per star
-    uncertainties -- error in the magnitudes
+    Parameters
+    ----------
+    data : np.ndarray
+        Data to apply the box least square to, one timeseries per row
+    uncertainties : np.ndarray
+        Error (sigma) in the data
+    timeline : Time, optional
+        Timeline of data, by default None
+
+    Returns
+    -------
+    np.ndarray
+        Array of dictionaries that contain the model for the data and whether or not
+        a star is varying.
     """
     if timeline is None:
         samples = data.shape[1]

@@ -1,4 +1,2 @@
-# Global variable storage
-# used during runtime, not for settings
-
+#Configuration during runtime
 filename = None

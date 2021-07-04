@@ -1,6 +1,6 @@
 [seaborn]
 palette = "deep"
-context = "paper"
+context = "notebook"
 style = "darkgrid"
 font = 'sans-serif'
 font_scale = 1
@@ -25,15 +25,3 @@ capsize = 1
 [error.fill]
 alpha = 0.45 # How seethrough the fill lines are
 label = "Error"
-
-# Where we put the output
-# Each entry corresponds to a new folder
-# Order matters
-[output.base]
-directory = "output"
-[output.corrected]
-corrected = "corrected"
-[output.non_varying]
-non_varying = "non_varying"
-[output.varying]
-varying = "varying"

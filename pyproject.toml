@@ -2,22 +2,29 @@
 name = "differential photometry"
 version = "0.1.1"
 description = "Conducts differential photometry on arbitrary datasets"
-authors = ["Harlan Shaw <harlan.shaw@ucalgary.ca>"]
+authors = [
+    "Harlan Shaw <harlan.shaw@ucalgary.ca>",
+    "Ruben Morales <ruben.morales1@ucalgary.ca>",
+]
 license = "MIT"
+include = ["config/*"]
+exclude = ["config/working.toml", "data/*"]
 
 [tool.poetry.dependencies]
 python = "~3.8.8"
-pandas = "^1.2.5"
-numpy = "^1.21.0"
-numba = "^0.53.1"
-wotan = "^1.9"
-feets = "^0.4"
-matplotlib = "^3.4.2"
-seaborn = "^0.11.1"
-toml = "^0.10.2"
-statsmodels = "^0.12.2"
-arch = "^4.19"
-natsort = "^7.1.1"
+pandas = "~1.2"
+numpy = "~1.21"
+numba = "~0.53"
+wotan = "~1.9"
+feets = "~0.4"
+matplotlib = "~3.4"
+seaborn = "~0.11"
+toml = "~0.10"
+statsmodels = "~0.12"
+arch = "~4.19"
+natsort = "~7.1"
+click = "^8.0.1"
+tqdm = "^4.61.1"
 
 [tool.poetry.dev-dependencies]
 

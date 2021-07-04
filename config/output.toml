@@ -1,0 +1,13 @@
+# Where we put the output
+# Each entry corresponds to a new folder
+# Order matters
+[output.base]
+directory = "output"
+[output.corrected]
+corrected = "corrected"
+[output.non_varying]
+non_varying = "non_varying"
+[output.varying]
+varying = "varying"
+[output.uniform]
+uniform = "uniform"

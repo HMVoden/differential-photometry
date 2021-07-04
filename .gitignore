@@ -141,3 +141,5 @@ profiles/
 *.jpg
 *.html
 working.toml
+output/
+results/
