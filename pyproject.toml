@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "differential photometry"
+name = "differential_photometry"
 version = "0.1.1"
 description = "Conducts differential photometry on arbitrary datasets"
 authors = [
