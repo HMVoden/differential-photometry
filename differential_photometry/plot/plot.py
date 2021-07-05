@@ -44,6 +44,8 @@ def plot_and_save_all(df: pd.DataFrame,
     """
     to_plot = []
     if uniform_y_axis is True:
+        # Calculate the largest deviation along the y-axis
+        # for the entire dataset
         columns = ["mag", "average_diff_mags"]
         max_variation = math_utils.get_largest_range(
             **arrange_time_star(df, columns))
@@ -61,6 +63,7 @@ def plot_and_save_all(df: pd.DataFrame,
         mag_max_variation = None
         diff_max_variation = None
     if split is True:
+        # Need both output folders
         non_varying, varying = split_on(df, "varying")
         varying_output_folder = generate_graph_output_path(
             corrected=corrected,
@@ -81,7 +84,7 @@ def plot_and_save_all(df: pd.DataFrame,
                                                    uniform=uniform_y_axis)
         to_plot.append((df, output_folder))
     #end ifs
-    with tqdm(to_plot, leave=False) as pbar:
+    with tqdm(to_plot, leave=False, total=len(to_plot)) as pbar:
         for frame, folder in to_plot:
             logging.info("Writing to folder %s", folder)
             pbar.set_description("Graphing %s" % folder.parts[-1])
@@ -90,6 +93,7 @@ def plot_and_save_all(df: pd.DataFrame,
                                 mag_max_variation=mag_max_variation,
                                 diff_max_variation=diff_max_variation,
                                 output_folder=folder)
+            pbar.update(1)
 
 
 def raw_diff_magnitudes(star_frames: pd.DataFrame,
@@ -122,8 +126,8 @@ def raw_diff_magnitudes(star_frames: pd.DataFrame,
         # for name, frame in star_frames:
         #     saving_function([name, frame])
         with ProcessPoolExecutor(max_workers=4) as executor:
-            list(
-                tqdm(executor.map(saving_function, star_frames, chunksize=16),
+            concurrent = list(
+                tqdm(executor.map(saving_function, star_frames, chunksize=1),
                      total=len(star_frames),
                      leave=False,
                      desc="Plotting..."))
@@ -134,7 +138,7 @@ def raw_diff_magnitudes(star_frames: pd.DataFrame,
         with ProcessPoolExecutor(max_workers=4) as executor:
             list(
                 tqdm(
-                    executor.map(show_plots, star_frames, chunksize=16),
+                    executor.map(show_plots, star_frames, chunksize=1),
                     total=len(star_frames),
                     leave=False,
                 ))

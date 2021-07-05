@@ -11,3 +11,5 @@ non_varying = "non_varying"
 varying = "varying"
 [output.uniform]
 uniform = "uniform"
+[output.excel]
+excel = "excel"

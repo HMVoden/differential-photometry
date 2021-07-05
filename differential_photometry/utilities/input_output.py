@@ -66,6 +66,7 @@ def save_to_excel(df: pd.DataFrame,
                   filename: str,
                   sort_on: List[str] = None,
                   split_on: List[str] = None,
+                  corrected: bool = None,
                   output_folder: Path = None):
     """Saves specified dataframe to excel, changes filename based on inputted filename,
     how the dataframe is to be sorted and split.
@@ -83,23 +84,33 @@ def save_to_excel(df: pd.DataFrame,
     output_folder: Path, optional
         Root directory to output files to, by default None
     """
+    output_dict = {}
     if output_folder is None:
-        out_file = Path(**output_config["output"]["base"])
+        output_folder = Path.cwd()
+        output_dict.update(**output_config["output"]["base"])
+        output_dict.update(**output_config["output"]["excel"])
     else:
-        out_file = output_folder
+        output_folder = Path(output_folder)
     if sort_on is not None:
         df = df.sort_values(by=sort_on, key=natsort_keygen())
+    if corrected == True:
+        output_dict.update(**output_config["output"]["corrected"])
+    #end ifs
+    output_folder = output_folder.joinpath(*output_dict.values())
+    if not output_folder.exists():
+        logging.info("Creating directory %s", output_folder)
+        output_folder.mkdir(parents=True, exist_ok=True)
     if split_on is not None:
         to_write = df.groupby(split_on)
         for name, frame in to_write:
             out_name = "{0}_{1}_{2}.xlsx".format(split_on, name, filename)
-            out_file = out_file.joinpath(out_name)
-            logging.debug("Writing out %s", out_file)
+            out_file = output_folder.joinpath(out_name)
+            logging.info("Writing out %s", out_file)
             frame.to_excel(out_name)
     else:
         out_name = "processed_{0}.xlsx".format(filename)
-        out_file = out_file.joinpath(out_name)
-        logging.debug("Writing out %s", out_name)
+        out_file = output_folder.joinpath(out_name)
+        logging.info("Writing out %s", out_file)
         df.to_excel(out_file)
 
 

@@ -23,8 +23,9 @@ toml = "~0.10"
 statsmodels = "~0.12"
 arch = "~4.19"
 natsort = "~7.1"
-click = "^8.0.1"
-tqdm = "^4.61.1"
+click = "~8.0"
+tqdm = "~4.61"
+Sphinx = "~4.0"
 
 [tool.poetry.dev-dependencies]
 
