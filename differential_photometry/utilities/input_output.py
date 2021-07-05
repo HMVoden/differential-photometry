@@ -92,7 +92,8 @@ def save_to_excel(df: pd.DataFrame,
     else:
         output_folder = Path(output_folder)
     if sort_on is not None:
-        df = df.sort_values(by=sort_on, key=natsort_keygen())
+        df = df.sort_values(by=sort_on,
+                            key=natsort_keygen()).reset_index(drop=True)
     if corrected == True:
         output_dict.update(**output_config["output"]["corrected"])
     #end ifs

@@ -94,7 +94,7 @@ def main(input_file: PathLike,
     # Set all sets of varying stars, so that we can properly graph them
     df = data.flag_variable(df)
     # Correct for any offset found in the data
-    logging.info("Total variable stars: %s",
+    logging.info("Total unique variable stars: %s",
                  df[df["varying"] == True]["name"].nunique())
     # logging.info("Starting graphing")
     if correct == True:
