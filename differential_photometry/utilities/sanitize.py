@@ -28,16 +28,12 @@ def clean_stars_data(dataframe: pd.DataFrame) -> pd.DataFrame:
     if "obj" in dataframe.columns:
         dataframe = dataframe.rename(columns={"obj": "name"})
 
-    required_columns = ["mag", "error"]
+    required_columns = ["mag", "error", "jd", "name"]
     for col in required_columns:
         if col not in dataframe.columns:
             raise KeyError(
                 "Unable to continue program, missing critical column: {0}".
                 format(col))
-    if "name" not in dataframe.columns:
-        raise KeyError("""Unable to continue program, 
-                    missing name/object columns for number of star
-                    calculations""")
 
     datatypes = dataframe.dtypes
     if not (datatypes.mag.name

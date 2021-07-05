@@ -1,5 +1,4 @@
 import logging
-import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 from os import PathLike
@@ -12,10 +11,10 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import toml
-from tqdm import tqdm
 from differential_photometry.utilities.data import arrange_time_star, split_on
 from differential_photometry.utilities.input_output import \
     generate_graph_output_path
+from tqdm import tqdm
 
 # Get config information
 plot_config = toml.load("config/plotting.toml")
@@ -64,7 +63,7 @@ def plot_and_save_all(df: pd.DataFrame,
         diff_max_variation = None
     if split is True:
         # Need both output folders
-        non_varying, varying = split_on(df, "varying")
+        non_varying, varying = split_on(df, "graph_varying")
         varying_output_folder = generate_graph_output_path(
             corrected=corrected,
             split=True,
@@ -84,16 +83,17 @@ def plot_and_save_all(df: pd.DataFrame,
                                                    uniform=uniform_y_axis)
         to_plot.append((df, output_folder))
     #end ifs
-    with tqdm(to_plot, leave=False, total=len(to_plot)) as pbar:
+    with tqdm(to_plot, leave=False) as pbar:
         for frame, folder in to_plot:
-            logging.info("Writing to folder %s", folder)
             pbar.set_description("Graphing %s" % folder.parts[-1])
-            star_frames = frame.groupby("name", sort=False)
+            logging.info("Writing to folder %s", folder)
+            star_frames = frame.groupby("name")
             raw_diff_magnitudes(star_frames,
                                 mag_max_variation=mag_max_variation,
                                 diff_max_variation=diff_max_variation,
                                 output_folder=folder)
             pbar.update(1)
+        pbar.close()
 
 
 def raw_diff_magnitudes(star_frames: pd.DataFrame,

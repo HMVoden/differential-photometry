@@ -26,6 +26,7 @@ natsort = "~7.1"
 click = "~8.0"
 tqdm = "~4.61"
 Sphinx = "~4.0"
+enlighten = "^1.10.1"
 
 [tool.poetry.dev-dependencies]
 

@@ -63,7 +63,9 @@ def flag_variable(df: pd.DataFrame) -> pd.DataFrame:
     # TODO find better way of doing this
     for _, star_frame in stars:
         if star_frame["varying"].any():
-            star_frame = star_frame.assign(varying=True)
+            star_frame["graph_varying"] = True
+        else:
+            star_frame["graph_varying"] = False
         updated_frames.append(star_frame)
 
     return pd.concat(updated_frames, join="outer")
