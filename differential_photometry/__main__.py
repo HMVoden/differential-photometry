@@ -5,6 +5,7 @@ from pathlib import Path
 
 import click
 import toml
+import enlighten
 
 import differential_photometry.config as config
 import differential_photometry.plot.plot as plot
@@ -48,26 +49,46 @@ app_config = toml.load("config/application.toml")
               help="Whether to correct offset between days in the graphs")
 def runner(input_file: Path, output_folder: Path, uniform: bool,
            output_excel: bool, offset: bool):
-    # Setup logging for verbose output
-    if app_config['logging']['enabled'] == True:
-        log_config = toml.load("config/logging.toml")
-        logging.config.dictConfig(log_config)
-        logging.debug("Logging configured")
-    # So we can have an infinite amount of folders or files to go through
-    for path in input_file:
-        path = Path(path)
-        if path.is_dir():
-            files = [
-                x for x in path.iterdir()
-                if x.suffix == ".csv" or x.suffix == ".xlsx"
-            ]
-            for data_file in files:
-                logging.info("Processing file %s", data_file.stem)
-                main(data_file, output_folder, uniform, output_excel, offset)
-        else:
-            logging.info("Processing file %s", path.stem)
-            main(path, output_folder, uniform, output_excel, offset)
-    logging.info("Program finished, exiting.")
+    with enlighten.get_manager() as manager:
+        config.pbar_man = manager  # set up universal progress bar manager
+
+        status = manager.status_bar(
+            status_format=u'{fill}Stage: {demo}{fill}{elapsed}',
+            color='bold_underline_bright_white_on_lightslategray',
+            justify=enlighten.Justify.CENTER,
+            demo='Reading data',
+            autorefresh=True,
+            min_delta=0.5)
+
+        config.pbar_status = status
+
+        # Setup logging for verbose output
+        if app_config['logging']['enabled'] == True:
+            log_config = toml.load("config/logging.toml")
+            logging.config.dictConfig(log_config)
+            logging.debug("Logging configured")
+        pbar = manager.counter(total=len(input_file),
+                               desc="Reading data",
+                               unit="Datasets")
+        # So we can have an infinite amount of folders or files to go through
+        for path in input_file:
+            path = Path(path)
+            if path.is_dir():
+                files = [
+                    x for x in path.iterdir()
+                    if x.suffix == ".csv" or x.suffix == ".xlsx"
+                ]
+                for data_file in files:
+                    logging.info("Processing file %s", data_file.stem)
+                    main(data_file, output_folder, uniform, output_excel,
+                         offset)
+                    pbar.update()
+            else:
+                logging.info("Processing file %s", path.stem)
+                main(path, output_folder, uniform, output_excel, offset)
+                pbar.update()
+        pbar.close()
+        logging.info("Program finished, exiting.")
 
 
 def main(input_file: PathLike,
