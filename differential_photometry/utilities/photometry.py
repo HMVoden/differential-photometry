@@ -128,11 +128,14 @@ def find_varying_diff_calc(df: pd.DataFrame,
                            method: str = "chisquared",
                            p_value: int = 4,
                            null="accept",
-                           clip=False) -> pd.DataFrame:
+                           clip=False,
+                           pbar_method=None) -> pd.DataFrame:
 
     day = df["d_m_y"].unique()
     logging.info("Processing day %s", day)
     df = find_varying_stars(df, method, p_value, null, clip)
+    if pbar_method is not None:
+        pbar_method()
     return calculate_differential_photometry(df)
 
 
