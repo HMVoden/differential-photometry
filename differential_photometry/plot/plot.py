@@ -92,7 +92,7 @@ def plot_and_save_all(df: pd.DataFrame,
 
     pbar_plot = bars.get_progress_bar(name="plot_to_folder",
                                       total=len(to_plot),
-                                      desc="Graphing to folder",
+                                      desc="Plotting folder",
                                       unit="folder",
                                       color="purple",
                                       leave=False)

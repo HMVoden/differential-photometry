@@ -38,5 +38,6 @@ def get_progress_bar(name: str,
 
 
 def close_progress_bars():
-    for pbar in config.pbars.values():
+    for name, pbar in config.pbars.items():
         pbar.close()
+    config.pbars.clear()

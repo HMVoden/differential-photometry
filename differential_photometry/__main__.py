@@ -66,7 +66,7 @@ importlib.reload(phot)
               default=None,
               help="Space separated list of names to remove from dataset")
 def runner(input_file: Path, output_folder: Path, uniform: bool,
-           output_excel: bool, offset: bool):
+           output_excel: bool, offset: bool, iterations: int, remove: str):
     bars.init_progress_bars()
     manager = config.pbar_man
     status = config.pbar_status
@@ -77,8 +77,11 @@ def runner(input_file: Path, output_folder: Path, uniform: bool,
         logging.debug("Logging configured")
     inputted_pbar = manager.counter(desc="Inputted files or paths",
                                     unit="inputs",
-                                    total=len(input_file))
-    pbar = manager.counter(desc='Processing dataset', unit="Datasets", total=1)
+                                    total=len(input_file),
+                                    color="green")
+    pbar = manager.counter(desc='Processing datasets',
+                           unit="Datasets",
+                           total=1)
 
     # So we can have an infinite amount of folders or files to go through
     for path in input_file:
@@ -99,7 +102,8 @@ def runner(input_file: Path, output_folder: Path, uniform: bool,
             data_file = Path(data_file)
             status.update('Processing file')
             logging.info("Processing file %s", data_file.stem)
-            main(data_file, output_folder, uniform, output_excel, offset)
+            main(data_file, output_folder, uniform, output_excel, offset,
+                 iterations, remove)
             bars.close_progress_bars()
             pbar.update()
         inputted_pbar.update()
@@ -156,6 +160,7 @@ def main(input_file: PathLike,
         total=len(days),
         desc="Calculating and finding variable stars",
         unit="Days",
+        color="blue",
         leave=False)
     df = days.apply(phot.find_varying_diff_calc,
                     method=star_detection_method,

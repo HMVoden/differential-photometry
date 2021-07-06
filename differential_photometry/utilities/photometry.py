@@ -2,6 +2,7 @@ import logging
 from typing import List
 
 import differential_photometry.maths.stats as stat
+import differential_photometry.utilities.progress_bars as bars
 import pandas as pd
 from differential_photometry.maths.differential_photometry import (
     calculate_differential_average, calculate_differential_magnitude,
@@ -133,6 +134,13 @@ def find_varying_diff_calc(df: pd.DataFrame,
                            pbar_method=None) -> pd.DataFrame:
     day = df["d_m_y"].unique()
     logging.info("Processing day %s", day)
+    pbar_iter = bars.get_progress_bar(
+        "iterations",
+        total=iterations,
+        desc="Variable star detection iterations",
+        unit="iteration",
+        leave=False,
+        color="cyan")
     for i in range(0, iterations, 1):
         # Step 1, get average differential
         df = calculate_differential_photometry(df)
@@ -143,6 +151,7 @@ def find_varying_diff_calc(df: pd.DataFrame,
                                 "average_diff_mags")
         logging.info("Iteration %s found %s varying stars", i + 1,
                      df[df["varying"] == True]["name"].nunique())
+        pbar_iter.update()
     if pbar_method is not None:
         pbar_method()
     return df
