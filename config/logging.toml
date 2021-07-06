@@ -12,5 +12,5 @@ datefmt = "%d/%m/%y %H:%M:%S"
 class = "logging.StreamHandler"
 formatter = "detailed"
 [root]
-level = "INFO"
+level = "DEBUG"
 handlers = ["console"]

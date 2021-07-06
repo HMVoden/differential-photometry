@@ -16,7 +16,8 @@ def find_varying_stars(df: pd.DataFrame,
                        method="adf_gls",
                        p_value=0.05,
                        null="accept",
-                       clip=False) -> pd.DataFrame:
+                       clip=False,
+                       data="mag") -> pd.DataFrame:
     """Takes a dataframe containing a numerical data column and applies the specified
     statistical test on it, then compares the resulting p-value to the threshold value.
     Some tests, such as the Dickson-Fuller test, have a null hypothesis that the timeseries in question
@@ -34,12 +35,15 @@ def find_varying_stars(df: pd.DataFrame,
         Whether we want to accept or reject the hypothesis to know if a star is variable, by default "accept"
     clip : bool, optional
         Whether to sigma clip the data and possibly error for the statistical test, by default False
+    data : str, optional
+        The data column to operate the varying star detection on, by default "mag"
 
     Returns
     -------
     pd.DataFrame
         Dataframe containing the statistical test column and a "varying" truth column
     """
+
     stars = df.groupby("name")
     error_name = None
     if method == "chisquared":
@@ -49,14 +53,14 @@ def find_varying_stars(df: pd.DataFrame,
         stat_function = stat.augmented_dfuller
     if method == "kpss":
         stat_function = stat.kpss
-    if method == "zastat":
+    if method == "zivot_andrews":
         stat_function = stat.zastat
     if method == "adf_gls":  # best one so far
         stat_function = stat.adf_gls
 
     test_statistic = stars.apply(
         func=stat_runner,
-        data_name="mag",
+        data_name=data,
         error_name=error_name,
         clip=clip,
         stat_func=stat_function).rename(method).reset_index()
@@ -67,33 +71,29 @@ def find_varying_stars(df: pd.DataFrame,
         df["varying"] = df[method] >= p_value
     else:
         df["varying"] = df[method] <= p_value
-    varying = df[df["varying"] == True]  # for logging
-
-    logging.info("Number of stars found to be varying: %s",
-                 varying["name"].nunique())
 
     return df
 
 
 def calculate_differential_photometry(df: pd.DataFrame) -> pd.DataFrame:
 
-    frames = []
     required_cols = ["mag", "error"]
-    # Groupby won't work here as we need both sets to do this
-    non_varying = df[df["varying"] == False]
-    varying = df[df["varying"] == True]
-    ref_raw = arrange_time_star(non_varying, required_cols)
-    raw_mag = ref_raw["mag"]
-    raw_error = ref_raw["error"]
-
     # In case there are no varying stars
-    if (varying.empty):
-        var_mag = None
-        var_error = None
-    else:
+    if "varying" in df.columns and not df[df["varying"] == True].empty:
+        # Groupby won't work here as we need both sets to do this
+        non_varying = df[df["varying"] == False]
+        varying = df[df["varying"] == True]
         var_raw = arrange_time_star(varying, required_cols)
         var_mag = var_raw["mag"]
         var_error = var_raw["error"]
+    else:
+        non_varying = df
+        varying = pd.DataFrame()
+        var_mag = None
+        var_error = None
+    ref_raw = arrange_time_star(non_varying, required_cols)
+    raw_mag = ref_raw["mag"]
+    raw_error = ref_raw["error"]
 
     subtracted_mags = calculate_difference(magnitudes=raw_mag,
                                            varying_magnitudes=var_mag)
@@ -128,12 +128,21 @@ def find_varying_diff_calc(df: pd.DataFrame,
                            method: str = "chisquared",
                            p_value: int = 4,
                            null="accept",
-                           clip=False) -> pd.DataFrame:
-
+                           clip=False,
+                           iterations=1) -> pd.DataFrame:
     day = df["d_m_y"].unique()
     logging.info("Processing day %s", day)
-    df = find_varying_stars(df, method, p_value, null, clip)
-    return calculate_differential_photometry(df)
+    for i in range(0, iterations, 1):
+        # Step 1, get average differential
+        df = calculate_differential_photometry(df)
+        # Step 2, remove varying and method columns for recalculation
+        df = df.drop(columns=["varying", method], errors='ignore')
+        # Step 3, find varying stars via average differential
+        df = find_varying_stars(df, method, p_value, null, clip,
+                                "average_diff_mags")
+        logging.info("Iteration %s found %s varying stars", i + 1,
+                     df[df["varying"] == True]["name"].nunique())
+    return df
 
 
 def calculate_difference(magnitudes: List[float],

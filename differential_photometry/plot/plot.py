@@ -49,15 +49,16 @@ def plot_and_save_all(df: pd.DataFrame,
         max_variation = math_utils.get_largest_range(
             **arrange_time_star(df, columns))
 
-        # Divide by 2 to keep most data in viewing range as
+        # Divide by 4 to keep most data in viewing range as
         # this encompasses the entire range (half above, half below)
-        mag_max_variation = max_variation["mag"] / 2
-        diff_max_variation = max_variation["average_diff_mags"] / 2
+        mag_max_variation = np.round(max_variation["mag"] / 2, decimals=1)
+        diff_max_variation = np.round(max_variation["average_diff_mags"] / 2,
+                                      decimals=1)
 
-        logging.debug("Maximum raw magnitude variation is: %s",
-                      mag_max_variation)
-        logging.debug("Maximum differential magnitude variation is: %s",
-                      diff_max_variation)
+        logging.info("Maximum raw magnitude difference is: %s",
+                     mag_max_variation)
+        logging.info("Maximum differential magnitude difference is: %s",
+                     diff_max_variation)
     else:
         mag_max_variation = None
         diff_max_variation = None
@@ -214,17 +215,18 @@ def create_4x1_raw_diff_plot(star,
         Matplotlib figure of a column representing a timeseries day
     """
     if mag_max_variation != None and differential_magnitude_config != None:
-        mag_mean = np.average(star["mag"], weights=(1 / star["error"]**2))
-        diff_mean = np.average(star["average_diff_mags"],
-                               weights=(1 / star["average_uncertainties"]**2))
-        mag_lim = (mag_mean - mag_max_variation, mag_mean + mag_max_variation)
-        diff_lim = (diff_mean - diff_max_variation,
-                    diff_mean + diff_max_variation)
+        mag_median = np.median(star["mag"])
+        diff_median = np.median(star["average_diff_mags"])
+        mag_lim = (mag_median - mag_max_variation,
+                   mag_median + mag_max_variation)
+        diff_lim = (diff_median - diff_max_variation,
+                    diff_median + diff_max_variation)
     else:
         mag_lim = None
         diff_lim = None
     #end if
-    day_frames = star.groupby("d_m_y")
+    day_frames = star.groupby(
+        [star["time"].dt.year, star["time"].dt.month, star["time"].dt.day])
     days = len(day_frames)
     star_name = star["name"].unique()[0]
     fig, axes = plt.subplots(nrows=4,

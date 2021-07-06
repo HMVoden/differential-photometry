@@ -1,3 +1,5 @@
+import logging
+
 import pandas as pd
 
 
@@ -17,19 +19,20 @@ def correct_offset(df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         Dataframe where magnitude and differential magnitude have been corrected
     """
+    logging.info("Calculating offset for each star")
     non_varying = df[df["varying"] == False]
     # Probably close to what it 'really' is across all days,
     # more data points will make it closer to real mean.
     true_mean = non_varying.groupby("name").agg({
-        "mag": "mean",
-        "average_diff_mags": "mean"
+        "mag": "median",
+        "average_diff_mags": "median"
     })
     # Individual day means to find offset
     day_star_mean = non_varying.groupby(["d_m_y", "name"]).agg({
         "mag":
-        "mean",
+        "median",
         "average_diff_mags":
-        "mean"
+        "median"
     })
     offset = day_star_mean.sub(true_mean, axis="index").reset_index()
     # Median of offsets to prevent huge outliers from mucking with data

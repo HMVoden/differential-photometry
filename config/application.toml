@@ -19,7 +19,7 @@ clip = true # Protect against outliers
 # if we accept then we know the star is varying
 p_value = 0.05
 null = "accept"
-clip = false # unnecessary
+clip = true # unnecessary
 [kpss]
 # Null is timeseries is stationary
 # if we reject then we know the star is varying
@@ -36,6 +36,6 @@ clip = false # unnecessary
 # NOTE: This one seems to work best
 # Null is timeseries is stationary
 # if we accept then we know the star is varying
-p_value = 0.05
+p_value = 0.025 # small p, more false-positives
 null = "accept"
-clip = false # unnecessary
+clip = true

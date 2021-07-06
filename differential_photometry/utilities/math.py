@@ -3,6 +3,7 @@ from typing import Callable, Dict, List
 import numpy as np
 import pandas as pd
 from astropy.time import Time
+from astropy.stats import sigma_clip
 from feets import FeatureSpace
 from feets.preprocess import remove_noise
 
@@ -60,7 +61,9 @@ def get_largest_range(**data: Dict):
     """
     result = []
     for d in data.values():
-        max_variation = np.abs((d.max(axis=1) - d.min(axis=1)).max())
+        d = np.abs(sigma_clip(d, sigma=2, axis=1, masked=False))
+        max_variation = np.nanmax(
+            np.abs((np.nanmax(d, axis=1) - np.nanmin(d, axis=1))))
         result.append(max_variation)
     return dict(zip(data.keys(), result))
 
