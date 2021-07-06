@@ -1,5 +1,5 @@
 import logging
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
 from os import PathLike
 from pathlib import Path
@@ -11,10 +11,12 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import toml
+import differential_photometry.config as config
 from differential_photometry.utilities.data import arrange_time_star, split_on
 from differential_photometry.utilities.input_output import \
     generate_graph_output_path
-from tqdm import tqdm
+
+import differential_photometry.utilities.progress_bars as bars
 
 # Get config information
 plot_config = toml.load("config/plotting.toml")
@@ -23,6 +25,9 @@ magnitude_config = plot_config["magnitude"]
 differential_magnitude_config = plot_config["differential_magnitude"]
 bar_error_config = plot_config["error"]["bar"]
 fill_error_config = plot_config["error"]["fill"]
+
+manager = None
+status = None
 
 
 def plot_and_save_all(df: pd.DataFrame,
@@ -84,17 +89,21 @@ def plot_and_save_all(df: pd.DataFrame,
                                                    uniform=uniform_y_axis)
         to_plot.append((df, output_folder))
     #end ifs
-    with tqdm(to_plot, leave=False) as pbar:
-        for frame, folder in to_plot:
-            pbar.set_description("Graphing %s" % folder.parts[-1])
-            logging.info("Writing to folder %s", folder)
-            star_frames = frame.groupby("name")
-            raw_diff_magnitudes(star_frames,
-                                mag_max_variation=mag_max_variation,
-                                diff_max_variation=diff_max_variation,
-                                output_folder=folder)
-            pbar.update(1)
-        pbar.close()
+
+    pbar_plot = bars.get_progress_bar(name="plot_to_folder",
+                                      total=len(to_plot),
+                                      desc="Graphing to folder",
+                                      unit="folder",
+                                      color="purple",
+                                      leave=False)
+    for frame, folder in to_plot:
+        logging.info("Writing to folder %s", folder)
+        star_frames = frame.groupby("name")
+        raw_diff_magnitudes(star_frames,
+                            mag_max_variation=mag_max_variation,
+                            diff_max_variation=diff_max_variation,
+                            output_folder=folder)
+        pbar_plot.update()
 
 
 def raw_diff_magnitudes(star_frames: pd.DataFrame,
@@ -114,6 +123,13 @@ def raw_diff_magnitudes(star_frames: pd.DataFrame,
     save : bool, optional
         Switch to save or graph and display, by default False
     """
+    config.pbar_status.update(demo="Plotting and saving stars")
+    pbar = bars.get_progress_bar(name="plot_and_save",
+                                 total=len(star_frames),
+                                 desc="Plotting and saving stars",
+                                 unit="stars",
+                                 color="green",
+                                 leave=False)
     # Mulitprocess to speed up awful plotting code
     if output_folder is not None:
         plot_function = partial(
@@ -127,22 +143,24 @@ def raw_diff_magnitudes(star_frames: pd.DataFrame,
         # for name, frame in star_frames:
         #     saving_function([name, frame])
         with ProcessPoolExecutor(max_workers=4) as executor:
-            concurrent = list(
-                tqdm(executor.map(saving_function, star_frames, chunksize=1),
-                     total=len(star_frames),
-                     leave=False,
-                     desc="Plotting..."))
+            futures = {
+                executor.submit(saving_function, frame)
+                for frame in star_frames
+            }
+            for future in as_completed(futures):
+                pbar.update()
+
     else:
         # for group in star_frames:
         #     show_plots(group)
         # list(map(show_plots, star_frames))
         with ProcessPoolExecutor(max_workers=4) as executor:
-            list(
-                tqdm(
-                    executor.map(show_plots, star_frames, chunksize=1),
-                    total=len(star_frames),
-                    leave=False,
-                ))
+            futures = {
+                executor.submit(show_plots, frame)
+                for frame in star_frames
+            }
+            for future in as_completed(futures):
+                pbar.update()
         # pass
 
 

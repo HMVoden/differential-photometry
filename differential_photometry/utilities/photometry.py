@@ -129,7 +129,8 @@ def find_varying_diff_calc(df: pd.DataFrame,
                            p_value: int = 4,
                            null="accept",
                            clip=False,
-                           iterations=1) -> pd.DataFrame:
+                           iterations=1,
+                           pbar_method=None) -> pd.DataFrame:
     day = df["d_m_y"].unique()
     logging.info("Processing day %s", day)
     for i in range(0, iterations, 1):
@@ -142,6 +143,8 @@ def find_varying_diff_calc(df: pd.DataFrame,
                                 "average_diff_mags")
         logging.info("Iteration %s found %s varying stars", i + 1,
                      df[df["varying"] == True]["name"].nunique())
+    if pbar_method is not None:
+        pbar_method()
     return df
 
 

@@ -14,6 +14,7 @@ import differential_photometry.utilities.input_output as io
 import differential_photometry.utilities.photometry as phot
 import differential_photometry.utilities.sanitize as sanitize
 import differential_photometry.utilities.timeseries as ts
+import differential_photometry.utilities.progress_bars as bars
 
 # Need this to prevent it from spamming
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -65,12 +66,20 @@ importlib.reload(phot)
               default=None,
               help="Space separated list of names to remove from dataset")
 def runner(input_file: Path, output_folder: Path, uniform: bool,
-           output_excel: bool, offset: bool, iterations: int, remove: str):
+           output_excel: bool, offset: bool):
+    bars.init_progress_bars()
+    manager = config.pbar_man
+    status = config.pbar_status
     # Setup logging for verbose output
     if app_config['logging']['enabled'] == True:
         log_config = toml.load("config/logging.toml")
         logging.config.dictConfig(log_config)
         logging.debug("Logging configured")
+    inputted_pbar = manager.counter(desc="Inputted files or paths",
+                                    unit="inputs",
+                                    total=len(input_file))
+    pbar = manager.counter(desc='Processing dataset', unit="Datasets", total=1)
+
     # So we can have an infinite amount of folders or files to go through
     for path in input_file:
         path = Path(path)
@@ -79,14 +88,25 @@ def runner(input_file: Path, output_folder: Path, uniform: bool,
                 x for x in path.iterdir()
                 if x.suffix == ".csv" or x.suffix == ".xlsx"
             ]
-            for data_file in files:
-                logging.info("Processing file %s", data_file.stem)
-                main(data_file, output_folder, uniform, output_excel, offset,
-                     iterations, remove)
+            pbar.total = len(files)
+            pbar.refresh()
         else:
-            logging.info("Processing file %s", path.stem)
-            main(path, output_folder, uniform, output_excel, offset,
-                 iterations, remove)
+            pbar.total = 1
+            pbar.refresh()
+            files = [input_file[0]]
+
+        for data_file in files:
+            data_file = Path(data_file)
+            status.update('Processing file')
+            logging.info("Processing file %s", data_file.stem)
+            main(data_file, output_folder, uniform, output_excel, offset)
+            bars.close_progress_bars()
+            pbar.update()
+        inputted_pbar.update()
+
+    pbar.close()
+    inputted_pbar.close()
+    bars.close_progress_bars()
     logging.info("Program finished, exiting.")
 
 
@@ -102,6 +122,7 @@ def main(input_file: PathLike,
     file = data_directory.joinpath(input_file)
 
     config.filename = file
+    status = config.pbar_status
 
     df = io.extract(input_file)
     df = sanitize.remove_incomplete_sets(df)
@@ -129,8 +150,16 @@ def main(input_file: PathLike,
     # before earlier months, with an earlier day.
     # e.g. 1/7/2021 being before 22/6/2021
     star_detection_method = app_config["star_detection"]["method"]
+    status.update(desc="Differential Photometry per day")
+    diff_pbar = bars.get_progress_bar(
+        name="differential",
+        total=len(days),
+        desc="Calculating and finding variable stars",
+        unit="Days",
+        leave=False)
     df = days.apply(phot.find_varying_diff_calc,
                     method=star_detection_method,
+                    pbar_method=diff_pbar.update,
                     iterations=iterations,
                     **app_config[star_detection_method]).reset_index(drop=True)
 
