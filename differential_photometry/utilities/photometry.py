@@ -11,14 +11,12 @@ from differential_photometry.utilities.data import (arrange_for_dataframe,
                                                     arrange_time_star)
 from differential_photometry.utilities.math import calculate_on_dataset
 from differential_photometry.utilities.stats import stat_runner
+from differential_photometry.utilities.data import split_on
 
 
-def find_varying_stars(df: pd.DataFrame,
-                       method="adf_gls",
-                       p_value=0.05,
-                       null="accept",
-                       clip=False,
-                       data="mag") -> pd.DataFrame:
+def test_stationarity(data: List[float],
+                      method: str = "adf_gls",
+                      clip: bool = False) -> pd.DataFrame:
     """Takes a dataframe containing a numerical data column and applies the specified
     statistical test on it, then compares the resulting p-value to the threshold value.
     Some tests, such as the Dickson-Fuller test, have a null hypothesis that the timeseries in question
@@ -36,7 +34,7 @@ def find_varying_stars(df: pd.DataFrame,
         Whether we want to accept or reject the hypothesis to know if a star is variable, by default "accept"
     clip : bool, optional
         Whether to sigma clip the data and possibly error for the statistical test, by default False
-    data : str, optional
+    data_name : str, optional
         The data column to operate the varying star detection on, by default "mag"
 
     Returns
@@ -44,12 +42,8 @@ def find_varying_stars(df: pd.DataFrame,
     pd.DataFrame
         Dataframe containing the statistical test column and a "varying" truth column
     """
-
-    stars = df.groupby("name")
-    error_name = None
     if method == "chisquared":
         stat_function = stat.reduced_chi_square
-        error_name = "error"
     if method == "adfuller":
         stat_function = stat.augmented_dfuller
     if method == "kpss":
@@ -58,32 +52,21 @@ def find_varying_stars(df: pd.DataFrame,
         stat_function = stat.zastat
     if method == "adf_gls":  # best one so far
         stat_function = stat.adf_gls
-
-    test_statistic = stars.apply(
-        func=stat_runner,
-        data_name=data,
-        error_name=error_name,
-        clip=clip,
-        stat_func=stat_function).rename(method).reset_index()
+    test_statistic = stat_runner(data=data, stat_func=stat_function, clip=clip)
 
     # Combine test-statistic column with old dataframe
-    df = pd.merge(df, test_statistic, how="left", on="name")
-    if null == "accept":
-        df["varying"] = df[method] >= p_value
-    else:
-        df["varying"] = df[method] <= p_value
 
-    return df
+    return test_statistic
 
 
-def calculate_differential_photometry(df: pd.DataFrame) -> pd.DataFrame:
+def calculate_differential_photometry(df: pd.DataFrame,
+                                      varying_flag="varying") -> pd.DataFrame:
 
     required_cols = ["mag", "error"]
     # In case there are no varying stars
-    if "varying" in df.columns and not df[df["varying"] == True].empty:
+    if varying_flag in df.columns and not df[df[varying_flag] == True].empty:
         # Groupby won't work here as we need both sets to do this
-        non_varying = df[df["varying"] == False]
-        varying = df[df["varying"] == True]
+        non_varying, varying = split_on(df, varying_flag)
         var_raw = arrange_time_star(varying, required_cols)
         var_mag = var_raw["mag"]
         var_error = var_raw["error"]
@@ -125,32 +108,42 @@ def calculate_differential_photometry(df: pd.DataFrame) -> pd.DataFrame:
     return pd.concat([non_varying, varying], join="outer")
 
 
-def find_varying_diff_calc(df: pd.DataFrame,
-                           method: str = "chisquared",
-                           p_value: int = 4,
-                           null="accept",
-                           clip=False,
-                           iterations=1,
-                           pbar_method=None) -> pd.DataFrame:
-    day = df["d_m_y"].unique()
-    logging.info("Processing day %s", day)
+def iterate_differential_photometry(df: pd.DataFrame,
+                                    method: str = "chisquared",
+                                    p_value: int = 4,
+                                    null="accept",
+                                    clip=False,
+                                    iterations=1,
+                                    pbar_method=None,
+                                    varying_flag="varying",
+                                    detection_data="mag",
+                                    detection_error="error") -> pd.DataFrame:
+    logging.info("Processing day %s", df.name)
+    cols = [detection_data, detection_error]
+    result_cols = [varying_flag, method]
     pbar_iter = bars.get_progress_bar(
         "iterations",
         total=iterations,
-        desc="Variable star detection iterations",
+        desc="    Variable star detection iterations",
         unit="iteration",
         leave=False,
         color="cyan")
     for i in range(0, iterations, 1):
         # Step 1, get average differential
-        df = calculate_differential_photometry(df)
+        df = calculate_differential_photometry(df, varying_flag)
         # Step 2, remove varying and method columns for recalculation
-        df = df.drop(columns=["varying", method], errors='ignore')
+        # ignore errors if columns aren't present
+        df = df.drop(columns=result_cols, errors='ignore')
         # Step 3, find varying stars via average differential
-        df = find_varying_stars(df, method, p_value, null, clip,
-                                "average_diff_mags")
+        df[method] = df.groupby("id")[detection_data].transform(
+            test_stationarity, method=method, clip=clip)
+        if null == "accept":
+            df[(varying_flag)] = df[method] >= p_value
+        else:
+            df[varying_flag] = df[method] <= p_value
+
         logging.info("Iteration %s found %s varying stars", i + 1,
-                     df[df["varying"] == True]["name"].nunique())
+                     df[df[varying_flag] == True]["id"].nunique())
         pbar_iter.update()
     if pbar_method is not None:
         pbar_method()

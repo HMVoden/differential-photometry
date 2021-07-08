@@ -18,7 +18,7 @@ def extract_samples_stars(dataframe: pd.DataFrame) -> int:
         number of stars, number of samples of those stars
     """
     rows = dataframe.shape[0]
-    num_stars = dataframe["name"].nunique()
+    num_stars = dataframe["id"].nunique()
     samples = int(rows / num_stars)
     return num_stars, samples
 
@@ -36,14 +36,23 @@ def split_on(df: pd.DataFrame, split_on: str):
     Returns
     -------
     pd.Dataframe, pd.Dataframe
-        Dataframes that have been split on the column name specified
+        Dataframes that have been split on the column name specified, ordered by
+        negative, positive (false, true)
     """
     false_df = df[df[split_on] == False]
     true_df = df[df[split_on] == True]
     return false_df, true_df
 
 
-def flag_variable(df: pd.DataFrame) -> pd.DataFrame:
+def split_varying(df: pd.DataFrame):
+    inter_varying = df[df.inter_varying == True]
+    intra_varying = df[(df.inter_varying == False) & (df.graph_intra == True)]
+    non_varying = df[(df.inter_varying == False) & (df.graph_intra == False)]
+
+    return non_varying, intra_varying, inter_varying
+
+
+def flag_intra_variable(df: pd.DataFrame) -> pd.DataFrame:
     """Goes through each star and if any star has any day flagged as
     variable, this flags every day as variable. For use before plotting
 
@@ -57,18 +66,11 @@ def flag_variable(df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         Flagged dataframe
     """
-    stars = df.groupby("name")
-    updated_frames = []
-    # Can't find better way of doing this yet
-    # TODO find better way of doing this
-    for _, star_frame in stars:
-        if star_frame["varying"].any():
-            star_frame["graph_varying"] = True
-        else:
-            star_frame["graph_varying"] = False
-        updated_frames.append(star_frame)
 
-    return pd.concat(updated_frames, join="outer")
+    df["graph_intra"] = df.groupby("id")["intra_varying"].transform(
+        pd.DataFrame.any)
+
+    return df
 
 
 def arrange_for_dataframe(df: pd.DataFrame, *arrays):
@@ -171,3 +173,8 @@ def flatten_dictionary(dictionary: Dict) -> Dict:
 
         result.update(**temp)
     return
+
+
+def group_by_year_month_day(df: pd.DataFrame) -> pd.DataFrame:
+    return df.groupby(
+        [df["time"].dt.year, df["time"].dt.month, df["time"].dt.day])

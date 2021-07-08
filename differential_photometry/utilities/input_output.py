@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import toml
 import differential_photometry.config as config
-from differential_photometry.utilities.sanitize import clean_stars_data
+import differential_photometry.utilities.sanitize as sanitize
 from natsort import natsort_keygen
 
 output_config = toml.load("config/output.toml")
@@ -26,7 +26,7 @@ def extract(filename: str) -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
-        Dataframe containing only required columns, trimmed and made usable
+        Dataframe containing required columns, trimmed and made usable
     """
     data_path = PurePath(filename)
     if (data_path.suffix == ".xlsx"
@@ -34,20 +34,11 @@ def extract(filename: str) -> pd.DataFrame:
         df = pd.read_excel(data_path)
     else:
         df = pd.read_csv(data_path)
-    df.columns = (df.columns.str.strip().str.lower().str.replace(
-        " ", "_").str.replace("(", "_").str.replace(")", "").str.replace(
-            "<", "").str.replace(">", ""))
-    # Cleanup of headers, could be made more succinct with a simple REGEX
-    desired_column_names = np.array(
+    required_column_names = np.array(
         ["obj", "name", "mag", "error", "x", "y", "jd"])
-    # We can input the desired column names as a variable, then issue info notices on what comes out.
-    # As a possible improvement to this script.
-    extracted_column_names = df.columns
-    # Finds common column names
-    intersection = np.intersect1d(desired_column_names, extracted_column_names)
-    df = clean_stars_data(df[intersection])
-    # names index for future use
-    df.index.name = "index"
+    df = sanitize.clean_headers(df, required_column_names)
+    df = sanitize.clean_data(df)
+    # This might be better as its own function
     if "jd" in df.columns:
         df["time"] = pd.to_datetime(df["jd"], origin="julian", unit="D")
         unique_years = df["time"].dt.year.unique()
@@ -117,6 +108,7 @@ def save_to_excel(df: pd.DataFrame,
 
 def generate_graph_output_path(corrected: bool = False,
                                varying: bool = False,
+                               brief: bool = False,
                                split: bool = False,
                                uniform: bool = False,
                                root: Path = None) -> PathLike:
@@ -128,6 +120,8 @@ def generate_graph_output_path(corrected: bool = False,
         Whether or not the dataframe has been corrected, by default False.
     varying : bool, optional
         Whether or not the dataframe data is varying, by default False.
+    brief : bool, optional
+        Whether or not the data is briefly varying, by default False.
     split : bool, optional
         Whether or not the dataframe is split, by default False.
     uniform : bool, optional
@@ -154,7 +148,10 @@ def generate_graph_output_path(corrected: bool = False,
     if corrected == True:
         output_dict.update(**output_config["output"]["corrected"])
     if varying == True:
-        output_dict.update(**output_config["output"]["varying"])
+        if brief == True:
+            output_dict.update(**output_config["output"]["briefly_varying"])
+        else:
+            output_dict.update(**output_config["output"]["varying"])
     elif split == True:
         output_dict.update(**output_config["output"]["non_varying"])
 

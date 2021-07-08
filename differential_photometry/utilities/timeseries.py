@@ -1,3 +1,4 @@
+from differential_photometry.utilities.data import split_on, split_varying
 import logging
 
 import pandas as pd
@@ -20,15 +21,15 @@ def correct_offset(df: pd.DataFrame) -> pd.DataFrame:
         Dataframe where magnitude and differential magnitude have been corrected
     """
     logging.info("Calculating offset for each star")
-    non_varying = df[df["varying"] == False]
+    non_varying, _ = split_on(df, "intra_varying")
     # Probably close to what it 'really' is across all days,
     # more data points will make it closer to real mean.
-    true_mean = non_varying.groupby("name").agg({
+    true_mean = non_varying.groupby("id").agg({
         "mag": "median",
         "average_diff_mags": "median"
     })
     # Individual day means to find offset
-    day_star_mean = non_varying.groupby(["d_m_y", "name"]).agg({
+    day_star_mean = non_varying.groupby(["d_m_y", "id"]).agg({
         "mag":
         "median",
         "average_diff_mags":

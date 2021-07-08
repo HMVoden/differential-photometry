@@ -12,7 +12,7 @@ import pandas as pd
 import seaborn as sns
 import toml
 import differential_photometry.config as config
-from differential_photometry.utilities.data import arrange_time_star, split_on
+from differential_photometry.utilities.data import arrange_time_star, split_on, split_varying
 from differential_photometry.utilities.input_output import \
     generate_graph_output_path
 
@@ -69,12 +69,18 @@ def plot_and_save_all(df: pd.DataFrame,
         diff_max_variation = None
     if split is True:
         # Need both output folders
-        non_varying, varying = split_on(df, "graph_varying")
+        non_varying, briefly_varying, varying = split_varying(df)
         varying_output_folder = generate_graph_output_path(
             corrected=corrected,
             split=True,
             varying=True,
             uniform=uniform_y_axis)
+        brief_output_folder = generate_graph_output_path(
+            corrected=corrected,
+            split=True,
+            varying=True,
+            uniform=uniform_y_axis,
+            brief=True)
         non_varying_output_folder = generate_graph_output_path(
             corrected=corrected,
             split=True,
@@ -82,6 +88,7 @@ def plot_and_save_all(df: pd.DataFrame,
             uniform=uniform_y_axis)
         to_plot.append((non_varying, non_varying_output_folder))
         to_plot.append((varying, varying_output_folder))
+        to_plot.append((briefly_varying, brief_output_folder))
     else:
         output_folder = generate_graph_output_path(corrected=corrected,
                                                    split=False,
@@ -98,7 +105,7 @@ def plot_and_save_all(df: pd.DataFrame,
                                       leave=False)
     for frame, folder in to_plot:
         logging.info("Writing to folder %s", folder)
-        star_frames = frame.groupby("name")
+        star_frames = frame.groupby("id")
         raw_diff_magnitudes(star_frames,
                             mag_max_variation=mag_max_variation,
                             diff_max_variation=diff_max_variation,
@@ -126,9 +133,9 @@ def raw_diff_magnitudes(star_frames: pd.DataFrame,
     config.pbar_status.update(demo="Plotting and saving stars")
     pbar = bars.get_progress_bar(name="plot_and_save",
                                  total=len(star_frames),
-                                 desc="Plotting and saving stars",
+                                 desc="  Plotting and saving stars",
                                  unit="stars",
-                                 color="green",
+                                 color="magenta",
                                  leave=False)
     # Mulitprocess to speed up awful plotting code
     if output_folder is not None:
@@ -246,7 +253,7 @@ def create_4x1_raw_diff_plot(star,
     day_frames = star.groupby(
         [star["time"].dt.year, star["time"].dt.month, star["time"].dt.day])
     days = len(day_frames)
-    star_name = star["name"].unique()[0]
+    star_name = star["id"].unique()[0]
     fig, axes = plt.subplots(nrows=4,
                              ncols=days,
                              figsize=(5 * days, 15),

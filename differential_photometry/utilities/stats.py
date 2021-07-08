@@ -1,13 +1,15 @@
+from logging import error
 import numpy as np
 import pandas as pd
+
+from typing import List
 from astropy.stats import sigma_clip
 
 
 def stat_runner(
-    df: pd.DataFrame,
-    data_name: str,
+    data: List[float],
     stat_func,
-    error_name: str = None,
+    error: List[float] = None,
     clip: bool = False,
 ):
     """Helper function that allows for a pandas Dataframe to
@@ -32,17 +34,16 @@ def stat_runner(
         A test statistic p-value from the assigned stat function
     """
     if clip == True:
-        return sigma_clip_data(df, data_name, stat_func, error_name)
-    if error_name is not None:
-        return stat_func(df[data_name], df[error_name])
+        return sigma_clip_data(data, stat_func, error)
+    if error is not None:
+        return stat_func(data, error)
     else:
-        return stat_func(df[data_name])
+        return stat_func(data)
 
 
-def sigma_clip_data(df: pd.DataFrame,
-                    data_name: str,
+def sigma_clip_data(data: List[float],
                     stat_func,
-                    error_name: str = None) -> pd.DataFrame:
+                    error: List[float] = None) -> pd.DataFrame:
     """A secondary runner for a pandas Apply, sigma clips the data in the data_name column from the dataframe
     before running the stat function on the data column.
 
@@ -62,8 +63,8 @@ def sigma_clip_data(df: pd.DataFrame,
     pd.DataFrame
         Dataframe containing the p-values calculated by the statistical function.
     """
-    sample = sigma_clip(df[data_name], sigma=3, masked=True)
-    if error_name is not None:
-        error = np.ma.array(df[error_name], mask=sample.mask)
+    sample = sigma_clip(data, sigma=3, masked=True)
+    if error is not None:
+        error = np.ma.array(error, mask=sample.mask)
         return stat_func(sample, error)
     return stat_func(sample)

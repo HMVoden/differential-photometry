@@ -75,7 +75,7 @@ def runner(input_file: Path, output_folder: Path, uniform: bool,
         log_config = toml.load("config/logging.toml")
         logging.config.dictConfig(log_config)
         logging.debug("Logging configured")
-    inputted_pbar = manager.counter(desc="Inputted files or paths",
+    inputted_pbar = manager.counter(desc="Input files or paths",
                                     unit="inputs",
                                     total=len(input_file),
                                     color="green")
@@ -130,53 +130,70 @@ def main(input_file: PathLike,
 
     df = io.extract(input_file)
     df = sanitize.remove_incomplete_sets(df)
-    if remove is not None:
-        bad_stars = remove.split(" ")
-        logging.info("Attempting to remove stars: %s", bad_stars)
-        try:
-            star_rows = df[df["name"].isin(bad_stars)].index
-            if len(star_rows) == 0:
-                logging.info("No stars with specified names exist in dataset")
-            else:
-                df = df.drop(index=star_rows)
-                logging.info("Removed stars: %s", bad_stars)
-        except KeyError as e:
-            logging.error("Failed to remove specified stars")
-            logging.error("Error received: %s", e)
-            logging.info("Continuing without star removal")
+    days = data.group_by_year_month_day(df)
 
     # Find obviously varying stars
     # perform differential photometry on them
     # Drop=True to prevent index error with Pandas
-    days = df.groupby([
-        df["time"].dt.year, df["time"].dt.month, df["time"].dt.day
-    ])  # Group by year/month/day to prevent later months from being
+    # Group by year/month/day to prevent later months from being
     # before earlier months, with an earlier day.
     # e.g. 1/7/2021 being before 22/6/2021
     star_detection_method = app_config["star_detection"]["method"]
     status.update(desc="Differential Photometry per day")
-    diff_pbar = bars.get_progress_bar(
-        name="differential",
+    intra_pbar = bars.get_progress_bar(
+        name="intra_diff",
         total=len(days),
-        desc="Calculating and finding variable stars",
+        desc="  Calculating and finding variable intra-day stars",
         unit="Days",
         color="blue",
         leave=False)
-    df = days.apply(phot.find_varying_diff_calc,
-                    method=star_detection_method,
-                    pbar_method=diff_pbar.update,
-                    iterations=iterations,
-                    **app_config[star_detection_method]).reset_index(drop=True)
+    logging.info("Detecting intra-day variable stars...")
+    df = days.apply(
+        phot.iterate_differential_photometry,
+        method=star_detection_method,
+        pbar_method=intra_pbar.update,
+        iterations=iterations,
+        **app_config[star_detection_method],
+        varying_flag="intra_varying",
+        detection_data="average_diff_mags",
+        detection_error="average_uncertainties").reset_index(drop=True)
+    status.update(desc="Differential Photometry per star")
+    df_corrected = ts.correct_offset(df)
+    stars = df_corrected.groupby("id")
+    intra_pbar = bars.get_progress_bar(
+        name="inter_diff",
+        total=len(stars),
+        desc="  Calculating and finding variable inter-day stars",
+        unit="Days",
+        color="blue",
+        leave=False)
+    # Detecting if stars are varying across entire dataset
+    logging.info("Detecting inter-day variable stars...")
 
+    df[star_detection_method] = stars["average_diff_mags"].transform(
+        phot.test_stationarity,
+        method=star_detection_method,
+        clip=app_config[star_detection_method]["clip"]).reset_index(drop=True)
+    p_value = app_config[star_detection_method]["p_value"]
+    null = app_config[star_detection_method]["null"]
+    if null == "accept":
+        df["inter_varying"] = df[star_detection_method] >= p_value
+    else:
+        df["inter_varying"] = df[star_detection_method] <= p_value
     # Set all sets of varying stars, so that we can properly graph them
-    df = data.flag_variable(df)
+    df = data.flag_intra_variable(df)
+    df_corrected = ts.correct_offset(df)
+    inter_varying_count = df[df["inter_varying"] == True]["id"].nunique()
+    intra_varying_count = df[df["intra_varying"] == True]["id"].nunique()
+    unique_varying_count = df[df["intra_varying"]
+                              | df["inter_varying"]]["id"].nunique()
     # Correct for any offset found in the data
-    logging.info("Total unique variable stars: %s",
-                 df[df["varying"] == True]["name"].nunique())
+    logging.info("Total consistently varying stars: %s", inter_varying_count)
+    logging.info("Total briefly varying stars: %s", intra_varying_count)
+    logging.info("Total variable stars: %s", unique_varying_count)
     logging.info("Starting graphing...")
 
     if correct == True:
-        df_corrected = ts.correct_offset(df)
         plot.plot_and_save_all(df=df_corrected,
                                uniform_y_axis=uniform_y_axis,
                                split=True,
@@ -196,13 +213,13 @@ def main(input_file: PathLike,
         if correct == True:
             io.save_to_excel(df=df_corrected,
                              filename=file.stem,
-                             sort_on=["time", "name"],
+                             sort_on=["time", "id"],
                              corrected=correct,
                              output_folder=output_folder)
         else:
             io.save_to_excel(df=df,
                              filename=file.stem,
-                             sort_on=["time", "name"],
+                             sort_on=["time", "id"],
                              corrected=correct,
                              output_folder=output_folder)
         logging.info("Finished excel output")

@@ -9,6 +9,8 @@ corrected = "corrected"
 non_varying = "non_varying"
 [output.varying]
 varying = "varying"
+[output.briefly_varying]
+briefly_varying = "briefly_varying"
 [output.uniform]
 uniform = "uniform"
 [output.excel]

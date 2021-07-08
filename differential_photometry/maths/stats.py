@@ -9,7 +9,6 @@ stats_config = toml.load("config/stats.toml")
 
 
 def reduced_chi_square(data: List[float],
-                       error: List[float] = None,
                        expected: List[float] = None,
                        parameters_estimated: int = None):
     """Computes the reduced chi squared of a given dataset and returns
@@ -38,17 +37,11 @@ def reduced_chi_square(data: List[float],
     # This is ugly and can be handled better
     data = np.asanyarray(data)
     if parameters_estimated is None:
-        parameters_estimated = 0
-    if error is None:
-        parameters_estimated += 1
-        variance = np.var(data, ddof=1)
-    if error is not None:
-        uncertainty = np.asanyarray(error)
-        variance = uncertainty**2
+        parameters_estimated = 1
     if expected is None:
         parameters_estimated += 1
-        expected = np.average(data, weights=(1 / error**2))
-
+        expected = np.median(data)
+    variance = np.var(data, ddof=1)
     dof = data.shape[0] - parameters_estimated - 1
     chi = np.sum(((data - expected)**2 / variance)) / dof
     # print(chi)
