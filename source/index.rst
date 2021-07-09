@@ -17,6 +17,9 @@ variable stars. The custom modules supporting this should be readily usable for 
    :maxdepth: 2
    :caption: Contents:
 
+   getting_started.rst
+   api.rst
+
 
 
 Indices and tables

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "differential_photometry"
-version = "0.1.1"
+version = "0.1.2"
 description = "Conducts differential photometry on arbitrary datasets"
 authors = [
     "Harlan Shaw <harlan.shaw@ucalgary.ca>",
@@ -24,7 +24,6 @@ statsmodels = "~0.12"
 arch = "~4.19"
 natsort = "~7.1"
 click = "~8.0"
-tqdm = "~4.61"
 Sphinx = "~4.0"
 enlighten = "^1.10.1"
 

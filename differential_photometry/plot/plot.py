@@ -34,7 +34,9 @@ def plot_and_save_all(df: pd.DataFrame,
                       uniform_y_axis: bool = False,
                       split: bool = False,
                       corrected: bool = False,
-                      output_folder: Path = None):
+                      output_folder: Path = None,
+                      mag_y_scale: float = None,
+                      diff_y_scale: float = None):
     """Setup function for plotting and saving the entire dataframe as a series of graphs
 
     Parameters
@@ -47,6 +49,23 @@ def plot_and_save_all(df: pd.DataFrame,
         Splits the dataframe into varying and non-varying, by default False
     """
     to_plot = []
+    if mag_y_scale is not None or diff_y_scale is not None:
+        mag_max_variation = mag_y_scale
+        diff_max_variation = diff_y_scale
+        if uniform_y_axis is True:
+            logging.warning(
+                "Manual y-axis scaling and uniform y-axis flag are both set, disabling uniform."
+            )
+            uniform_y_axis = False
+        if mag_y_scale is None or diff_y_scale is None:
+            logging.warning(
+                "The magnitude or differential magnitude plotting scale is not set."
+            )
+            logging.warning("Continuing with defaults for unset scale.")
+        logging.info("Maximum raw magnitude difference is: %s",
+                     mag_max_variation)
+        logging.info("Maximum differential magnitude difference is: %s",
+                     diff_max_variation)
     if uniform_y_axis is True:
         # Calculate the largest deviation along the y-axis
         # for the entire dataset
@@ -54,7 +73,7 @@ def plot_and_save_all(df: pd.DataFrame,
         max_variation = math_utils.get_largest_range(
             **arrange_time_star(df, columns))
 
-        # Divide by 4 to keep most data in viewing range as
+        # Divide by 2 to keep most data in viewing range as
         # this encompasses the entire range (half above, half below)
         mag_max_variation = np.round(max_variation["mag"] / 2, decimals=1)
         diff_max_variation = np.round(max_variation["average_diff_mags"] / 2,

@@ -48,7 +48,7 @@ def clean_data(dataframe: pd.DataFrame) -> pd.DataFrame:
         # First instance of bad data
         bad_mags = dataframe[(dataframe.mag == "Flux<0")]
 
-        stars_removed = bad_mags.name.unique()
+        stars_removed = bad_mags.id.unique()
         star_rows = dataframe[(dataframe["id"].isin(stars_removed))]
 
         logging.warning(
@@ -104,14 +104,17 @@ def remove_specified_stars(df: pd.DataFrame,
         try:
             star_rows = df[df["id"].isin(bad_stars)].index
             if len(star_rows) == 0:
-                logging.info("No stars with specified names exist in dataset")
+                logging.warning(
+                    "No stars with specified names exist in dataset")
+                logging.warning("Continuing without star removal")
             else:
                 df = df.drop(index=star_rows)
                 logging.info("Removed stars: %s", bad_stars)
         except KeyError as e:
             logging.error("Failed to remove specified stars")
             logging.error("Error received: %s", e)
-            logging.info("Continuing without star removal")
+            logging.warning("Continuing without star removal")
+    return df
 
 
 def clean_headers(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:

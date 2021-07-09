@@ -60,13 +60,31 @@ importlib.reload(phot)
               help="""The number of iterations that the star variation
         detection system will go through for each differential photometry run"""
               )
-@click.option("-r",
-              "--remove",
-              type=click.STRING,
-              default=None,
-              help="Space separated list of names to remove from dataset")
+@click.option(
+    "-r",
+    "--remove",
+    type=click.STRING,
+    default=None,
+    help="Space or comma separated list of names to remove from dataset")
+@click.option(
+    "-my",
+    "--mag_y_scale",
+    type=click.FLOAT,
+    default=None,
+    help=
+    """Sets the magnitude y-scale to have this value above and below the median
+              of any dataset when plotted. OVERRIDES UNIFORM""")
+@click.option(
+    "-dy",
+    "--diff_y_scale",
+    type=click.FLOAT,
+    default=None,
+    help=
+    """Sets the differential magnitude y-scale to have this value above and below the median
+              of any dataset when plotted. OVERRIDES UNIFORM""")
 def runner(input_file: Path, output_folder: Path, uniform: bool,
-           output_excel: bool, offset: bool, iterations: int, remove: str):
+           output_excel: bool, offset: bool, iterations: int, remove: str,
+           mag_y_scale: float, diff_y_scale: float):
     bars.init_progress_bars()
     manager = config.pbar_man
     status = config.pbar_status
@@ -96,14 +114,20 @@ def runner(input_file: Path, output_folder: Path, uniform: bool,
         else:
             pbar.total = 1
             pbar.refresh()
-            files = [input_file[0]]
+            files = [path]
 
         for data_file in files:
-            data_file = Path(data_file)
             status.update('Processing file')
             logging.info("Processing file %s", data_file.stem)
-            main(data_file, output_folder, uniform, output_excel, offset,
-                 iterations, remove)
+            main(input_file=data_file,
+                 output_folder=output_folder,
+                 uniform_y_axis=uniform,
+                 output_excel=output_excel,
+                 correct=offset,
+                 iterations=iterations,
+                 remove=remove,
+                 mag_y_scale=mag_y_scale,
+                 diff_y_scale=diff_y_scale)
             bars.close_progress_bars()
             pbar.update()
         inputted_pbar.update()
@@ -120,7 +144,9 @@ def main(input_file: PathLike,
          output_excel: bool = False,
          correct: bool = False,
          iterations: int = 1,
-         remove: str = None):
+         remove: str = None,
+         mag_y_scale: float = None,
+         diff_y_scale: float = None):
 
     data_directory = Path(app_config["input"]["directory"])
     file = data_directory.joinpath(input_file)
@@ -130,6 +156,7 @@ def main(input_file: PathLike,
 
     df = io.extract(input_file)
     df = sanitize.remove_incomplete_sets(df)
+    df = sanitize.remove_specified_stars(df, remove)
     days = data.group_by_year_month_day(df)
 
     # Find obviously varying stars
@@ -198,13 +225,17 @@ def main(input_file: PathLike,
                                uniform_y_axis=uniform_y_axis,
                                split=True,
                                corrected=True,
-                               output_folder=output_folder)
+                               output_folder=output_folder,
+                               mag_y_scale=mag_y_scale,
+                               diff_y_scale=diff_y_scale)
     else:
         plot.plot_and_save_all(df=df,
                                uniform_y_axis=uniform_y_axis,
                                split=True,
                                corrected=True,
-                               output_folder=output_folder)
+                               output_folder=output_folder,
+                               mag_y_scale=mag_y_scale,
+                               diff_y_scale=diff_y_scale)
 
     logging.info("Finished graphing")
 

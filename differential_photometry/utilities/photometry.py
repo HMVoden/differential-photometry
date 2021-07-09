@@ -142,9 +142,11 @@ def iterate_differential_photometry(df: pd.DataFrame,
         else:
             df[varying_flag] = df[method] <= p_value
 
-        logging.info("Iteration %s found %s varying stars", i + 1,
-                     df[df[varying_flag] == True]["id"].nunique())
+        logging.debug("Iteration %s found %s varying stars", i + 1,
+                      df[df[varying_flag] == True]["id"].nunique())
         pbar_iter.update()
+    logging.info("%s iterations found %s varying stars", i + 1,
+                 df[df[varying_flag] == True]["id"].nunique())
     if pbar_method is not None:
         pbar_method()
     return df
