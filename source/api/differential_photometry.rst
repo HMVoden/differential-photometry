@@ -1,4 +1,4 @@
-(Differential Photometry project name) package
+(Differential Photometry project name) Modules
 ==============================================
 
 Subpackages
@@ -8,17 +8,16 @@ Subpackages
     differential_photometry.machine_learning
     differential_photometry.maths
     differential_photometry.plot
-    differential_photometry.tests
     differential_photometry.timeseries
     differential_photometry.utilities
 
 Submodules
 -----------
 
-.. automodule:: differential_photometry.__main__
+.. automodule:: __main__
     :members:
     :undoc-members:
 
-.. automodule:: differential_photometry.config
+.. automodule:: config
     :members:
     :undoc-members:

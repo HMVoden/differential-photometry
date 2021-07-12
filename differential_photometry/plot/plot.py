@@ -101,10 +101,7 @@ def plot_and_save_all(df: pd.DataFrame,
             uniform=uniform_y_axis,
             brief=True)
         non_varying_output_folder = generate_graph_output_path(
-            corrected=corrected,
-            split=True,
-            varying=False,
-            uniform=uniform_y_axis)
+            corrected=corrected, split=True, uniform=uniform_y_axis)
         to_plot.append((non_varying, non_varying_output_folder))
         to_plot.append((varying, varying_output_folder))
         to_plot.append((briefly_varying, brief_output_folder))

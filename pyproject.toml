@@ -1,33 +1,39 @@
 [tool.poetry]
 name = "differential_photometry"
-version = "0.1.2"
+version = "0.1.33"
 description = "Conducts differential photometry on arbitrary datasets"
 authors = [
     "Harlan Shaw <harlan.shaw@ucalgary.ca>",
     "Ruben Morales <ruben.morales1@ucalgary.ca>",
 ]
 license = "MIT"
-include = ["config/*"]
+include = ["config/*", "source/*", "docs/*"]
 exclude = ["config/working.toml", "data/*"]
 
 [tool.poetry.dependencies]
-python = "~3.8.8"
-pandas = "~1.2"
-numpy = "~1.21"
-numba = "~0.53"
-wotan = "~1.9"
-feets = "~0.4"
-matplotlib = "~3.4"
-seaborn = "~0.11"
-toml = "~0.10"
-statsmodels = "~0.12"
-arch = "~4.19"
-natsort = "~7.1"
-click = "~8.0"
-Sphinx = "~4.0"
+python = ">=3.8.8 <4.0.0"
+pandas = ">=1.2"
+numpy = ">=1.2"
+numba = ">=0.53"
+wotan = ">=1.9"
+feets = ">=0.4"
+matplotlib = ">=3.4"
+seaborn = ">=0.11"
+toml = ">=0.10"
+statsmodels = ">=0.12"
+arch = ">=4.19"
+natsort = ">=7.1"
+click = ">=8.0"
 enlighten = "^1.10.1"
 
+
 [tool.poetry.dev-dependencies]
+Sphinx = ">=4.0"
+sphinx-click = "^3.0.1"
+rinohtype = "^0.5.3"
+
+[tool.poetry.scripts]
+differential_photometry = "differential_photometry.cli:runner"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -1,13 +1,8 @@
-.. differential_photometry documentation master file, created by
-   sphinx-quickstart on Sun Jul  4 13:12:00 2021.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+(Differential Photometry Project Name's)
+============================================================================
 
-Welcome to differential_photometry's documentation!
-===================================================
-
-**differential_photometry** is a python library that takes in photometry output from Mira x64 and processes it to find
-variable stars. The custom modules supporting this should be readily usable for other projects and should be relatively simple.
+**(Differentialy Photometry Project Name's)** is a python application that takes in photometry output from Mira x64 and processes it to find
+variable stars. The custom modules supporting this should be readily usable for other projects.
 
 .. note::
 
@@ -17,8 +12,10 @@ variable stars. The custom modules supporting this should be readily usable for 
    :maxdepth: 2
    :caption: Contents:
 
-   getting_started.rst
-   api.rst
+   installation.rst
+   usage.rst
+   config.rst
+   api/modules.rst
 
 
 

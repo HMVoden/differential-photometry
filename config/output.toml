@@ -3,15 +3,21 @@
 # Order matters
 [output.base]
 directory = "output"
-[output.corrected]
-corrected = "corrected"
-[output.non_varying]
-non_varying = "non_varying"
-[output.varying]
-varying = "varying"
-[output.briefly_varying]
-briefly_varying = "briefly_varying"
+
 [output.uniform]
 uniform = "uniform"
+
+[output.corrected]
+corrected = "corrected"
+
+[output.non_varying]
+non_varying = "non_varying"
+
+[output.varying]
+varying = "varying"
+
+[output.briefly_varying]
+briefly_varying = "briefly_varying"
+
 [output.excel]
 excel = "excel"

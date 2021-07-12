@@ -15,6 +15,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "appdirs"
+version = "1.4.4"
+description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "arch"
 version = "4.19"
 description = "ARCH for Python"
@@ -127,6 +135,17 @@ description = "Cross-platform colored terminal text."
 category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+
+[[package]]
+name = "commonmark"
+version = "0.9.1"
+description = "Python parser for the CommonMark Markdown spec"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.extras]
+test = ["flake8 (==3.7.8)", "hypothesis (==3.55.3)"]
 
 [[package]]
 name = "cycler"
@@ -475,6 +494,19 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "recommonmark"
+version = "0.7.1"
+description = "A docutils-compatibility bridge to CommonMark, enabling you to write CommonMark inside of Docutils & Sphinx projects."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+commonmark = ">=0.8.1"
+docutils = ">=0.11"
+sphinx = ">=1.3.1"
+
+[[package]]
 name = "requests"
 version = "2.25.1"
 description = "Python HTTP for Humans."
@@ -491,6 +523,68 @@ urllib3 = ">=1.21.1,<1.27"
 [package.extras]
 security = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)"]
 socks = ["PySocks (>=1.5.6,!=1.5.7)", "win-inet-pton"]
+
+[[package]]
+name = "rinoh-typeface-dejavuserif"
+version = "0.1.3"
+description = "DejaVu Serif typeface"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+rinohtype = "*"
+
+[[package]]
+name = "rinoh-typeface-texgyrecursor"
+version = "0.1.1"
+description = "TeX Gyre Cursor typeface"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+rinohtype = "*"
+
+[[package]]
+name = "rinoh-typeface-texgyreheros"
+version = "0.1.1"
+description = "TeX Gyre Heros typeface"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+rinohtype = "*"
+
+[[package]]
+name = "rinoh-typeface-texgyrepagella"
+version = "0.1.1"
+description = "TeX Gyre Pagella typeface"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+rinohtype = "*"
+
+[[package]]
+name = "rinohtype"
+version = "0.5.3"
+description = "The Python document processor"
+category = "main"
+optional = false
+python-versions = ">=3.6.1,<4.0.0"
+
+[package.dependencies]
+appdirs = ">=1.4.3,<2.0.0"
+docutils = ">=0.15"
+recommonmark = ">=0.6.0"
+rinoh-typeface-dejavuserif = ">=0.1.3,<0.2.0"
+rinoh-typeface-texgyrecursor = ">=0.1.1,<0.2.0"
+rinoh-typeface-texgyreheros = ">=0.1.1,<0.2.0"
+rinoh-typeface-texgyrepagella = ">=0.1.1,<0.2.0"
+Sphinx = ">=2.2.1"
 
 [[package]]
 name = "scipy"
@@ -563,6 +657,19 @@ sphinxcontrib-serializinghtml = "*"
 docs = ["sphinxcontrib-websupport"]
 lint = ["flake8 (>=3.5.0)", "isort", "mypy (>=0.800)", "docutils-stubs"]
 test = ["pytest", "pytest-cov", "html5lib", "cython", "typed-ast"]
+
+[[package]]
+name = "sphinx-click"
+version = "3.0.1"
+description = "Sphinx extension that automatically documents click applications"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+click = ">=7.0"
+docutils = "*"
+sphinx = ">=2.0"
 
 [[package]]
 name = "sphinxcontrib-applehelp"
@@ -698,8 +805,8 @@ scipy = "*"
 
 [metadata]
 lock-version = "1.1"
-python-versions = "~3.8.8"
-content-hash = "696ee600cf43fa34b1bee1522b6d428860a90a46a7b973c155e662d95c313ec6"
+python-versions = ">=3.8.8 <4.0.0"
+content-hash = "0f6dd132edd354d30f6cfa7017778ebc78de86a71009a26860f18e9d9168d4e9"
 
 [metadata.files]
 alabaster = [
@@ -709,6 +816,10 @@ alabaster = [
 ansicon = [
     {file = "ansicon-1.89.0-py2.py3-none-any.whl", hash = "sha256:f1def52d17f65c2c9682cf8370c03f541f410c1752d6a14029f97318e4b9dfec"},
     {file = "ansicon-1.89.0.tar.gz", hash = "sha256:e4d039def5768a47e4afec8e89e83ec3ae5a26bf00ad851f914d1240b444d2b1"},
+]
+appdirs = [
+    {file = "appdirs-1.4.4-py2.py3-none-any.whl", hash = "sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128"},
+    {file = "appdirs-1.4.4.tar.gz", hash = "sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41"},
 ]
 arch = [
     {file = "arch-4.19-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:5f4a8dd8cb2bb127683cf9700fb71c543fd2522a2cef8f741aca6a505a7f34ac"},
@@ -777,6 +888,10 @@ click = [
 colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
+]
+commonmark = [
+    {file = "commonmark-0.9.1-py2.py3-none-any.whl", hash = "sha256:da2f38c92590f83de410ba1a3cbceafbc74fee9def35f9251ba9a971d6d66fd9"},
+    {file = "commonmark-0.9.1.tar.gz", hash = "sha256:452f9dc859be7f06631ddcb328b6919c67984aca654e5fefb3914d54691aed60"},
 ]
 cycler = [
     {file = "cycler-0.10.0-py2.py3-none-any.whl", hash = "sha256:1d8a5ae1ff6c5cf9b93e8811e581232ad8920aeec647c37316ceac982b08cb2d"},
@@ -1149,9 +1264,33 @@ pytz = [
     {file = "pytz-2021.1-py2.py3-none-any.whl", hash = "sha256:eb10ce3e7736052ed3623d49975ce333bcd712c7bb19a58b9e2089d4057d0798"},
     {file = "pytz-2021.1.tar.gz", hash = "sha256:83a4a90894bf38e243cf052c8b58f381bfe9a7a483f6a9cab140bc7f702ac4da"},
 ]
+recommonmark = [
+    {file = "recommonmark-0.7.1-py2.py3-none-any.whl", hash = "sha256:1b1db69af0231efce3fa21b94ff627ea33dee7079a01dd0a7f8482c3da148b3f"},
+    {file = "recommonmark-0.7.1.tar.gz", hash = "sha256:bdb4db649f2222dcd8d2d844f0006b958d627f732415d399791ee436a3686d67"},
+]
 requests = [
     {file = "requests-2.25.1-py2.py3-none-any.whl", hash = "sha256:c210084e36a42ae6b9219e00e48287def368a26d03a048ddad7bfee44f75871e"},
     {file = "requests-2.25.1.tar.gz", hash = "sha256:27973dd4a904a4f13b263a19c866c13b92a39ed1c964655f025f3f8d3d75b804"},
+]
+rinoh-typeface-dejavuserif = [
+    {file = "rinoh-typeface-dejavuserif-0.1.3.tar.gz", hash = "sha256:8be129230ac98ab2ebfbf5b570575052ba7069e4087ce36a2d4c1d85182833ce"},
+    {file = "rinoh_typeface_dejavuserif-0.1.3-py3-none-any.whl", hash = "sha256:35ba67bf25e526b4b8180dc31d8fa2ff9b594d924e8790e8074699cd2f0e7da8"},
+]
+rinoh-typeface-texgyrecursor = [
+    {file = "rinoh-typeface-texgyrecursor-0.1.1.tar.gz", hash = "sha256:076f7dbbd0201b0d44f4c77e4f7070474e1365152dc8509b5cded04c1648308a"},
+    {file = "rinoh_typeface_texgyrecursor-0.1.1-py3-none-any.whl", hash = "sha256:98080e6af2271e67cff1d69033cb6c3a6baa58de41a66dce1a1102b4dd41de72"},
+]
+rinoh-typeface-texgyreheros = [
+    {file = "rinoh-typeface-texgyreheros-0.1.1.tar.gz", hash = "sha256:fd7082e917bccc292894447f11d15a3efce9f1386056118b57b66cc2f5a36bbd"},
+    {file = "rinoh_typeface_texgyreheros-0.1.1-py3-none-any.whl", hash = "sha256:0c921a040a84b0af031e4a36d196d46b65fb18929d88df5ed26533b57100e6c9"},
+]
+rinoh-typeface-texgyrepagella = [
+    {file = "rinoh-typeface-texgyrepagella-0.1.1.tar.gz", hash = "sha256:53f4dba338c6b1df758888f23ce1ed728e5be45746f161488ad3b944e5e79fd2"},
+    {file = "rinoh_typeface_texgyrepagella-0.1.1-py3-none-any.whl", hash = "sha256:0144e3b828a31b405ab9be1dec67f48be360d9f86d109578924fd1d7e0e1ded6"},
+]
+rinohtype = [
+    {file = "rinohtype-0.5.3-py3-none-any.whl", hash = "sha256:8bd4f0dd188026ede65286eab4bcfb3bffc594fe4bca7cf1f0125ccd35ff995a"},
+    {file = "rinohtype-0.5.3.tar.gz", hash = "sha256:7b4dea40df49a7f623ad0382b3802cb72a7e72d0e30facba135cd86b977b5762"},
 ]
 scipy = [
     {file = "scipy-1.7.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:821e75f5c16cd7b0ab0ffe7eb9917e5af7b48c25306b4777287de8d792a5f7f3"},
@@ -1189,6 +1328,10 @@ snowballstemmer = [
 sphinx = [
     {file = "Sphinx-4.0.2-py3-none-any.whl", hash = "sha256:d1cb10bee9c4231f1700ec2e24a91be3f3a3aba066ea4ca9f3bbe47e59d5a1d4"},
     {file = "Sphinx-4.0.2.tar.gz", hash = "sha256:b5c2ae4120bf00c799ba9b3699bc895816d272d120080fbc967292f29b52b48c"},
+]
+sphinx-click = [
+    {file = "sphinx-click-3.0.1.tar.gz", hash = "sha256:9b24c46f3b8f25fc639f47c97ac0361d9f80d48c2ed6b3917de2865bbdbe1785"},
+    {file = "sphinx_click-3.0.1-py3-none-any.whl", hash = "sha256:e9ee2237e5a6b6620e9996b8214934afdf8f7f9f9fc082482c77be0e4379038e"},
 ]
 sphinxcontrib-applehelp = [
     {file = "sphinxcontrib-applehelp-1.0.2.tar.gz", hash = "sha256:a072735ec80e7675e3f432fcae8610ecf509c5f1869d17e2eecff44389cdbc58"},

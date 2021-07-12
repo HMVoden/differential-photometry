@@ -7,9 +7,9 @@ import differential_photometry.maths.stats as stat
 import numpy as np
 import pandas as pd
 from differential_photometry.utilities.data import (arrange_for_dataframe,
-                                                    arrange_time_star)
-from differential_photometry.utilities.input_output import \
-    extract_samples_stars
+                                                    arrange_time_star,
+                                                    extract_samples_stars)
+
 from wotan import flatten
 
 

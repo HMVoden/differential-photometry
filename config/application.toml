@@ -1,41 +1,38 @@
-# Where the input data lives
-[input]
-directory = "data"
-
 [logging]
 enabled = true
-
 
 [star_detection]
 # Change to one of the below to change
 # star varying test
 method = "adf_gls"
+
+
 [chisquared]
-p_value = 4
+p_value = 4     # Not really a p-value, just a threshold.
 null = "accept" # >> 1 means varying
-clip = true # Protect against outliers
+clip = true     # Protect against outliers
 [adfuller]
 # Null is timeseries is non-stationary
 # if we accept then we know the star is varying
 p_value = 0.05
 null = "accept"
-clip = true # unnecessary
+clip = true     # unnecessary
 [kpss]
 # Null is timeseries is stationary
 # if we reject then we know the star is varying
 p_value = 0.05
 null = "reject"
-clip = false # unnecessary
+clip = false    # unnecessary
 [zivot_andrews]
 # Null is timeseries is non-stationary
 # if we accept then we know the star is varying
 p_value = 0.05
 null = "accept"
-clip = false # unnecessary
+clip = false    # unnecessary
 [adf_gls]
 # NOTE: This one seems to work best
 # Null is timeseries is stationary
 # if we accept then we know the star is varying
-p_value = 0.025 # small p, more false-positives
+p_value = 0.025 # small p, less variation on multiple iterations
 null = "accept"
 clip = true

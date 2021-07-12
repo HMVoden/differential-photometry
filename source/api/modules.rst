@@ -1,7 +1,7 @@
-(Differential Photometry project name) Modules
+(Differential Photometry project name) Package
 ============================================================
 
 .. toctree::
     :maxdepth 4
 
-    api
+    differential_photometry
