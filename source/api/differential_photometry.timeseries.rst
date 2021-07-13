@@ -3,6 +3,21 @@
 
 Submodules
 -----------
+timeseries.features module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: differential_photometry.timeseries.features
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+timeseries.trend module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: differential_photometry.timeseries.trend
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 timeseries.models module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -13,10 +28,10 @@ timeseries.models module
     :show-inheritance:
 
     
-timeseries.trend module
+timeseries.timeseries module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: differential_photometry.timeseries.trend
+.. automodule:: differential_photometry.timeseries.timeseries
     :members:
     :undoc-members:
     :show-inheritance:

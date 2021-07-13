@@ -3,28 +3,20 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
 from os import PathLike
 from pathlib import Path
+from typing import Dict
 
-import differential_photometry.utilities.math as math_utils
-import matplotlib.dates as mdates  # TODO Configure date display on plots
+import config.manager as config
+import differential_photometry.progress_bars as bars
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import toml
-import differential_photometry.config as config
-from differential_photometry.utilities.data import arrange_time_star, split_on, split_varying
-from differential_photometry.utilities.input_output import \
+from differential_photometry.data.input_output import \
     generate_graph_output_path
-
-import differential_photometry.utilities.progress_bars as bars
-
-# Get config information
-plot_config = toml.load("config/plotting.toml")
-seaborn_config = plot_config["seaborn"]
-magnitude_config = plot_config["magnitude"]
-differential_magnitude_config = plot_config["differential_magnitude"]
-bar_error_config = plot_config["error"]["bar"]
-fill_error_config = plot_config["error"]["fill"]
+from differential_photometry.data.utilities import (arrange_time_star,
+                                                    get_largest_range,
+                                                    split_varying)
 
 manager = None
 status = None
@@ -48,6 +40,7 @@ def plot_and_save_all(df: pd.DataFrame,
     split : bool, optional
         Splits the dataframe into varying and non-varying, by default False
     """
+    plot_config = config.get_file_configuration("plotting")
     to_plot = []
     if mag_y_scale is not None or diff_y_scale is not None:
         mag_max_variation = mag_y_scale
@@ -70,8 +63,7 @@ def plot_and_save_all(df: pd.DataFrame,
         # Calculate the largest deviation along the y-axis
         # for the entire dataset
         columns = ["mag", "average_diff_mags"]
-        max_variation = math_utils.get_largest_range(
-            **arrange_time_star(df, columns))
+        max_variation = get_largest_range(**arrange_time_star(df, columns))
 
         # Divide by 2 to keep most data in viewing range as
         # this encompasses the entire range (half above, half below)
@@ -122,17 +114,19 @@ def plot_and_save_all(df: pd.DataFrame,
     for frame, folder in to_plot:
         logging.info("Writing to folder %s", folder)
         star_frames = frame.groupby("id")
-        raw_diff_magnitudes(star_frames,
-                            mag_max_variation=mag_max_variation,
-                            diff_max_variation=diff_max_variation,
-                            output_folder=folder)
+        multiprocess_save(star_frames,
+                          mag_max_variation=mag_max_variation,
+                          diff_max_variation=diff_max_variation,
+                          output_folder=folder,
+                          plot_config=plot_config)
         pbar_plot.update()
 
 
-def raw_diff_magnitudes(star_frames: pd.DataFrame,
-                        mag_max_variation: float = None,
-                        diff_max_variation: float = None,
-                        output_folder: PathLike = None):
+def multiprocess_save(star_frames: pd.DataFrame,
+                      plot_config: Dict,
+                      mag_max_variation: float = None,
+                      diff_max_variation: float = None,
+                      output_folder: PathLike = None):
     """Runner function, sets up multiprocess graphing for system
 
     Parameters
@@ -146,7 +140,7 @@ def raw_diff_magnitudes(star_frames: pd.DataFrame,
     save : bool, optional
         Switch to save or graph and display, by default False
     """
-    config.pbar_status.update(demo="Plotting and saving stars")
+    bars.status.update(demo="Plotting and saving stars")
     pbar = bars.get_progress_bar(name="plot_and_save",
                                  total=len(star_frames),
                                  desc="  Plotting and saving stars",
@@ -155,16 +149,17 @@ def raw_diff_magnitudes(star_frames: pd.DataFrame,
                                  leave=False)
     # Mulitprocess to speed up awful plotting code
     if output_folder is not None:
-        plot_function = partial(
-            create_4x1_raw_diff_plot,
-            mag_max_variation=mag_max_variation,
-            diff_max_variation=diff_max_variation,
-        )
+        plot_function = partial(create_4x1_raw_diff_plot,
+                                mag_max_variation=mag_max_variation,
+                                diff_max_variation=diff_max_variation,
+                                plot_config=plot_config)
         saving_function = partial(save_plots,
                                   plot_function=plot_function,
-                                  output_folder=output_folder)
-        # for name, frame in star_frames:
-        #     saving_function([name, frame])
+                                  output_folder=output_folder,
+                                  plot_config=plot_config)
+        # for frame in star_frames:
+        #     saving_function(frame)
+        #     pbar.update()
         with ProcessPoolExecutor(max_workers=4) as executor:
             futures = {
                 executor.submit(saving_function, frame)
@@ -173,21 +168,9 @@ def raw_diff_magnitudes(star_frames: pd.DataFrame,
             for future in as_completed(futures):
                 pbar.update()
 
-    else:
-        # for group in star_frames:
-        #     show_plots(group)
-        # list(map(show_plots, star_frames))
-        with ProcessPoolExecutor(max_workers=4) as executor:
-            futures = {
-                executor.submit(show_plots, frame)
-                for frame in star_frames
-            }
-            for future in as_completed(futures):
-                pbar.update()
-        # pass
 
-
-def save_plots(data: pd.DataFrame, plot_function, output_folder):
+def save_plots(data: pd.DataFrame, plot_function, output_folder,
+               plot_config: Dict):
     """Generates output path, calls plotting function then saves figure to specified file
 
     Parameters
@@ -199,7 +182,7 @@ def save_plots(data: pd.DataFrame, plot_function, output_folder):
     """
     # Needs to be set here so each worker
     # Has the same settings
-    sns.set_theme(**seaborn_config)
+    sns.set_theme(**plot_config["seaborn"])
     logging.info("Plotting and saving %s", data[0])
     if not output_folder.exists():
         logging.info("Creating directory %s", output_folder)
@@ -209,32 +192,35 @@ def save_plots(data: pd.DataFrame, plot_function, output_folder):
     fig = plot_function(data[1])
     fig.savefig(fname=output_file, transparent=False, bbox_inches="tight")
     plt.close(fig)
-    return
+    return True
 
 
-def show_plots(data, plot_function):
-    """Runs plotting function then shows generated figure.
+# def show_plots(data, plot_function):
+#     """Runs plotting function then shows generated figure.
 
-    Parameters
-    ----------
-    data : pd.DataFrame
-        Dataframe containing numerical data for plot
-    plot_function : Callable[[pd.DataFrame, int=None, int=None], figure]
-        Function that generates the plots and figures
-    """
-    # Needs to be set here so each worker
-    # Has the same settings
-    sns.set_theme(**seaborn_config)
-    logging.info("Plotting and showing %s", data[0])
-    fig = plot_function(data[1])
-    fig.show()
-    plt.close(fig)
-    return
+#     Parameters
+#     ----------
+#     data : pd.DataFrame
+#         Dataframe containing numerical data for plot
+#     plot_function : Callable[[pd.DataFrame, int=None, int=None], figure]
+#         Function that generates the plots and figures
+#     """
+#     # Needs to be set here so each worker
+#     # Has the same settings
+#     sns.set_theme(**seaborn_config)
+#     logging.info("Plotting and showing %s", data[0])
+#     fig = plot_function(data[1])
+#     fig.show()
+#     plt.close(fig)
+#     return
 
 
-def create_4x1_raw_diff_plot(star,
-                             mag_max_variation=None,
-                             diff_max_variation=None):
+def create_4x1_raw_diff_plot(
+    star,
+    plot_config: Dict,
+    mag_max_variation=None,
+    diff_max_variation=None,
+):
     """Creates a column plot of 2 scatter and 2 line plots, one of each is for raw
     magnitude and one of each is for differential magnitude.
     Requires errors for both.
@@ -255,7 +241,7 @@ def create_4x1_raw_diff_plot(star,
     figure
         Matplotlib figure of a column representing a timeseries day
     """
-    if mag_max_variation != None and differential_magnitude_config != None:
+    if mag_max_variation != None and diff_max_variation != None:
         mag_median = np.median(star["mag"])
         diff_median = np.median(star["average_diff_mags"])
         mag_lim = (mag_median - mag_max_variation,
@@ -290,17 +276,24 @@ def create_4x1_raw_diff_plot(star,
         # Raw Magnitude
         plot_line_scatter(x=frame["time"],
                           y=frame["mag"],
+                          ylabel=plot_config["magnitude"]["ylabel"],
+                          xlabel=plot_config["magnitude"]["xlabel"],
+                          color=plot_config["magnitude"]["color"],
                           error=frame["error"],
                           axes=day_ax[:2],
                           yrange=mag_lim,
-                          **magnitude_config)
+                          plot_config=plot_config)
         # Differential Magnitude
-        plot_line_scatter(x=frame["time"],
-                          y=frame["average_diff_mags"],
-                          error=frame["average_uncertainties"],
-                          axes=day_ax[2:],
-                          yrange=diff_lim,
-                          **differential_magnitude_config)
+        plot_line_scatter(
+            x=frame["time"],
+            y=frame["average_diff_mags"],
+            ylabel=plot_config["differential_magnitude"]["ylabel"],
+            xlabel=plot_config["differential_magnitude"]["xlabel"],
+            color=plot_config["differential_magnitude"]["color"],
+            error=frame["average_uncertainties"],
+            axes=day_ax[2:],
+            yrange=diff_lim,
+            plot_config=plot_config)
         day_ax[0].set_title(str(day))
 
         # end day loop
@@ -310,6 +303,8 @@ def create_4x1_raw_diff_plot(star,
         for row in axes.transpose():
             row[0].get_shared_y_axes().join(*row)
         for ax in axes.flat:
+            ax.xaxis.set_major_formatter(  # set display of time
+                mdates.DateFormatter(plot_config["time"]["format"]))
             ax.label_outer()
     else:
         axes[0].get_shared_x_axes().join(*axes)
@@ -327,6 +322,7 @@ def plot_line_scatter(x,
                       xlabel,
                       error,
                       axes,
+                      plot_config,
                       color="blue",
                       yrange=None):
     """Creates Two plots with inputted axes, one scatter and one line.
@@ -361,9 +357,9 @@ def plot_line_scatter(x,
         "y1": error_plus,
         "y2": error_neg,
         "color": color,
-        **fill_error_config
+        **plot_config["error"]["fill"]
     }
-    error_settings = {"x": x, **bar_error_config}
+    error_settings = {"x": x, **plot_config["error"]["bar"]}
 
     sns.lineplot(ax=axes[0], x=x, y=y, ci=None, color=color)
     axes[0].fill_between(**fill_between)

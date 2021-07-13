@@ -1,20 +1,19 @@
 import logging.config
 import warnings
-import importlib
 from os import PathLike
 from pathlib import Path
 
 import click
-import toml
 
-import differential_photometry.config as config
+import differential_photometry.data.utilities as data
 import differential_photometry.plot.plot as plot
-import differential_photometry.utilities.data as data
-import differential_photometry.utilities.input_output as io
-import differential_photometry.utilities.photometry as phot
-import differential_photometry.utilities.sanitize as sanitize
-import differential_photometry.utilities.timeseries as ts
-import differential_photometry.utilities.progress_bars as bars
+import differential_photometry.data.input_output as io
+import differential_photometry.photometry.photometry as phot
+import differential_photometry.data.sanitize as sanitize
+import differential_photometry.timeseries.timeseries as ts
+import differential_photometry.progress_bars as bars
+
+import config.manager as config
 
 # Need this to prevent it from spamming
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -22,9 +21,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 # warnings.filterwarnings("ignore", category=ExtractorWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
-app_config = toml.load("config/application.toml")
-
-importlib.reload(phot)
+app_config = None
 
 
 @click.command()
@@ -85,12 +82,15 @@ importlib.reload(phot)
 def runner(input_file: Path, output_folder: Path, uniform: bool,
            output_excel: bool, offset: bool, iterations: int, remove: str,
            mag_y_scale: float, diff_y_scale: float):
+    global app_config
     bars.init_progress_bars()
-    manager = config.pbar_man
-    status = config.pbar_status
+    config.init_configuration()
+    manager = bars.manager
+    status = bars.status
+    app_config = config.get_file_configuration("application")
     # Setup logging for verbose output
     if app_config['logging']['enabled'] == True:
-        log_config = toml.load("config/logging.toml")
+        log_config = config.get_file_configuration("logging")
         logging.config.dictConfig(log_config)
         logging.debug("Logging configured")
     inputted_pbar = manager.counter(desc="Input files or paths",
@@ -131,7 +131,7 @@ def runner(input_file: Path, output_folder: Path, uniform: bool,
             bars.close_progress_bars()
             pbar.update()
         inputted_pbar.update()
-
+    status.update("Finished")
     pbar.close()
     inputted_pbar.close()
     bars.close_progress_bars()
@@ -148,8 +148,8 @@ def main(input_file: PathLike,
          mag_y_scale: float = None,
          diff_y_scale: float = None):
 
-    config.filename = input_file
-    status = config.pbar_status
+    config.add_configuration("filename", input_file)
+    status = bars.status
 
     # Extraction and cleanup
     df = io.extract(input_file)
@@ -223,12 +223,12 @@ def main(input_file: PathLike,
     logging.info("Total briefly varying stars: %s", intra_varying_count)
     logging.info("Total variable stars: %s", unique_varying_count)
     logging.info("Starting graphing...")
-
+    #TODO fix bug output to "corrected" no matter what
     if correct == True:
         plot.plot_and_save_all(df=df_corrected,
                                uniform_y_axis=uniform_y_axis,
                                split=True,
-                               corrected=True,
+                               corrected=correct,
                                output_folder=output_folder,
                                mag_y_scale=mag_y_scale,
                                diff_y_scale=diff_y_scale)
@@ -236,7 +236,7 @@ def main(input_file: PathLike,
         plot.plot_and_save_all(df=df,
                                uniform_y_axis=uniform_y_axis,
                                split=True,
-                               corrected=True,
+                               corrected=correct,
                                output_folder=output_folder,
                                mag_y_scale=mag_y_scale,
                                diff_y_scale=diff_y_scale)
@@ -247,13 +247,13 @@ def main(input_file: PathLike,
         logging.info("Outputting processed dataset as excel...")
         if correct == True:
             io.save_to_excel(df=df_corrected,
-                             filename=file.stem,
+                             filename=input_file.stem,
                              sort_on=["time", "id"],
                              corrected=correct,
                              output_folder=output_folder)
         else:
             io.save_to_excel(df=df,
-                             filename=file.stem,
+                             filename=input_file.stem,
                              sort_on=["time", "id"],
                              corrected=correct,
                              output_folder=output_folder)

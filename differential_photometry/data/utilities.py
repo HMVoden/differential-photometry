@@ -1,7 +1,9 @@
-from typing import Dict
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
+
+from astropy.stats import sigma_clip
 
 
 def extract_samples_stars(dataframe: pd.DataFrame) -> int:
@@ -178,3 +180,28 @@ def flatten_dictionary(dictionary: Dict) -> Dict:
 def group_by_year_month_day(df: pd.DataFrame) -> pd.DataFrame:
     return df.groupby(
         [df["time"].dt.year, df["time"].dt.month, df["time"].dt.day])
+
+
+def get_largest_range(**data: Dict):
+    """Finds the largest range in one part of a timeseries dataset, for example
+    if you have three days of timeseries, this will find the largest range that
+    can be found in a single day
+
+    Returns
+    -------
+    Dict
+        Dictionary of the data name passed in and the entire dataset of values as the
+        dictionary value.
+
+    Returns
+    -------
+    Dict
+        Dictionary of the data name and the largest range for the entire dataset
+    """
+    result = []
+    for d in data.values():
+        d = np.abs(sigma_clip(d, sigma=2, axis=1, masked=False))
+        max_variation = np.nanmax(
+            np.abs((np.nanmax(d, axis=1) - np.nanmin(d, axis=1))))
+        result.append(max_variation)
+    return dict(zip(data.keys(), result))

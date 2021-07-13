@@ -5,12 +5,10 @@ from typing import List
 
 import numpy as np
 import pandas as pd
-import toml
-import differential_photometry.config as config
-import differential_photometry.utilities.sanitize as sanitize
+import differential_photometry.data.sanitize as sanitize
 from natsort import natsort_keygen
 
-output_config = toml.load("config/output.toml")
+import config.manager as config
 
 
 def extract(filename: str) -> pd.DataFrame:
@@ -75,18 +73,20 @@ def save_to_excel(df: pd.DataFrame,
     output_folder: Path, optional
         Root directory to output files to, by default None
     """
+    output_config = config.get_file_configuration("output")
+
     output_dict = {}
     if output_folder is None:
         output_folder = Path.cwd()
-        output_dict.update(**output_config["output"]["base"])
-        output_dict.update(**output_config["output"]["excel"])
+        output_dict.update(**output_config["base"])
+        output_dict.update(**output_config["excel"])
     else:
         output_folder = Path(output_folder)
     if sort_on is not None:
         df = df.sort_values(by=sort_on,
                             key=natsort_keygen()).reset_index(drop=True)
     if corrected == True:
-        output_dict.update(**output_config["output"]["corrected"])
+        output_dict.update(**output_config["corrected"])
     #end ifs
     output_folder = output_folder.joinpath(*output_dict.values())
     if not output_folder.exists():
@@ -134,26 +134,28 @@ def generate_graph_output_path(corrected: bool = False,
     PathLike
         A path object of the folder to write to.
     """
+    output_config = config.get_file_configuration("output")
+
     output_dict = {}
     if root is None:
         output_path = Path.cwd()  # current directory of script
     else:
         output_path = root
-    output_dict.update(**output_config["output"]["base"])
-    dataset = config.filename
+    output_dict.update(**output_config["base"])
+    dataset = config.get_runtime_configuration("filename")
     output_dict["dataset"] = dataset.stem.split("_")[0]
     output_dict["input_filename"] = dataset.stem
     if uniform == True:
-        output_dict.update(**output_config["output"]["uniform"])
+        output_dict.update(**output_config["uniform"])
     if corrected == True:
-        output_dict.update(**output_config["output"]["corrected"])
+        output_dict.update(**output_config["corrected"])
     if varying == True:
         if brief == True:
-            output_dict.update(**output_config["output"]["briefly_varying"])
+            output_dict.update(**output_config["briefly_varying"])
         else:
-            output_dict.update(**output_config["output"]["varying"])
+            output_dict.update(**output_config["varying"])
     elif split == True:
-        output_dict.update(**output_config["output"]["non_varying"])
+        output_dict.update(**output_config["non_varying"])
 
     output_path = output_path.joinpath(*output_dict.values())
     return output_path

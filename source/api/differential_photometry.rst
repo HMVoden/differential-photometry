@@ -6,10 +6,11 @@ Subpackages
 
 .. toctree::
     differential_photometry.machine_learning
-    differential_photometry.maths
+    differential_photometry.photometry
+    differential_photometry.data
+    differential_photometry.stats
     differential_photometry.plot
     differential_photometry.timeseries
-    differential_photometry.utilities
 
 Submodules
 -----------
@@ -18,6 +19,6 @@ Submodules
     :members:
     :undoc-members:
 
-.. automodule:: config
+.. automodule:: progress_bars
     :members:
     :undoc-members:

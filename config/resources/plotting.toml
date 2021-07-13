@@ -9,14 +9,19 @@ color_codes = true
 #rc =  # overrides for above
 
 [magnitude]
-xlabel = "Julian Date"
+xlabel = "Time (UTC)"
 ylabel = "Raw Magnitude"
 color = "purple"
 
 [differential_magnitude]
-xlabel = "Julian Date"
+xlabel = "Time (UTC)"
 ylabel = "Average Differential Magnitude"
 color = "orange"
+
+[time]
+#based on https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
+format = "%H:%M:%S"
+
 
 [error.bar] #Error bars on both differential and normal magnitude
 # see https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.errorbar.html?highlight=errorbar#matplotlib.axes.Axes.errorbar

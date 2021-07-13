@@ -1,7 +1,10 @@
-from differential_photometry.utilities.data import split_on, split_varying
 import logging
+from typing import List
 
+import differential_photometry.data.utilities as data_util
+import numpy as np
 import pandas as pd
+from astropy.stats import sigma_clip
 
 
 def correct_offset(df: pd.DataFrame) -> pd.DataFrame:
@@ -21,7 +24,7 @@ def correct_offset(df: pd.DataFrame) -> pd.DataFrame:
         Dataframe where magnitude and differential magnitude have been corrected
     """
     logging.info("Calculating offset for each star")
-    non_varying, _ = split_on(df, "intra_varying")
+    non_varying, _ = data_util.split_on(df, "intra_varying")
     # Probably close to what it 'really' is across all days,
     # more data points will make it closer to real mean.
     true_mean = non_varying.groupby("id").agg({
@@ -55,3 +58,32 @@ def correct_offset(df: pd.DataFrame) -> pd.DataFrame:
     df_corrected["corrected"] = True
 
     return df_corrected
+
+
+def sigma_clip_data(data: List[float],
+                    stat_func,
+                    error: List[float] = None) -> pd.DataFrame:
+    """A secondary runner for a pandas Apply, sigma clips the data in the data_name column from the dataframe
+    before running the stat function on the data column.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Dataframe containing the numerical columns data_name and error_name if applicable.
+    data_name : str
+        Column label of the numerical data in the dataframe.
+    stat_func : Callable[[np.ndarray, np.ndarray=None] float]
+        statistical function returning the p-value from the statistical function in question.
+    error_name : str, optional
+        Column label of the numerical error of the data in the dataframe, by default None.
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe containing the p-values calculated by the statistical function.
+    """
+    sample = sigma_clip(data, sigma=3, masked=True)
+    if error is not None:
+        error = np.ma.array(error, mask=sample.mask)
+        return stat_func(sample, error)
+    return stat_func(sample)

@@ -1,11 +1,10 @@
 import numpy as np
 import pandas as pd
 from typing import List
-import toml
 from arch.unitroot import ADF, DFGLS, KPSS, ZivotAndrews
 from scipy.stats import chisquare
 
-stats_config = toml.load("config/stats.toml")
+import config.manager as config
 
 
 def reduced_chi_square(data: List[float],
@@ -67,6 +66,7 @@ def regular_chi_square(data, error=None):
     float
         p-value of the chi squared test
     """
+    stats_config = config.get_file_configuration("stats")
     expected_switch = stats_config["chisquared"]["expected"]
     ddof = stats_config["chisquared"]["ddof"]
     expected = None
@@ -101,6 +101,7 @@ def augmented_dfuller(data: List[float]) -> float:
     float
         the p-value of the test statistic
     """
+    stats_config = config.get_file_configuration("stats")
     result = ADF(data, **stats_config["adfuller"])
     # print(result)
     return result.pvalue
@@ -125,6 +126,7 @@ def kpss(data: List[float]) -> float:
     float
         the p-value of the test statistic
     """
+    stats_config = config.get_file_configuration("stats")
     result = KPSS(data, **stats_config["kpss"])
     return result.pvalue
 
@@ -149,6 +151,7 @@ def zastat(data: List[float]) -> float:
     float
         the p-value of the test statistic
     """
+    stats_config = config.get_file_configuration("stats")
     result = ZivotAndrews(data, **stats_config["zivot_andrews"])
     return result.pvalue
 
@@ -173,6 +176,7 @@ def adf_gls(data: List[float]) -> float:
     float
         the p-value of the test statistic
     """
+    stats_config = config.get_file_configuration("stats")
     result = DFGLS(data, **stats_config["adf_gls"])
     return result.pvalue
 

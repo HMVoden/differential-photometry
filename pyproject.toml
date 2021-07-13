@@ -1,17 +1,21 @@
 [tool.poetry]
 name = "differential_photometry"
-version = "0.1.33"
+version = "0.1.35"
 description = "Conducts differential photometry on arbitrary datasets"
 authors = [
     "Harlan Shaw <harlan.shaw@ucalgary.ca>",
     "Ruben Morales <ruben.morales1@ucalgary.ca>",
 ]
+packages = [
+    { include = "differential_photometry" },
+    { include = "config" },
+    { include = "source" },
+]
 license = "MIT"
-include = ["config/*", "source/*", "docs/*"]
-exclude = ["config/working.toml", "data/*"]
+exclude = ["data/*"]
 
 [tool.poetry.dependencies]
-python = ">=3.8.8 <4.0.0"
+python = ">=3.9 <4.0.0"
 pandas = ">=1.2"
 numpy = ">=1.2"
 numba = ">=0.53"
@@ -25,6 +29,7 @@ arch = ">=4.19"
 natsort = ">=7.1"
 click = ">=8.0"
 enlighten = "^1.10.1"
+openpyxl = "^3.0.7"
 
 
 [tool.poetry.dev-dependencies]

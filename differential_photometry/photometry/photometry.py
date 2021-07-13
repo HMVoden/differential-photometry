@@ -1,62 +1,15 @@
 import logging
 from typing import List
 
-import differential_photometry.maths.stats as stat
-import differential_photometry.utilities.progress_bars as bars
+import differential_photometry.progress_bars as bars
 import pandas as pd
-from differential_photometry.maths.differential_photometry import (
+from differential_photometry.data.utilities import (arrange_for_dataframe,
+                                                    arrange_time_star,
+                                                    split_on)
+from differential_photometry.photometry.math import (
     calculate_differential_average, calculate_differential_magnitude,
-    calculate_differential_uncertainty)
-from differential_photometry.utilities.data import (arrange_for_dataframe,
-                                                    arrange_time_star)
-from differential_photometry.utilities.math import calculate_on_dataset
-from differential_photometry.utilities.stats import stat_runner
-from differential_photometry.utilities.data import split_on
-
-
-def test_stationarity(data: List[float],
-                      method: str = "adf_gls",
-                      clip: bool = False) -> pd.DataFrame:
-    """Takes a dataframe containing a numerical data column and applies the specified
-    statistical test on it, then compares the resulting p-value to the threshold value.
-    Some tests, such as the Dickson-Fuller test, have a null hypothesis that the timeseries in question
-    is non-stationary and if we want to know if a star is variable we must set the null to 'accept' that hypothesis.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Dataframe containing numerical timeseries columns and a name column to group by
-    method : str, optional
-        Statistical test name, by default "chisquared"
-    threshold : float, optional
-        The p-value threshold on which we want to reject or accept the hypothesis, by default 0.05
-    null : str, optional
-        Whether we want to accept or reject the hypothesis to know if a star is variable, by default "accept"
-    clip : bool, optional
-        Whether to sigma clip the data and possibly error for the statistical test, by default False
-    data_name : str, optional
-        The data column to operate the varying star detection on, by default "mag"
-
-    Returns
-    -------
-    pd.DataFrame
-        Dataframe containing the statistical test column and a "varying" truth column
-    """
-    if method == "chisquared":
-        stat_function = stat.reduced_chi_square
-    if method == "adfuller":
-        stat_function = stat.augmented_dfuller
-    if method == "kpss":
-        stat_function = stat.kpss
-    if method == "zivot_andrews":
-        stat_function = stat.zastat
-    if method == "adf_gls":  # best one so far
-        stat_function = stat.adf_gls
-    test_statistic = stat_runner(data=data, stat_func=stat_function, clip=clip)
-
-    # Combine test-statistic column with old dataframe
-
-    return test_statistic
+    calculate_differential_uncertainty, calculate_on_dataset)
+from differential_photometry.stats.stats import test_stationarity
 
 
 def calculate_differential_photometry(df: pd.DataFrame,

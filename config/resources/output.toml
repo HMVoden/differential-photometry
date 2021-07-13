@@ -1,23 +1,23 @@
 # Where we put the output
 # Each entry corresponds to a new folder
 # Order matters
-[output.base]
+[base]
 directory = "output"
 
-[output.uniform]
+[uniform]
 uniform = "uniform"
 
-[output.corrected]
+[corrected]
 corrected = "corrected"
 
-[output.non_varying]
+[non_varying]
 non_varying = "non_varying"
 
-[output.varying]
+[varying]
 varying = "varying"
 
-[output.briefly_varying]
+[briefly_varying]
 briefly_varying = "briefly_varying"
 
-[output.excel]
+[excel]
 excel = "excel"

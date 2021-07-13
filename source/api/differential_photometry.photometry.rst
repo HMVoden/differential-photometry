@@ -1,21 +1,21 @@
-(Differential Photometry project name).maths package
+(Differential Photometry project name).photometry package
 ================================================================
 
 Submodules
 -----------
 
-maths.differential_photometry module
+photometry.math module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: differential_photometry.maths.differential_photometry
+.. automodule:: differential_photometry.photometry.math
     :members:
     :undoc-members:
     :show-inheritance:
 
-maths.stats module
+photometry.photometry module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: differential_photometry.maths.stats
+.. automodule:: differential_photometry.photometry.photometry
     :members:
     :undoc-members:
     :show-inheritance:
