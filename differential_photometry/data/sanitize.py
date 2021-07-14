@@ -43,8 +43,8 @@ def clean_data(dataframe: pd.DataFrame) -> pd.DataFrame:
     if not (datatypes.mag.name
             == "float64"):  # Could make this apply to error and error_t too
         logging.warning(
-            "Data column '{0}' is not a numerical type, attempting to fix".
-            format("mag"))
+            "Data column '%s' is not a numerical type, attempting to fix",
+            "mag")
         # First instance of bad data
         bad_mags = dataframe[(dataframe.mag == "Flux<0")]
 
@@ -80,7 +80,7 @@ def remove_incomplete_sets(df: pd.DataFrame) -> pd.DataFrame:
     if len(bad_stars) > 0:
         logging.warning(
             "Stars have been found without sufficient amount of information")
-        logging.warning("Removing star(s) {0} from dataset".format(*bad_stars))
+        logging.warning("Removing star(s) %s from dataset", bad_stars)
         star_rows = df[df["id"].isin(bad_stars)]
         df = df.drop(index=star_rows.index)
     return df

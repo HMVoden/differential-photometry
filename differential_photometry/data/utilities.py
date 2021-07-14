@@ -47,14 +47,15 @@ def split_on(df: pd.DataFrame, split_on: str):
 
 
 def split_varying(df: pd.DataFrame):
-    inter_varying = df[df.inter_varying == True]
-    intra_varying = df[(df.inter_varying == False) & (df.graph_intra == True)]
+    inter_varying = df[df.inter_varying == True]  # Varying
+    intra_varying = df[(df.inter_varying == False) &
+                       (df.graph_intra == True)]  # Briefly varying
     non_varying = df[(df.inter_varying == False) & (df.graph_intra == False)]
 
     return non_varying, intra_varying, inter_varying
 
 
-def flag_intra_variable(df: pd.DataFrame) -> pd.DataFrame:
+def flag_variable(df: pd.DataFrame) -> pd.DataFrame:
     """Goes through each star and if any star has any day flagged as
     variable, this flags every day as variable. For use before plotting
 
@@ -71,6 +72,7 @@ def flag_intra_variable(df: pd.DataFrame) -> pd.DataFrame:
 
     df["graph_intra"] = df.groupby("id")["intra_varying"].transform(
         pd.DataFrame.any)
+    df["varying"] = df["graph_intra"] | df["inter_varying"]
 
     return df
 
@@ -200,8 +202,8 @@ def get_largest_range(**data: Dict):
     """
     result = []
     for d in data.values():
-        d = np.abs(sigma_clip(d, sigma=2, axis=1, masked=False))
-        max_variation = np.nanmax(
-            np.abs((np.nanmax(d, axis=1) - np.nanmin(d, axis=1))))
+        # max_variation = np.abs(np.ptp(d))
+        ptp = np.ptp(d, axis=0)
+        max_variation = np.abs(np.max(ptp) - np.min(ptp))
         result.append(max_variation)
     return dict(zip(data.keys(), result))

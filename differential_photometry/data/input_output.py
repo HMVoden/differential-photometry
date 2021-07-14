@@ -1,7 +1,7 @@
 import logging
 from os import PathLike
 from pathlib import Path, PurePath
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -73,7 +73,7 @@ def save_to_excel(df: pd.DataFrame,
     output_folder: Path, optional
         Root directory to output files to, by default None
     """
-    output_config = config.get_file_configuration("output")
+    output_config = config.get("output")
 
     output_dict = {}
     if output_folder is None:
@@ -109,7 +109,6 @@ def save_to_excel(df: pd.DataFrame,
 def generate_graph_output_path(corrected: bool = False,
                                varying: bool = False,
                                brief: bool = False,
-                               split: bool = False,
                                uniform: bool = False,
                                root: Path = None) -> PathLike:
     """Generates the output path based on configured features.
@@ -134,7 +133,7 @@ def generate_graph_output_path(corrected: bool = False,
     PathLike
         A path object of the folder to write to.
     """
-    output_config = config.get_file_configuration("output")
+    output_config = config.get("output")
 
     output_dict = {}
     if root is None:
@@ -142,7 +141,7 @@ def generate_graph_output_path(corrected: bool = False,
     else:
         output_path = root
     output_dict.update(**output_config["base"])
-    dataset = config.get_runtime_configuration("filename")
+    dataset = config.get("filename")
     output_dict["dataset"] = dataset.stem.split("_")[0]
     output_dict["input_filename"] = dataset.stem
     if uniform == True:
@@ -154,8 +153,22 @@ def generate_graph_output_path(corrected: bool = False,
             output_dict.update(**output_config["briefly_varying"])
         else:
             output_dict.update(**output_config["varying"])
-    elif split == True:
+    else:
         output_dict.update(**output_config["non_varying"])
 
     output_path = output_path.joinpath(*output_dict.values())
     return output_path
+
+
+def get_file_list(file_list: Tuple[PathLike, ...]) -> List[PathLike]:
+    result = []
+    for path in file_list:
+        if path.is_dir():
+            files = [
+                x for x in path.iterdir()
+                if x.suffix == ".csv" or x.suffix == ".xlsx"
+            ]
+            result.extend(files)
+        else:
+            result.append(path)
+    return result

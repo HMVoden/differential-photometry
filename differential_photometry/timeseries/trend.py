@@ -3,19 +3,17 @@ from math import isclose
 
 import astropy.modeling.fitting as fitting
 import astropy.modeling.models as models
-import differential_photometry.maths.stats as stat
+import differential_photometry.stats.utilities as stat
 import numpy as np
 import pandas as pd
-from differential_photometry.utilities.data import (arrange_for_dataframe,
-                                                    arrange_time_star,
-                                                    extract_samples_stars)
+import differential_photometry.data.utilities as data_util
 
 from wotan import flatten
 
 
 def find_biweight_trend(df: pd.DataFrame):
     required_cols = ["mag", "error"]
-    non_varying = arrange_time_star(df, required_cols)
+    non_varying = data_util.arrange_time_star(df, required_cols)
     mag = non_varying["mag"]
     error = non_varying["error"]
     N = mag[0].shape[0]
@@ -85,10 +83,10 @@ def detrend(df: pd.DataFrame, trend: np.ndarray) -> pd.DataFrame:
     """
 
     # get data and organize it properly by time = row, column = star
-    data_with_trend = arrange_time_star(df, ["mag"])["mag"]
+    data_with_trend = data_util.arrange_time_star(df, ["mag"])["mag"]
     data_detrended = data_with_trend.transpose() - trend
     # reshape to re-insert into dataframe
-    data_detrended = arrange_for_dataframe(df, data_detrended)[0]
+    data_detrended = data_util.arrange_for_dataframe(df, data_detrended)[0]
     return df.assign(mag=data_detrended)
 
 
@@ -108,7 +106,7 @@ def find_polynomial_trend(df: pd.DataFrame,
     np.ndarray
         The trend, hovering around 0, that has been found in an entire averaged dataset
     """
-    num_stars, num_samples = extract_samples_stars(df)
+    num_stars, num_samples = data_util.extract_samples_stars(df)
 
     degree = polynomial_degree
 

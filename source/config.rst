@@ -1,7 +1,7 @@
 Configuration
 ==============
 
-In the config folder of the project there are 6 .toml files.
+In the config/resources folder of the project there are 6 .toml files.
 Each one of these files contains configuration for a different part of the software. Changing these will change the behaviour of the software.
 
 .. note::

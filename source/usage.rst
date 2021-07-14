@@ -34,7 +34,7 @@ You can access the options for the application via the command
 
 which will detail the entire command-line interface. For completeness, it is detailed here as well:
 
-.. click:: differential_photometry.cli:runner
+.. click:: differential_photometry.cli:cli
     :prog: differential_photometry
     :nested: full
 

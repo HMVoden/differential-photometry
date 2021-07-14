@@ -15,10 +15,18 @@ Subpackages
 Submodules
 -----------
 
-.. automodule:: __main__
+.. automodule:: differential_photometry.__main__
     :members:
     :undoc-members:
 
-.. automodule:: progress_bars
+.. automodule:: differential_photometry.progress_bars
+    :members:
+    :undoc-members:
+
+.. automodule:: differential_photometry.cli
+    :members:
+    :undoc-members:
+
+.. automodule:: differential_photometry.runner
     :members:
     :undoc-members:

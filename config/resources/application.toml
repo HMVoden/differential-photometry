@@ -35,4 +35,4 @@ clip = false    # unnecessary
 # if we accept then we know the star is varying
 p_value = 0.025 # small p, less variation on multiple iterations
 null = "accept"
-clip = true
+clip = false

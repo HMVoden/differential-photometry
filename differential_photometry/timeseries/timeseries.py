@@ -28,15 +28,15 @@ def correct_offset(df: pd.DataFrame) -> pd.DataFrame:
     # Probably close to what it 'really' is across all days,
     # more data points will make it closer to real mean.
     true_mean = non_varying.groupby("id").agg({
-        "mag": "median",
-        "average_diff_mags": "median"
+        "mag": "mean",
+        "average_diff_mags": "mean"
     })
     # Individual day means to find offset
     day_star_mean = non_varying.groupby(["d_m_y", "id"]).agg({
         "mag":
-        "median",
+        "mean",
         "average_diff_mags":
-        "median"
+        "mean"
     })
     offset = day_star_mean.sub(true_mean, axis="index").reset_index()
     # Median of offsets to prevent huge outliers from mucking with data
@@ -52,10 +52,9 @@ def correct_offset(df: pd.DataFrame) -> pd.DataFrame:
                                       left_on="d_m_y",
                                       right_on="d_m_y",
                                       how="inner")
-    df_corrected["mag"] = df_corrected["mag"] - df_corrected["mag_offset"]
-    df_corrected["average_diff_mags"] = df_corrected[
+    df_corrected["c_mag"] = df_corrected["mag"] - df_corrected["mag_offset"]
+    df_corrected["c_average_diff_mags"] = df_corrected[
         "average_diff_mags"] - df_corrected["diff_mag_offset"]
-    df_corrected["corrected"] = True
 
     return df_corrected
 

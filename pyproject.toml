@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "differential_photometry"
-version = "0.1.35"
+version = "0.1.36"
 description = "Conducts differential photometry on arbitrary datasets"
 authors = [
     "Harlan Shaw <harlan.shaw@ucalgary.ca>",
