@@ -12,6 +12,15 @@ __config = {}
 # This is just a singleton updating a dicts, I don't see
 # any reason to make this a class.
 def init_configuration(**settings):
+
+    # load runtime config
+    for name, data in settings.items():
+        logging.debug("Loaded configuration setting %s", name)
+        update(name, data)
+    __check_config()
+
+
+def load_file_configuration():
     files = importlib.resources.files(resources)
 
     toml_resources = [x for x in files.iterdir() if x.suffix == ".toml"]
@@ -20,10 +29,6 @@ def init_configuration(**settings):
         data = toml.load(f)
         logging.debug("Loaded configuration file %s", f.stem)
         __config[f.stem] = data
-    # load runtime config
-    for name, data in settings.items():
-        logging.debug("Loaded configuration setting %s", name)
-        update(name, data)
 
 
 def get(config_name: str) -> Dict:
@@ -56,3 +61,15 @@ def __load_from_config(config_name: str, config_dict: Dict) -> Any:
             "Unable to load configuration from %s, not found in configuration",
             config_name)
         return None
+
+
+def __check_config():
+    uniform = get("uniform")
+    mag_y_scale = get("mag_y_scale")
+    diff_y_scale = get("diff_y_scale")
+    if uniform is True and (mag_y_scale is not None
+                            or diff_y_scale is not None):
+        logging.warning(
+            "Manual y-axis scaling and uniform y-axis flag are both set, disabling uniform flag."
+        )
+        update("uniform", False)

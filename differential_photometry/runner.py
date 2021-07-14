@@ -12,14 +12,16 @@ import config.manager as config
 
 
 def initialize(**settings):
-    bars.init_progress_bars()
-    config.init_configuration(**settings)
+    config.load_file_configuration()
     # Setup logging for verbose output
     if config.get("application")['logging']['enabled'] == True:
         log_config = config.get("logging")
         logging.config.dictConfig(log_config)
         logging.debug("Logging configured")
     logging.info("Application initialized successfully")
+
+    bars.init_progress_bars()
+    config.init_configuration(**settings)
 
 
 def teardown():

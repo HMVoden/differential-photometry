@@ -7,6 +7,7 @@ import click
 import differential_photometry.progress_bars as bars
 import differential_photometry.runner as runner
 import differential_photometry.data.input_output as io
+import config.manager as config
 
 # Need this to prevent it from spamming
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -58,7 +59,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
     default=None,
     help="Space or comma separated list of names to remove from dataset")
 @click.option(
-    "-my",
+    "-m",
     "--mag_y_scale",
     type=click.FLOAT,
     default=None,
@@ -66,7 +67,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
     """Sets the magnitude y-scale to have this value above and below the median
               of any dataset when plotted. OVERRIDES UNIFORM""")
 @click.option(
-    "-dy",
+    "-d",
     "--diff_y_scale",
     type=click.FLOAT,
     default=None,
@@ -77,11 +78,6 @@ def cli(input_file: Path, output_folder: Path, uniform: bool,
         output_excel: bool, offset: bool, iterations: int, remove: str,
         mag_y_scale: float, diff_y_scale: float):
 
-    if uniform is True & (mag_y_scale is True or diff_y_scale is True):
-        logging.warning(
-            "Manual y-axis scaling and uniform y-axis flag are both set, disabling uniform flag."
-        )
-        uniform = False
     runner.initialize(output_folder=output_folder,
                       uniform=uniform,
                       output_excel=output_excel,
@@ -90,6 +86,7 @@ def cli(input_file: Path, output_folder: Path, uniform: bool,
                       remove=remove,
                       mag_y_scale=mag_y_scale,
                       diff_y_scale=diff_y_scale)
+
     manager = bars.manager
     status = bars.status
 

@@ -103,8 +103,8 @@ def get_max_variation(df: pd.DataFrame) -> Tuple[float, float]:
         mag_max_variation = np.round(max_variation["mag"] / 2, decimals=1)
         diff_max_variation = np.round(max_variation["average_diff_mags"] / 2,
                                       decimals=1)
-    logging.info("Magnitude y-axis range is: %s", mag_max_variation * 2)
-    logging.info("Differential y-axis range is: %s", diff_max_variation * 2)
+    logging.info("Magnitude y-axis range is: %s", mag_max_variation)
+    logging.info("Differential y-axis range is: %s", diff_max_variation)
     return mag_max_variation, diff_max_variation
 
 
