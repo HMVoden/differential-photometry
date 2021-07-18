@@ -1,4 +1,4 @@
-(Differential Photometry project name).photometry package
+peeper.photometry package
 ================================================================
 
 Submodules
@@ -7,7 +7,7 @@ Submodules
 photometry.math module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: differential_photometry.photometry.math
+.. automodule:: peeper.photometry.math
     :members:
     :undoc-members:
     :show-inheritance:
@@ -15,7 +15,7 @@ photometry.math module
 photometry.photometry module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: differential_photometry.photometry.photometry
+.. automodule:: peeper.photometry.photometry
     :members:
     :undoc-members:
     :show-inheritance:

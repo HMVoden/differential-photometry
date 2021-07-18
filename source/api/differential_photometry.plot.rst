@@ -1,4 +1,4 @@
-(Differential Photometry project name).plot package
+peeper.plot package
 ================================================================
 
 Submodules
@@ -7,7 +7,7 @@ Submodules
 plot.plot module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: differential_photometry.plot.plot
+.. automodule:: peeper.plot.plot
     :members:
     :undoc-members:
     :show-inheritance:

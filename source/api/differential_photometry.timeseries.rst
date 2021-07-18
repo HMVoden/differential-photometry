@@ -1,4 +1,4 @@
-(Differential Photometry project name).timeseries package
+peeper.timeseries package
 ================================================================
 
 Submodules
@@ -6,7 +6,7 @@ Submodules
 timeseries.features module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: differential_photometry.timeseries.features
+.. automodule:: peeper.timeseries.features
     :members:
     :undoc-members:
     :show-inheritance:
@@ -14,7 +14,7 @@ timeseries.features module
 timeseries.trend module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: differential_photometry.timeseries.trend
+.. automodule:: peeper.timeseries.trend
     :members:
     :undoc-members:
     :show-inheritance:
@@ -22,7 +22,7 @@ timeseries.trend module
 timeseries.models module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: differential_photometry.timeseries.models
+.. automodule:: peeper.timeseries.models
     :members:
     :undoc-members:
     :show-inheritance:
@@ -31,7 +31,7 @@ timeseries.models module
 timeseries.timeseries module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: differential_photometry.timeseries.timeseries
+.. automodule:: peeper.timeseries.timeseries
     :members:
     :undoc-members:
     :show-inheritance:

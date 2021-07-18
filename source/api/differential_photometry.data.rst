@@ -1,4 +1,4 @@
-(Differential Photometry project name).data package
+peeper.data package
 ================================================================
 
 Submodules
@@ -7,7 +7,7 @@ Submodules
 data.input_output module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: differential_photometry.data.input_output
+.. automodule:: peeper.data.input_output
     :members:
     :undoc-members:
     :show-inheritance:
@@ -15,7 +15,7 @@ data.input_output module
 data.santize module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: differential_photometry.data.sanitize
+.. automodule:: peeper.data.sanitize
     :members:
     :undoc-members:
     :show-inheritance:
@@ -23,7 +23,7 @@ data.santize module
 data.utilities module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: differential_photometry.data.utilities
+.. automodule:: peeper.data.utilities
     :members:
     :undoc-members:
     :show-inheritance:

@@ -1,32 +1,32 @@
-(Differential Photometry project name) Modules
+peeper Modules
 ==============================================
 
 Subpackages
 -----------
 
 .. toctree::
-    differential_photometry.machine_learning
-    differential_photometry.photometry
-    differential_photometry.data
-    differential_photometry.stats
-    differential_photometry.plot
-    differential_photometry.timeseries
+    peeper.machine_learning
+    peeper.photometry
+    peeper.data
+    peeper.stats
+    peeper.plot
+    peeper.timeseries
 
 Submodules
 -----------
 
-.. automodule:: differential_photometry.__main__
+.. automodule:: peeper.__main__
     :members:
     :undoc-members:
 
-.. automodule:: differential_photometry.progress_bars
+.. automodule:: peeper.progress_bars
     :members:
     :undoc-members:
 
-.. automodule:: differential_photometry.cli
+.. automodule:: peeper.cli
     :members:
     :undoc-members:
 
-.. automodule:: differential_photometry.runner
+.. automodule:: peeper.runner
     :members:
     :undoc-members:

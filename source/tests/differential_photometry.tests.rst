@@ -1,4 +1,4 @@
-(Differential Photometry project name).tests module
+peeper.tests module
 ================================================================
 
 Submodules

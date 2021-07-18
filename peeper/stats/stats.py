@@ -1,14 +1,14 @@
 import pandas as pd
-
+import numpy as np
 from typing import List
 
-import differential_photometry.stats.utilities as stat_utils
-import differential_photometry.timeseries.timeseries as ts
+import peeper.stats.utilities as stat_utils
+import peeper.timeseries.timeseries as ts
 
 
-def test_stationarity(data: List[float],
-                      method: str = "adf_gls",
-                      clip: bool = False) -> pd.DataFrame:
+def test_stationarity(
+    data: List[float], method: str = "adf_gls", clip: bool = False
+) -> pd.DataFrame:
     """Takes a dataframe containing a numerical data column and applies the specified
     statistical test on it, then compares the resulting p-value to the threshold value.
     Some tests, such as the Dickson-Fuller test, have a null hypothesis that the timeseries in question
@@ -44,6 +44,7 @@ def test_stationarity(data: List[float],
         stat_function = stat_utils.zastat
     if method == "adf_gls":  # best one so far
         stat_function = stat_utils.adf_gls
+    data = np.asanyarray(data)
     test_statistic = stat_runner(data=data, stat_func=stat_function, clip=clip)
 
     # Combine test-statistic column with old dataframe

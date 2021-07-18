@@ -1,7 +1,7 @@
-(Differential Photometry project name) Package
+peeper Package
 ============================================================
 
 .. toctree::
     :maxdepth 4
 
-    differential_photometry
+    peeper

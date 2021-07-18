@@ -14,37 +14,32 @@ def init_progress_bars():
     manager = enlighten.get_manager()  # set up universal progress bar manager
 
     status = manager.status_bar(
-        status_format=u'{fill}Stage: {demo}{fill}{elapsed}',
-        color='bold_underline_bright_white_on_lightslategray',
+        status_format=u"{fill}Stage: {demo}{fill}{elapsed}",
+        color="bold_underline_bright_white_on_lightslategray",
         justify=enlighten.Justify.CENTER,
-        demo='Processing file',
+        demo="Processing file",
         autorefresh=True,
-        min_delta=0.5)
+        min_delta=0.5,
+    )
 
 
-def bar_update_wrapper(progress_bar: enlighten.Counter, function, *args,
-                       **kwargs) -> Any:
+def bar_update_wrapper(
+    progress_bar: enlighten.Counter, function, *args, **kwargs
+) -> Any:
     result = function(*args, **kwargs)
     progress_bar.update()
     return result
 
 
-def get_progress_bar(name: str,
-                     total: int,
-                     desc: str,
-                     unit: str,
-                     leave: bool,
-                     color: str = None):
+def get_progress_bar(
+    name: str, total: int, desc: str, unit: str, leave: bool, color: str = None
+):
     global progress_bars
     if name in progress_bars.keys():
         pbar = progress_bars[name]
         pbar.close()
 
-    pbar = manager.counter(total=total,
-                           desc=desc,
-                           unit=unit,
-                           leave=leave,
-                           color=color)
+    pbar = manager.counter(total=total, desc=desc, unit=unit, leave=leave, color=color)
     progress_bars[name] = pbar
     return pbar
 

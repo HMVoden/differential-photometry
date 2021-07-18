@@ -1,18 +1,18 @@
+import gc
 import logging
 from os import PathLike
 from pathlib import Path, PurePath
 from typing import List, Tuple
 
+import config.manager as config
+import peeper.data.sanitize as sanitize
 import numpy as np
 import pandas as pd
-import differential_photometry.data.sanitize as sanitize
 from natsort import natsort_keygen
-
-import config.manager as config
 
 
 def extract(filename: str) -> pd.DataFrame:
-    """ Assuming there are headers in the data file, this takes the filename opens it and reads it
+    """Assuming there are headers in the data file, this takes the filename opens it and reads it
     into a pandas dataframe, cleans the headers to make it all lowercase with no parenthesis and returns only
     the columns we're interested in.
 
@@ -27,36 +27,51 @@ def extract(filename: str) -> pd.DataFrame:
         Dataframe containing required columns, trimmed and made usable
     """
     data_path = PurePath(filename)
-    if (data_path.suffix == ".xlsx"
-        ):  # This way we can ignore if it's a csv or excel file
-        df = pd.read_excel(data_path)
+    # Read only the columns we need, to reduce size
+    required_column_names = ["name", "mag", "error", "x", "y", "jd"]
+    # This way we can ignore if it's a csv or excel file
+    if data_path.suffix == ".xlsx":
+        df = pd.read_excel(
+            data_path,
+            usecols=lambda x: sanitize.clean_headers(x) in required_column_names,
+        )
     else:
-        df = pd.read_csv(data_path)
-    required_column_names = np.array(
-        ["obj", "name", "mag", "error", "x", "y", "jd"])
-    df = sanitize.clean_headers(df, required_column_names)
+        df = pd.read_csv(
+            data_path,
+            usecols=lambda x: sanitize.clean_headers(x) in required_column_names,
+        )
+    clean_vector = np.vectorize(sanitize.clean_headers)
+    df.columns = clean_vector(np.array(df.columns))
+    df["time"] = generate_time_column(df["jd"])
+    df["y_m_d"] = df["time"].dt.strftime("%Y-%m-%d")
+    df = df.drop(columns="jd")
     df = sanitize.clean_data(df)
-    # This might be better as its own function
-    if "jd" in df.columns:
-        df["time"] = pd.to_datetime(df["jd"], origin="julian", unit="D")
-        unique_years = df["time"].dt.year.unique()
-        unique_months = df["time"].dt.month.unique()
-        unique_days = df["time"].dt.day.unique()
-        df["d_m_y"] = df["time"].dt.strftime("%d-%m-%Y")
 
-        logging.info("Number of days found in dataset: %s", len(unique_days))
-        logging.info("Number of months found in dataset: %s",
-                     len(unique_months))
-        logging.info("Number of years found in dataset: %s", len(unique_years))
+    gc.collect()
     return df
 
 
-def save_to_excel(df: pd.DataFrame,
-                  filename: str,
-                  sort_on: List[str] = None,
-                  split_on: List[str] = None,
-                  corrected: bool = None,
-                  output_folder: Path = None):
+def generate_time_column(jd: List[float]) -> pd.DatetimeTZDtype:
+    jd = pd.to_datetime(jd, origin="julian", unit="D")
+    unique_years = jd.dt.year.nunique()
+    unique_months = jd.dt.month.nunique()
+    unique_days = jd.dt.day.nunique()
+
+    logging.info("Number of days found in dataset: %s", unique_days)
+    logging.info("Number of months found in dataset: %s", unique_months)
+    logging.info("Number of years found in dataset: %s", unique_years)
+
+    return jd
+
+
+def save_to_excel(
+    df: pd.DataFrame,
+    filename: str,
+    sort_on: List[str] = None,
+    split_on: List[str] = None,
+    corrected: bool = None,
+    output_folder: Path = None,
+):
     """Saves specified dataframe to excel, changes filename based on inputted filename,
     how the dataframe is to be sorted and split.
 
@@ -83,11 +98,10 @@ def save_to_excel(df: pd.DataFrame,
     else:
         output_folder = Path(output_folder)
     if sort_on is not None:
-        df = df.sort_values(by=sort_on,
-                            key=natsort_keygen()).reset_index(drop=True)
+        df = df.sort_values(by=sort_on, key=natsort_keygen()).reset_index(drop=True)
     if corrected == True:
         output_dict.update(**output_config["corrected"])
-    #end ifs
+    # end ifs
     output_folder = output_folder.joinpath(*output_dict.values())
     if not output_folder.exists():
         logging.info("Creating directory %s", output_folder)
@@ -106,11 +120,13 @@ def save_to_excel(df: pd.DataFrame,
         df.to_excel(out_file)
 
 
-def generate_graph_output_path(corrected: bool = False,
-                               varying: bool = False,
-                               brief: bool = False,
-                               uniform: bool = False,
-                               root: Path = None) -> PathLike:
+def generate_graph_output_path(
+    corrected: bool = False,
+    inter_varying: bool = False,
+    intra_varying: bool = False,
+    uniform: bool = False,
+    root: Path = None,
+) -> PathLike:
     """Generates the output path based on configured features.
 
     Parameters
@@ -148,11 +164,12 @@ def generate_graph_output_path(corrected: bool = False,
         output_dict.update(**output_config["uniform"])
     if corrected == True:
         output_dict.update(**output_config["corrected"])
-    if varying == True:
-        if brief == True:
-            output_dict.update(**output_config["briefly_varying"])
-        else:
-            output_dict.update(**output_config["varying"])
+    if inter_varying == True and intra_varying == True:
+        output_dict.update(**output_config["always_varying"])
+    elif inter_varying == True and intra_varying == False:
+        output_dict.update(**output_config["inter_varying"])
+    elif inter_varying == False and intra_varying == True:
+        output_dict.update(**output_config["briefly_varying"])
     else:
         output_dict.update(**output_config["non_varying"])
 
@@ -165,8 +182,7 @@ def get_file_list(file_list: Tuple[PathLike, ...]) -> List[PathLike]:
     for path in file_list:
         if path.is_dir():
             files = [
-                x for x in path.iterdir()
-                if x.suffix == ".csv" or x.suffix == ".xlsx"
+                x for x in path.iterdir() if x.suffix == ".csv" or x.suffix == ".xlsx"
             ]
             result.extend(files)
         else:

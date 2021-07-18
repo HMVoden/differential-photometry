@@ -1,7 +1,7 @@
-(Differential Photometry Project Name's)
+peeper
 ============================================================================
 
-**(Differentialy Photometry Project Name's)** is a python application that takes in photometry output from Mira x64 and processes it to find
+**peeper** is a python application that takes in photometry output from Mira x64 and processes it to find
 variable stars. The custom modules supporting this should be readily usable for other projects.
 
 .. note::

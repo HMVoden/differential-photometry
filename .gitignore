@@ -139,7 +139,6 @@ profiles/
 *.png
 *.jpeg
 *.jpg
-*.html
 working.toml
 output/
 results/

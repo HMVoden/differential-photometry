@@ -13,8 +13,11 @@ corrected = "corrected"
 [non_varying]
 non_varying = "non_varying"
 
-[varying]
-varying = "varying"
+[always_varying]
+always_varying = "always_varying"
+
+[inter_varying]
+inter_varying = "inter_varying"
 
 [briefly_varying]
 briefly_varying = "briefly_varying"

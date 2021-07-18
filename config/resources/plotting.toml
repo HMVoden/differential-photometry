@@ -20,7 +20,9 @@ color = "orange"
 
 [time]
 #based on https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
-format = "%H:%M:%S"
+fmt = "%H:%M:%S"
+# tz = #must be https://docs.python.org/3/library/datetime.html#datetime.tzinfo
+# usetex = false
 
 
 [error.bar] #Error bars on both differential and normal magnitude

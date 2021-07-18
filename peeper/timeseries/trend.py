@@ -3,10 +3,10 @@ from math import isclose
 
 import astropy.modeling.fitting as fitting
 import astropy.modeling.models as models
-import differential_photometry.stats.utilities as stat
+import peeper.stats.utilities as stat
 import numpy as np
 import pandas as pd
-import differential_photometry.data.utilities as data_util
+import peeper.data.utilities as data_util
 
 from wotan import flatten
 
@@ -23,7 +23,7 @@ def find_biweight_trend(df: pd.DataFrame):
     window = time.max() / 10
 
     average = np.average(mag, axis=1)
-    av_error = np.sum(error**2, axis=1) / N
+    av_error = np.sum(error ** 2, axis=1) / N
 
     w_avg = stat.weighted_mean(average, av_error)
 
@@ -58,9 +58,9 @@ def is_trend_constant(trend: np.ndarray, parameters_fit: int = None) -> bool:
     """
     if parameters_fit is None:
         parameters_fit = 0
-    chisquared = stat.reduced_chi_square(data=trend,
-                                         expected=0,
-                                         parameters_estimated=parameters_fit)
+    chisquared = stat.reduced_chi_square(
+        data=trend, expected=0, parameters_estimated=parameters_fit
+    )
     is_constant = isclose(chisquared, 1, abs_tol=0.2)  # expected very close
     logging.info("Chisquared for trend found to be %s", chisquared)
     return is_constant
@@ -90,8 +90,7 @@ def detrend(df: pd.DataFrame, trend: np.ndarray) -> pd.DataFrame:
     return df.assign(mag=data_detrended)
 
 
-def find_polynomial_trend(df: pd.DataFrame,
-                          polynomial_degree: int = 8) -> np.ndarray:
+def find_polynomial_trend(df: pd.DataFrame, polynomial_degree: int = 8) -> np.ndarray:
     """Calculates a Chebyshev polynomial on top of averaged data of a dataset to find a trend in the entire dataset
 
     Parameters
@@ -117,16 +116,18 @@ def find_polynomial_trend(df: pd.DataFrame,
     )
 
     # get data and organize it properly by time = row, column = star
-    non_varying_mags = (df["mag"].to_numpy(dtype="float64").reshape(
-        num_samples, num_stars))
-    non_varying_error = (df["error"].to_numpy(dtype="float64").reshape(
-        num_samples, num_stars))
+    non_varying_mags = (
+        df["mag"].to_numpy(dtype="float64").reshape(num_samples, num_stars)
+    )
+    non_varying_error = (
+        df["error"].to_numpy(dtype="float64").reshape(num_samples, num_stars)
+    )
 
     average_mag = np.average(non_varying_mags, axis=1)
-    average_error = np.sum(non_varying_error**2, axis=1) / num_stars
+    average_error = np.sum(non_varying_error ** 2, axis=1) / num_stars
 
     timeline = df["jd"].unique()  # Our x-axis
-    weight = 1 / average_error**2  # Uncertainty weighting
+    weight = 1 / average_error ** 2  # Uncertainty weighting
 
     fit = fitting.LinearLSQFitter()  # Assuming linear dataset
     # Chebyshev seems to work better than polynomial
@@ -134,14 +135,13 @@ def find_polynomial_trend(df: pd.DataFrame,
     fitted_poly = fit(model=poly, x=timeline, y=average_mag, weights=weight)
 
     # Get calculated parameters from model
-    general_parameters = dict(
-        zip(fitted_poly.param_names, fitted_poly.parameters))
+    general_parameters = dict(zip(fitted_poly.param_names, fitted_poly.parameters))
     logging.debug("Parameters in found trend: %r", general_parameters)
     # Set y-intercept to 0 so that trend hovers around 0
     general_parameters["c0"] = 0
 
-    dataset_trend = models.Chebyshev1D(degree=degree,
-                                       domain=fitted_poly.domain,
-                                       **general_parameters)
+    dataset_trend = models.Chebyshev1D(
+        degree=degree, domain=fitted_poly.domain, **general_parameters
+    )
 
     return dataset_trend(timeline)  # return trend around 0

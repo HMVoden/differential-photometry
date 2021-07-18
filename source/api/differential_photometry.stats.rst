@@ -1,4 +1,4 @@
-(Differential Photometry project name).machine_learning package
+peeper.machine_learning package
 ================================================================
 
 Submodules
@@ -7,7 +7,7 @@ Submodules
 stats.stats module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: differential_photometry.stats.stats
+.. automodule:: peeper.stats.stats
     :members:
     :undoc-members:
     :show-inheritance:
@@ -15,7 +15,7 @@ stats.stats module
 stats.utilities module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: differential_photometry.stats.utilities
+.. automodule:: peeper.stats.utilities
     :members:
     :undoc-members:
     :show-inheritance:

@@ -1,12 +1,13 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
 
+import config.manager as config
+
 from astropy.stats import sigma_clip
 
-
-def extract_samples_stars(dataframe: pd.DataFrame) -> int:
+def extract_samples_stars(dataframe: pd.DataFrame) -> Tuple[int, int]:
     """Determines and returns the number of different star samples and number of stars as integers
 
     Parameters
@@ -19,10 +20,13 @@ def extract_samples_stars(dataframe: pd.DataFrame) -> int:
     int, int
         number of stars, number of samples of those stars
     """
+    if dataframe.empty:
+        return (0, 0)
     rows = dataframe.shape[0]
     num_stars = dataframe["id"].nunique()
     samples = int(rows / num_stars)
-    return num_stars, samples
+    return samples, num_stars
+
 
 
 def split_on(df: pd.DataFrame, split_on: str):
@@ -46,13 +50,16 @@ def split_on(df: pd.DataFrame, split_on: str):
     return false_df, true_df
 
 
+
 def split_varying(df: pd.DataFrame):
     inter_varying = df[df.inter_varying == True]  # Varying
-    intra_varying = df[(df.inter_varying == False) &
-                       (df.graph_intra == True)]  # Briefly varying
+    intra_varying = df[
+        (df.inter_varying == False) & (df.graph_intra == True)
+    ]  # Briefly varying
     non_varying = df[(df.inter_varying == False) & (df.graph_intra == False)]
 
     return non_varying, intra_varying, inter_varying
+
 
 
 def flag_variable(df: pd.DataFrame) -> pd.DataFrame:
@@ -70,14 +77,14 @@ def flag_variable(df: pd.DataFrame) -> pd.DataFrame:
         Flagged dataframe
     """
 
-    df["graph_intra"] = df.groupby("id")["intra_varying"].transform(
-        pd.DataFrame.any)
+    df["graph_intra"] = df.groupby("id")["intra_varying"].transform(pd.DataFrame.any)
     df["varying"] = df["graph_intra"] | df["inter_varying"]
 
     return df
 
 
-def arrange_for_dataframe(df: pd.DataFrame, *arrays):
+
+def arrange_for_dataframe(*arrays):
     """Finds the length of a dataframe and then changes each iterable passed
     into the function into the same length to be added into the dataframe
 
@@ -91,15 +98,10 @@ def arrange_for_dataframe(df: pd.DataFrame, *arrays):
     np.ndarray
         Numpy array of all the iterables that have been rearranged
     """
-    # TODO make into dictionary to return
-    dataframe_length = df.shape[0]
-    to_arrange = []
     for a in arrays:
-        a = np.asanyarray(a)
-        # Easier to pass into arrange function
-        to_arrange.append(a.transpose())
+        a = np.asanyarray(a)  # safety check
+        yield a.ravel()
 
-    return arrange_iterables(dataframe_length, 1, to_arrange)
 
 
 def arrange_time_star(df: pd.DataFrame, columns: list):
@@ -119,17 +121,18 @@ def arrange_time_star(df: pd.DataFrame, columns: list):
     np.ndarray
         Numpy array of rearranged data columns
     """
-    stars, samples = extract_samples_stars(df)
+    samples, stars = extract_samples_stars(df)
     num_columns = len(columns)
     # get only the columns we're interested in
     values = df[columns]
     # split columns into their own arrays
     values = np.hsplit(values, num_columns)
-    arranged = arrange_iterables(samples, stars, values)
+    arranged = arrange_iterables(samples, stars, *values)
     return dict(zip(columns, arranged))
 
 
-def arrange_iterables(row: int, col: int, iterables):
+
+def arrange_iterables(row: int, col: int, *iterables):
     """Generic function to reshape numpy arrays in the specified row/column arrangements, if possible
 
     Parameters
@@ -146,13 +149,11 @@ def arrange_iterables(row: int, col: int, iterables):
     np.ndarray
         Numpy array of all the iterables that have been reshaped
     """
-    results = []
     for l in iterables:
         l = np.asanyarray(l)  # make sure it's an array
         l = l.reshape(row, col)
-        results.append(l)
+        yield l
 
-    return np.array(results)
 
 
 def flatten_dictionary(dictionary: Dict) -> Dict:
@@ -180,8 +181,12 @@ def flatten_dictionary(dictionary: Dict) -> Dict:
 
 
 def group_by_year_month_day(df: pd.DataFrame) -> pd.DataFrame:
-    return df.groupby(
-        [df["time"].dt.year, df["time"].dt.month, df["time"].dt.day])
+    return df.groupby([df["time"].dt.year, df["time"].dt.month, df["time"].dt.day])
+
+
+def group_by_day_month_year(df: pd.DataFrame) -> pd.DataFrame:
+    return df.groupby([df["time"].dt.day, df["time"].dt.month, df["time"].dt.year])
+
 
 
 def get_largest_range(**data: Dict):

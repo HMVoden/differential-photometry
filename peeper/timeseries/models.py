@@ -4,13 +4,13 @@ from astropy.time import Time
 from astropy.timeseries import BoxLeastSquares
 
 
-def box_least_squares(data: np.ndarray,
-                      uncertainties: np.ndarray,
-                      timeline: Time = None) -> np.ndarray:
+def box_least_squares(
+    data: np.ndarray, uncertainties: np.ndarray, timeline: Time = None
+) -> np.ndarray:
     """Takes a dataset with uncertainties and a timeline, applies a box least squares model to it,
     then filters the data by if the number of transits is equal to one, approximating a dip or increase
     in the magnitude of the target star over time.
-    
+
     Early work, needs refactoring.
 
     Parameters

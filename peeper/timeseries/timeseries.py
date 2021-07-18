@@ -1,7 +1,7 @@
 import logging
 from typing import List
 
-import differential_photometry.data.utilities as data_util
+import peeper.data.utilities as data_util
 import numpy as np
 import pandas as pd
 from astropy.stats import sigma_clip
@@ -27,41 +27,35 @@ def correct_offset(df: pd.DataFrame) -> pd.DataFrame:
     non_varying, _ = data_util.split_on(df, "intra_varying")
     # Probably close to what it 'really' is across all days,
     # more data points will make it closer to real mean.
-    true_mean = non_varying.groupby("id").agg({
-        "mag": "mean",
-        "average_diff_mags": "mean"
-    })
+    true_mean = non_varying.groupby("id").agg(
+        {"mag": "mean", "average_diff_mags": "mean"}
+    )
     # Individual day means to find offset
-    day_star_mean = non_varying.groupby(["d_m_y", "id"]).agg({
-        "mag":
-        "mean",
-        "average_diff_mags":
-        "mean"
-    })
+    day_star_mean = non_varying.groupby(["y_m_d", "id"]).agg(
+        {"mag": "mean", "average_diff_mags": "mean"}
+    )
     offset = day_star_mean.sub(true_mean, axis="index").reset_index()
     # Median of offsets to prevent huge outliers from mucking with data
-    per_day_offset = offset.groupby("d_m_y").mean().reset_index()
+    per_day_offset = offset.groupby("y_m_d").mean().reset_index()
     # rename so merge doesn't go wonky
     per_day_offset = per_day_offset.rename(
-        columns={
-            "mag": "mag_offset",
-            "average_diff_mags": "diff_mag_offset"
-        })
+        columns={"mag": "mag_offset", "average_diff_mags": "diff_mag_offset"}
+    )
     df_corrected = df.copy()
-    df_corrected = df_corrected.merge(per_day_offset,
-                                      left_on="d_m_y",
-                                      right_on="d_m_y",
-                                      how="inner")
+    df_corrected = df_corrected.merge(
+        per_day_offset, left_on="y_m_d", right_on="y_m_d", how="inner"
+    )
     df_corrected["c_mag"] = df_corrected["mag"] - df_corrected["mag_offset"]
-    df_corrected["c_average_diff_mags"] = df_corrected[
-        "average_diff_mags"] - df_corrected["diff_mag_offset"]
+    df_corrected["c_average_diff_mags"] = (
+        df_corrected["average_diff_mags"] - df_corrected["diff_mag_offset"]
+    )
 
     return df_corrected
 
 
-def sigma_clip_data(data: List[float],
-                    stat_func,
-                    error: List[float] = None) -> pd.DataFrame:
+def sigma_clip_data(
+    data: List[float], stat_func, error: List[float] = None
+) -> pd.DataFrame:
     """A secondary runner for a pandas Apply, sigma clips the data in the data_name column from the dataframe
     before running the stat function on the data column.
 
