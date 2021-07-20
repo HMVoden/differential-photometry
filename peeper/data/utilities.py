@@ -3,9 +3,6 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
-import config.manager as config
-
-from astropy.stats import sigma_clip
 
 def extract_samples_stars(dataframe: pd.DataFrame) -> Tuple[int, int]:
     """Determines and returns the number of different star samples and number of stars as integers
@@ -26,7 +23,6 @@ def extract_samples_stars(dataframe: pd.DataFrame) -> Tuple[int, int]:
     num_stars = dataframe["id"].nunique()
     samples = int(rows / num_stars)
     return samples, num_stars
-
 
 
 def split_on(df: pd.DataFrame, split_on: str):
@@ -50,7 +46,6 @@ def split_on(df: pd.DataFrame, split_on: str):
     return false_df, true_df
 
 
-
 def split_varying(df: pd.DataFrame):
     inter_varying = df[df.inter_varying == True]  # Varying
     intra_varying = df[
@@ -59,7 +54,6 @@ def split_varying(df: pd.DataFrame):
     non_varying = df[(df.inter_varying == False) & (df.graph_intra == False)]
 
     return non_varying, intra_varying, inter_varying
-
 
 
 def flag_variable(df: pd.DataFrame) -> pd.DataFrame:
@@ -83,7 +77,6 @@ def flag_variable(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-
 def arrange_for_dataframe(*arrays):
     """Finds the length of a dataframe and then changes each iterable passed
     into the function into the same length to be added into the dataframe
@@ -101,7 +94,6 @@ def arrange_for_dataframe(*arrays):
     for a in arrays:
         a = np.asanyarray(a)  # safety check
         yield a.ravel()
-
 
 
 def arrange_time_star(df: pd.DataFrame, columns: list):
@@ -131,7 +123,6 @@ def arrange_time_star(df: pd.DataFrame, columns: list):
     return dict(zip(columns, arranged))
 
 
-
 def arrange_iterables(row: int, col: int, *iterables):
     """Generic function to reshape numpy arrays in the specified row/column arrangements, if possible
 
@@ -153,7 +144,6 @@ def arrange_iterables(row: int, col: int, *iterables):
         l = np.asanyarray(l)  # make sure it's an array
         l = l.reshape(row, col)
         yield l
-
 
 
 def flatten_dictionary(dictionary: Dict) -> Dict:
@@ -186,7 +176,6 @@ def group_by_year_month_day(df: pd.DataFrame) -> pd.DataFrame:
 
 def group_by_day_month_year(df: pd.DataFrame) -> pd.DataFrame:
     return df.groupby([df["time"].dt.day, df["time"].dt.month, df["time"].dt.year])
-
 
 
 def get_largest_range(**data: Dict):

@@ -45,9 +45,6 @@ def extract(filename: str) -> pd.DataFrame:
     df["time"] = generate_time_column(df["jd"])
     df["y_m_d"] = df["time"].dt.strftime("%Y-%m-%d")
     df = df.drop(columns="jd")
-    df = sanitize.clean_data(df)
-
-    gc.collect()
     return df
 
 
@@ -109,15 +106,15 @@ def save_to_excel(
     if split_on is not None:
         to_write = df.groupby(split_on)
         for name, frame in to_write:
-            out_name = "{0}_{1}_{2}.xlsx".format(split_on, name, filename)
+            out_name = "{0}_{1}_{2}.csv".format(split_on, name, filename)
             out_file = output_folder.joinpath(out_name)
             logging.info("Writing out %s", out_file)
             frame.to_excel(out_name)
     else:
-        out_name = "processed_{0}.xlsx".format(filename)
+        out_name = "processed_{0}.csv".format(filename)
         out_file = output_folder.joinpath(out_name)
         logging.info("Writing out %s", out_file)
-        df.to_excel(out_file)
+        df.to_csv(out_file)
 
 
 def generate_graph_output_path(

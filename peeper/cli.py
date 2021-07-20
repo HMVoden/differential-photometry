@@ -16,7 +16,6 @@ from pandas.errors import DtypeWarning
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=DtypeWarning)
-# warnings.filterwarnings("ignore", category=ExtractorWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
 

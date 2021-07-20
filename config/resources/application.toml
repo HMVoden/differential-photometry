@@ -33,6 +33,6 @@ clip = false    # unnecessary
 # NOTE: This one seems to work best
 # Null is timeseries is stationary
 # if we accept then we know the star is varying
-p_value = 0.025 # small p, less variation on multiple iterations
+p_value = 0.05  # small p, less variation on multiple iterations
 null = "accept"
 clip = false
