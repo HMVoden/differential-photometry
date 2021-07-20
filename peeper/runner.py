@@ -37,9 +37,19 @@ def run(input_file: PathLike):
     status = bars.status
 
     # Extraction, cleanup and processing
+    # io.extract returns a dataframe which we
+    # then move around in a pipe
+    # TODO write function that removes duplicates
+    # TODO write function that finds nearby stars
+    # TODO write function that finds stars less than 0.5 mag dimmer
+    # TODO convert to xarray
+    # TODO @guvectorize differential photometry modules
+    # TODO write wrapper for progress bars
+    # TODO
     df = (
         io.extract(input_file)
         .pipe(sanitize.remove_incomplete_sets)
+        .pipe(sanitize.clean_data)
         .pipe(photometry.intra_day_iter)
         .pipe(ts.correct_offset)
         .pipe(photometry.inter_day)
@@ -49,7 +59,7 @@ def run(input_file: PathLike):
     gc.collect()
 
     plot.plot_and_save_all(
-        df=df.drop(columns=["mag_offset", "diff_mag_offset", "adf_gls", "x", "y"])
+        df=df.drop(columns=["mag_offset", "diff_mag_offset", "x", "y"])
     )
 
     logging.info("Finished graphing")
