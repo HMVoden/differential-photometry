@@ -1,4 +1,7 @@
 from typing import Callable, List, Tuple
+from numba import guvectorize, float64, float32
+from math import sqrt
+from numba.core.types.scalars import Float
 
 import numpy as np
 
@@ -20,15 +23,31 @@ def calculate_differential_uncertainty(
 def calculate_differential_average(
     subtracted_mags: np.ndarray, calculated_errors: np.ndarray
 ) -> Tuple[List[float], List[float]]:
-    subtracted_mags = np.asanyarray(subtracted_mags)
-    calculated_errors = np.asanyarray(calculated_errors)
+    avg_diff_mags = average_differential_magnitudes(subtracted_mags)
+    avg_error = average_error(calculated_errors)
 
-    N = subtracted_mags[0].shape[0]
+    return avg_diff_mags, avg_error
 
-    average_diff_mags = np.mean(subtracted_mags, axis=1)
-    average_error = np.sqrt(np.sum(calculated_errors ** 2, axis=1)) / N
 
-    return average_diff_mags, average_error
+# guvectorize intentionally does not return.
+@guvectorize([(float32[:], float32), (float64[:], float64)], "(n) -> ()")
+def average_differential_magnitudes(
+    subtracted_magnitudes: List[float], res: List
+) -> float:
+    N = len(subtracted_magnitudes)
+    res = 0
+    for mag in subtracted_magnitudes:
+        res = res + mag
+    res = res / N
+
+
+@guvectorize([(float32[:], float32), (float64[:], float64)], "(n) -> ()")
+def average_error(errors: List[float], res: List) -> float:
+    N = len(errors)
+    res = 0
+    for error in errors:
+        res = res + error ** 2
+    res = sqrt(res) / N
 
 
 def calculate_on_dataset(

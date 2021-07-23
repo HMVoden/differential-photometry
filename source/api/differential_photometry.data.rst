@@ -1,4 +1,4 @@
-peeper.data package
+shutterbug.data package
 ================================================================
 
 Submodules
@@ -7,7 +7,7 @@ Submodules
 data.input_output module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: peeper.data.input_output
+.. automodule:: shutterbug.data.input_output
     :members:
     :undoc-members:
     :show-inheritance:
@@ -15,7 +15,7 @@ data.input_output module
 data.santize module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: peeper.data.sanitize
+.. automodule:: shutterbug.data.sanitize
     :members:
     :undoc-members:
     :show-inheritance:
@@ -23,7 +23,7 @@ data.santize module
 data.utilities module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: peeper.data.utilities
+.. automodule:: shutterbug.data.utilities
     :members:
     :undoc-members:
     :show-inheritance:

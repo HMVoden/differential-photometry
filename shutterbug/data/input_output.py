@@ -1,17 +1,14 @@
-import gc
 import logging
-from os import PathLike
-from pathlib import Path, PurePath
-from typing import List, Tuple
+from pathlib import Path
+from typing import Dict, List, Tuple
 
 import config.manager as config
-import peeper.data.sanitize as sanitize
-import numpy as np
 import pandas as pd
+import xarray as xr
 from natsort import natsort_keygen
 
 
-def extract(filename: str) -> pd.DataFrame:
+def extract(filename: Path) -> pd.DataFrame:
     """Assuming there are headers in the data file, this takes the filename opens it and reads it
     into a pandas dataframe, cleans the headers to make it all lowercase with no parenthesis and returns only
     the columns we're interested in.
@@ -26,42 +23,48 @@ def extract(filename: str) -> pd.DataFrame:
     pd.DataFrame
         Dataframe containing required columns, trimmed and made usable
     """
-    data_path = PurePath(filename)
-    # Read only the columns we need, to reduce size
-    required_column_names = ["name", "mag", "error", "x", "y", "jd"]
-    # This way we can ignore if it's a csv or excel file
-    if data_path.suffix == ".xlsx":
-        df = pd.read_excel(
-            data_path,
-            usecols=lambda x: sanitize.clean_headers(x) in required_column_names,
+
+    input_config = config.get("input")
+    filetype = input_config["types"][filename.suffix]
+    file_config = input_config[filetype]
+    required_column_names = input_config["required"]
+    if file_config["module"] == "pd":
+        ds = open_pandas(
+            filename=filename,
+            reader=file_config["reader"],
+            settings=file_config["settings"],
+            required_columns=required_column_names,
+        )
+    elif file_config["module"] == "xr":
+        ds = open_xr(
+            filename=filename,
+            reader=file_config["reader"],
+            settings=file_config["settings"],
+            required_columns=required_column_names,
         )
     else:
-        df = pd.read_csv(
-            data_path,
-            usecols=lambda x: sanitize.clean_headers(x) in required_column_names,
-        )
-    clean_vector = np.vectorize(sanitize.clean_headers)
-    df.columns = clean_vector(np.array(df.columns))
-    df["time"] = generate_time_column(df["jd"])
-    df["y_m_d"] = df["time"].dt.strftime("%Y-%m-%d")
-    df = df.drop(columns="jd")
+        raise NotImplementedError
+
+    return ds
+
+
+# TODO make these one function
+def open_pandas(
+    filename: Path, reader: str, settings: Dict, required_columns: List[str]
+):
+    reader_func = getattr(pd, reader)
+    df = reader_func(filename, **settings)
+    df = df.to_xarray()
     return df
 
 
-def generate_time_column(jd: List[float]) -> pd.DatetimeTZDtype:
-    jd = pd.to_datetime(jd, origin="julian", unit="D")
-    unique_years = jd.dt.year.nunique()
-    unique_months = jd.dt.month.nunique()
-    unique_days = jd.dt.day.nunique()
-
-    logging.info("Number of days found in dataset: %s", unique_days)
-    logging.info("Number of months found in dataset: %s", unique_months)
-    logging.info("Number of years found in dataset: %s", unique_years)
-
-    return jd
+def open_xr(filename: Path, reader: str, settings: Dict, required_columns: List[str]):
+    reader_func = getattr(xr, reader)
+    ds = reader_func(filename, **settings)
+    return ds
 
 
-def save_to_excel(
+def save_to_csv(
     df: pd.DataFrame,
     filename: str,
     sort_on: List[str] = None,
@@ -69,7 +72,7 @@ def save_to_excel(
     corrected: bool = None,
     output_folder: Path = None,
 ):
-    """Saves specified dataframe to excel, changes filename based on inputted filename,
+    """Saves specified dataframe to csv, changes filename based on inputted filename,
     how the dataframe is to be sorted and split.
 
     Parameters
@@ -91,7 +94,7 @@ def save_to_excel(
     if output_folder is None:
         output_folder = Path.cwd()
         output_dict.update(**output_config["base"])
-        output_dict.update(**output_config["excel"])
+        output_dict.update(**output_config["csv"])
     else:
         output_folder = Path(output_folder)
     if sort_on is not None:
@@ -123,7 +126,7 @@ def generate_graph_output_path(
     intra_varying: bool = False,
     uniform: bool = False,
     root: Path = None,
-) -> PathLike:
+) -> Path:
     """Generates the output path based on configured features.
 
     Parameters
@@ -143,7 +146,7 @@ def generate_graph_output_path(
 
     Returns
     -------
-    PathLike
+    Path
         A path object of the folder to write to.
     """
     output_config = config.get("output")
@@ -174,14 +177,14 @@ def generate_graph_output_path(
     return output_path
 
 
-def get_file_list(file_list: Tuple[PathLike, ...]) -> List[PathLike]:
+def get_file_list(file_list: Tuple[Path, ...]) -> List[Path]:
     result = []
+    readable_types = config.get("input")["types"]
     for path in file_list:
         if path.is_dir():
-            files = [
-                x for x in path.iterdir() if x.suffix == ".csv" or x.suffix == ".xlsx"
-            ]
+            files = [x for x in path.iterdir() if x.suffix in readable_types.keys()]
             result.extend(files)
         else:
-            result.append(path)
+            if path.suffix in readable_types.keys():
+                result.append(path)
     return result

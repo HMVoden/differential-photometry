@@ -1,0 +1,45 @@
+required = ["obj", "name", "mag", "error", "x", "y", "jd"]
+coords = ["star", "x", "y", "jd"]
+time = "jd"
+
+[excel]
+"module" = "pd"
+"reader" = "read_excel"
+[excel.settings]
+"sheet_name" = 0
+"header" = 0     # header row
+# "index_col" = # Uncomment for use
+"engine" = "openpyxl"
+[csv]
+"module" = "pd"
+"reader" = "read_csv"
+[csv.settings]
+"delimiter" = ","
+"header" = "infer"
+[parquet]
+"module" = "pd"
+"reader" = "read_parquet"
+[NETCDF4]
+"module" = "xr"
+"reader" = "open_dataset"
+[NETCDF4.settings]
+"engine" = "h5netcdf"
+
+[NETCDF4_CLASSIC]
+"module" = "xr"
+"reader" = "open_dataset"
+[NETCDF4_CLASSIC.settings]
+"engine" = "netcdf4"
+
+# Do not change below settings without modifying the code.
+[types]
+# Filetypes the program accepts
+".xlsx" = "excel"
+".xls" = "excel"
+".xlsm" = "excel"
+".odf" = "excel"
+".ods" = "excel"
+".csv" = "csv"
+".parquet" = "parquet"
+".hd5" = "NETCDF4"
+".nc" = "NETCDF4_CLASSIC"

@@ -1,4 +1,4 @@
-peeper.photometry package
+shutterbug.photometry package
 ================================================================
 
 Submodules
@@ -7,7 +7,7 @@ Submodules
 photometry.math module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: peeper.photometry.math
+.. automodule:: shutterbug.photometry.math
     :members:
     :undoc-members:
     :show-inheritance:
@@ -15,7 +15,7 @@ photometry.math module
 photometry.photometry module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: peeper.photometry.photometry
+.. automodule:: shutterbug.photometry.differential
     :members:
     :undoc-members:
     :show-inheritance:

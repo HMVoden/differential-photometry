@@ -10,13 +10,13 @@ After the project is installed to your system, you are able to run it in your vi
 
 .. code-block:: console
 
-    (diff_eq) $peeper [FILES/FOLDER] [OPTIONS]
+    (diff_eq) $shutterbug [FILES/FOLDER] [OPTIONS]
 
 alternatively, you can run
 
 .. code-block:: console
 
-    (diff_eq) $python -m peeper [FILES/FOLDER] [OPTIONS]
+    (diff_eq) $python -m shutterbug [FILES/FOLDER] [OPTIONS]
 
 which will call the software module directly from Python.
 
@@ -30,12 +30,12 @@ You can access the options for the application via the command
 
 .. code-block:: console
 
-    (diff_eq) $peeper --help
+    (diff_eq) $shutterbug --help
 
 which will detail the entire command-line interface. For completeness, it is detailed here as well:
 
-.. click:: peeper.cli:cli
-    :prog: peeper
+.. click:: shutterbug.cli:cli
+    :prog: shutterbug
     :nested: full
 
 
@@ -52,6 +52,6 @@ As an example, we shall run the command against a data file in the root folder u
 
 .. code-block:: console
 
-    (diff_eq) $peeper .\data\data.csv --output_excel --offset --iterations 4 --remove "M3-test, M3-test2" --mag_y_scale 1 --diff_y_scale 1
+    (diff_eq) $shutterbug .\data\data.csv --output_excel --offset --iterations 4 --remove "M3-test, M3-test2" --mag_y_scale 1 --diff_y_scale 1
 
 Using this command, the data.csv file will be read in, two stars should be removed, all output graphs will have a total 1 mag and 1 differential magnitude y-axis scale, the star finder will run 4 times on the dataset (recalculating differential photometry each time) and the result will be offset corrected.

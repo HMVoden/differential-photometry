@@ -1,17 +1,17 @@
 import gc
 import logging.config
-from os import PathLike
 
+from pathlib import Path
 import config.manager as config
 import pandas as pd
 
-import peeper.data.input_output as io
-import peeper.data.sanitize as sanitize
-import peeper.data.utilities as data
-import peeper.photometry.photometry as photometry
-import peeper.plot.plot as plot
-import peeper.progress_bars as bars
-import peeper.timeseries.timeseries as ts
+import shutterbug.data.input_output as io
+import shutterbug.data.sanitize as sanitize
+import shutterbug.data.utilities as data
+import shutterbug.photometry.differential as photometry
+import shutterbug.plot.plot as plot
+import shutterbug.progress_bars as bars
+import shutterbug.timeseries.timeseries as ts
 
 
 def initialize(**settings):
@@ -23,18 +23,18 @@ def initialize(**settings):
         logging.debug("Logging configured")
     logging.info("Application initialized successfully")
 
-    bars.init_progress_bars()
+    bars.init()
     config.init_configuration(**settings)
 
 
 def teardown():
-    bars.close_progress_bars()
+    bars.close_all()
 
 
-def run(input_file: PathLike):
+def process(input_file: Path):
 
     config.update("filename", input_file)
-    status = bars.status
+    input_config = config.get("input")
 
     # Extraction, cleanup and processing
     # io.extract returns a dataframe which we
@@ -45,11 +45,17 @@ def run(input_file: PathLike):
     # TODO convert to xarray
     # TODO @guvectorize differential photometry modules
     # TODO write wrapper for progress bars
-    # TODO
+    # TODO write blitting functions for graphing
     df = (
         io.extract(input_file)
-        .pipe(sanitize.remove_incomplete_sets)
-        .pipe(sanitize.clean_data)
+        .pipe(sanitize.drop_and_clean_names, input_config["required"])
+        .pipe(sanitize.remove_incomplete_sets, config.get("remove"))
+        .pipe(
+            sanitize.clean_data,
+            input_config["coords"],
+            input_config["time"],
+        )
+        .pipe(sanitize.arrange_data)
         .pipe(photometry.intra_day_iter)
         .pipe(ts.correct_offset)
         .pipe(photometry.inter_day)
@@ -65,7 +71,6 @@ def run(input_file: PathLike):
     logging.info("Finished graphing")
     output_excel = config.get("output_excel")
     if output_excel == True:
-        status.update(demo="Writing excel")
         logging.info("Outputting processed dataset as excel...")
         output_folder = config.get("output_folder")
         correct = config.get("offset")
@@ -77,7 +82,6 @@ def run(input_file: PathLike):
             output_folder=output_folder,
         )
         logging.info("Finished excel output")
-    status.update(demo="Wrapping up")
 
 
 def log_variable(df: pd.DataFrame):

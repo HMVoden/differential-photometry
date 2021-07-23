@@ -1,32 +1,32 @@
-peeper Modules
+shutterbug Modules
 ==============================================
 
 Subpackages
 -----------
 
 .. toctree::
-    peeper.machine_learning
-    peeper.photometry
-    peeper.data
-    peeper.stats
-    peeper.plot
-    peeper.timeseries
+    shutterbug.machine_learning
+    shutterbug.photometry
+    shutterbug.data
+    shutterbug.stats
+    shutterbug.plot
+    shutterbug.timeseries
 
 Submodules
 -----------
 
-.. automodule:: peeper.__main__
+.. automodule:: shutterbug.__main__
     :members:
     :undoc-members:
 
-.. automodule:: peeper.progress_bars
+.. automodule:: shutterbug.progress_bars
     :members:
     :undoc-members:
 
-.. automodule:: peeper.cli
+.. automodule:: shutterbug.cli
     :members:
     :undoc-members:
 
-.. automodule:: peeper.runner
+.. automodule:: shutterbug.runner
     :members:
     :undoc-members:

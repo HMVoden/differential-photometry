@@ -7,14 +7,17 @@ from scipy.stats import chisquare
 import config.manager as config
 
 
-def reduced_chi_square(data: List[float],
-                       expected: List[float] = None,
-                       parameters_estimated: int = None):
+from typing import Any
+
+
+def reduced_chi_square(
+    data: List[float], expected: List[float] = None, parameters_estimated: int = None
+):
     """Computes the reduced chi squared of a given dataset and returns
     a value that should be approximately 1. If the value is greatly less than one
     the expected dataset has errors that are overestimated for the dataset.
-    
-    If the value is greatly more than one the expected values are a bad fit for the 
+
+    If the value is greatly more than one the expected values are a bad fit for the
     data.
 
     Parameters
@@ -42,16 +45,16 @@ def reduced_chi_square(data: List[float],
         expected = np.median(data)
     variance = np.var(data, ddof=1)
     dof = data.shape[0] - parameters_estimated - 1
-    chi = np.sum(((data - expected)**2 / variance)) / dof
+    chi = np.sum(((data - expected) ** 2 / variance)) / dof
     # print(chi)
     return chi
 
 
 def regular_chi_square(data, error=None):
-    """Performs the chi squared test on the provided data. 
-    
+    """Performs the chi squared test on the provided data.
+
     Further reading: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chisquare.html#scipy.stats.chisquare
-    
+
     Configured in stats.toml
 
     Parameters
@@ -75,20 +78,20 @@ def regular_chi_square(data, error=None):
     elif expected_switch == "median":
         expected = np.median(data)
     elif expected_switch == "weighted_mean":
-        expected = np.average(data, weights=(1 / error**2))
+        expected = np.average(data, weights=(1 / error ** 2))
 
     result = chisquare(f_obs=data, f_exp=expected, ddof=ddof)
     print(result)
-    return result[1]  #p-value
+    return result[1]  # p-value
 
 
 def augmented_dfuller(data: List[float]) -> float:
     """Performs the augmented Dickey-Fuller test on the data.
-    The null hypothesis of this test is that the timeseries inputted is NOT stationary. 
-    
-    Further reading: 
+    The null hypothesis of this test is that the timeseries inputted is NOT stationary.
+
+    Further reading:
     https://arch.readthedocs.io/en/latest/unitroot/generated/arch.unitroot.ADF.html
-    
+
     This is configured in stats.toml
 
     Parameters
@@ -109,11 +112,11 @@ def augmented_dfuller(data: List[float]) -> float:
 
 def kpss(data: List[float]) -> float:
     """Performs the Kwiatkowski–Phillips–Schmidt–Shin test of stationarity on the inputted data.
-    The null hypothesis of this test is that the timeseries inputted is stationary. 
-    
-    Further reading: 
+    The null hypothesis of this test is that the timeseries inputted is stationary.
+
+    Further reading:
     https://arch.readthedocs.io/en/latest/unitroot/generated/arch.unitroot.DFGLS.html#arch.unitroot.DFGLS
-    
+
     This is configured in stats.toml
 
     Parameters
@@ -134,11 +137,11 @@ def kpss(data: List[float]) -> float:
 def zastat(data: List[float]) -> float:
     """Performs the non-parametric Zivot-Andrews test of timeseries
     stationarity on the inputted data.
-    The null hypothesis of this test is that the timeseries inputted is stationary. 
-    
-    Further reading: 
+    The null hypothesis of this test is that the timeseries inputted is stationary.
+
+    Further reading:
     https://arch.readthedocs.io/en/latest/unitroot/generated/arch.unitroot.ZivotAndrews.html
-    
+
     This is configured in stats.toml
 
     Parameters
@@ -159,11 +162,11 @@ def zastat(data: List[float]) -> float:
 def adf_gls(data: List[float]) -> float:
     """Performs the GLS-version of the augmented Dickey-Fuller test on the data.
     The null hypothesis of this test is that the timeseries inputted is
-    NOT stationary. 
-    
-    Further reading: 
+    NOT stationary.
+
+    Further reading:
     https://arch.readthedocs.io/en/latest/unitroot/generated/arch.unitroot.DFGLS.html#arch.unitroot.DFGLS
-    
+
     This is configured in stats.toml
 
     Parameters

@@ -1,4 +1,4 @@
-peeper.tests module
+shutterbug.tests module
 ================================================================
 
 Submodules

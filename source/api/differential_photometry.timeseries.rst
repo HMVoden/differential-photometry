@@ -1,4 +1,4 @@
-peeper.timeseries package
+shutterbug.timeseries package
 ================================================================
 
 Submodules
@@ -6,7 +6,7 @@ Submodules
 timeseries.features module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: peeper.timeseries.features
+.. automodule:: shutterbug.timeseries.features
     :members:
     :undoc-members:
     :show-inheritance:
@@ -14,7 +14,7 @@ timeseries.features module
 timeseries.trend module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: peeper.timeseries.trend
+.. automodule:: shutterbug.timeseries.trend
     :members:
     :undoc-members:
     :show-inheritance:
@@ -22,7 +22,7 @@ timeseries.trend module
 timeseries.models module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: peeper.timeseries.models
+.. automodule:: shutterbug.timeseries.models
     :members:
     :undoc-members:
     :show-inheritance:
@@ -31,7 +31,7 @@ timeseries.models module
 timeseries.timeseries module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: peeper.timeseries.timeseries
+.. automodule:: shutterbug.timeseries.timeseries
     :members:
     :undoc-members:
     :show-inheritance:

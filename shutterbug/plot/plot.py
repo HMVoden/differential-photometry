@@ -5,26 +5,19 @@ import gc
 import logging
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
-from functools import partial
-from os import PathLike
-from typing import Callable, Dict, List, Tuple
-from IPython.core.display import ProgressBar
-
-from pandas.core.algorithms import diff
+from pathlib import Path
+from typing import Dict, List, Tuple
 
 import config.manager as config
-import peeper.data.input_output as io
-import peeper.data.utilities as data_util
-import peeper.progress_bars as bars
-import peeper.plot.utilities as plot_util
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import shutterbug.data.input_output as io
+import shutterbug.data.utilities as data_util
+import shutterbug.plot.utilities as plot_util
+import shutterbug.progress_bars as bars
 import seaborn as sns
-from matplotlib.figure import Figure
 from pandas.core.groupby.generic import DataFrameGroupBy
-
 
 manager = None
 status = None
@@ -60,7 +53,7 @@ def plot_and_save_all(df: pd.DataFrame):
 
 def generate_data_folders(
     group: DataFrameGroupBy, uniform_y_axis: bool, correct: bool
-) -> List[Tuple[pd.DataFrame, PathLike]]:
+) -> List[Tuple[pd.DataFrame, Path]]:
     for inter, intra in group.groups:
         folder = io.generate_graph_output_path(
             corrected=correct,
@@ -139,7 +132,7 @@ def multiprocess_save(
     )
     for (name), group in star_frames:
         output_folder = star_frames.groups[name].output_folder
-        bars.status.update(demo="Plotting and saving stars")
+        bars.status.update(stage="Plotting and saving stars")
         pbar = bars.get_progress_bar(
             name="plot_and_save",
             total=group.id.nunique(),
@@ -185,7 +178,7 @@ def multiprocess_save(
 
 def build_and_save_figure(
     df: pd.DataFrame,
-    output_folder: PathLike,
+    output_folder: Path,
     plot_config: Dict,
     correct: bool = False,
     mag_max_variation: float = None,

@@ -1,13 +1,13 @@
-from os import PathLike
-from typing import Dict, Tuple
 import logging
-from matplotlib.figure import Figure
-import seaborn as sns
-import matplotlib.pyplot as plt
+from pathlib import Path
+from typing import Dict, Tuple
+
 import matplotlib
 import matplotlib.dates as mdates
-
+import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
+from matplotlib.figure import Figure
 
 
 class Singleton:
@@ -27,7 +27,7 @@ class WorkerFigure(Singleton):
         figsize: Tuple[int, int],
         name: str,
         plot_config: Dict,
-        output_folder: PathLike,
+        output_folder: Path,
     ):
         plt.ioff()
 

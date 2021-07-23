@@ -1,4 +1,4 @@
-peeper.plot package
+shutterbug.plot package
 ================================================================
 
 Submodules
@@ -7,7 +7,7 @@ Submodules
 plot.plot module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: peeper.plot.plot
+.. automodule:: shutterbug.plot.plot
     :members:
     :undoc-members:
     :show-inheritance:

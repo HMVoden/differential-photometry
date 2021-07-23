@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 from typing import List
 
-import peeper.stats.utilities as stat_utils
-import peeper.timeseries.timeseries as ts
+import shutterbug.stats.utilities as stat_utils
+import shutterbug.timeseries.timeseries as ts
 
 
 def test_stationarity(

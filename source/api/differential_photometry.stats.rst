@@ -1,4 +1,4 @@
-peeper.machine_learning package
+shutterbug.machine_learning package
 ================================================================
 
 Submodules
@@ -7,7 +7,7 @@ Submodules
 stats.stats module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: peeper.stats.stats
+.. automodule:: shutterbug.stats.stats
     :members:
     :undoc-members:
     :show-inheritance:
@@ -15,7 +15,7 @@ stats.stats module
 stats.utilities module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: peeper.stats.utilities
+.. automodule:: shutterbug.stats.utilities
     :members:
     :undoc-members:
     :show-inheritance:

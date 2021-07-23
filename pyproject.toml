@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "peeper"
+name = "shutterbug"
 version = "0.2.00"
 description = "Conducts differential photometry on arbitrary datasets"
 authors = [
@@ -7,7 +7,7 @@ authors = [
     "Ruben Morales <ruben.morales1@ucalgary.ca>",
 ]
 packages = [
-    { include = "peeper" },
+    { include = "shutterbug" },
     { include = "config" },
     { include = "source" },
 ]
@@ -38,7 +38,7 @@ sphinx-click = "^3.0.1"
 rinohtype = "^0.5.3"
 
 [tool.poetry.scripts]
-peeper = "peeper.cli:runner"
+shutterbug = "shutterbug.cli:runner"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

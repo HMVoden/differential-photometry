@@ -1,4 +1,4 @@
-peeper.machine_learning package
+shutterbug.machine_learning package
 ================================================================
 
 Submodules
@@ -7,7 +7,7 @@ Submodules
 machine_learning.evaluate module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: peeper.machine_learning.evaluate
+.. automodule:: shutterbug.machine_learning.evaluate
     :members:
     :undoc-members:
     :show-inheritance:
@@ -15,7 +15,7 @@ machine_learning.evaluate module
 machine_learning.model module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: peeper.machine_learning.model
+.. automodule:: shutterbug.machine_learning.model
     :members:
     :undoc-members:
     :show-inheritance:
@@ -23,7 +23,7 @@ machine_learning.model module
 machine_learning.train module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: peeper.machine_learning.train
+.. automodule:: shutterbug.machine_learning.train
     :members:
     :undoc-members:
     :show-inheritance:

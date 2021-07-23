@@ -139,6 +139,8 @@ profiles/
 *.png
 *.jpeg
 *.jpg
+*.hd5
+*.nc
 working.toml
 output/
 results/

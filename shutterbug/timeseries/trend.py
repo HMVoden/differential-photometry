@@ -3,10 +3,10 @@ from math import isclose
 
 import astropy.modeling.fitting as fitting
 import astropy.modeling.models as models
-import peeper.stats.utilities as stat
+import shutterbug.stats.utilities as stat
 import numpy as np
 import pandas as pd
-import peeper.data.utilities as data_util
+import shutterbug.data.utilities as data_util
 
 from wotan import flatten
 

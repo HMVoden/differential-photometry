@@ -4,10 +4,10 @@ from pathlib import Path
 
 import click
 
-import peeper.progress_bars as bars
-import peeper.runner as runner
-import peeper.data.input_output as io
-import peeper.data.sanitize as sanitize
+import shutterbug.progress_bars as bars
+import shutterbug.shutterbug as bug
+import shutterbug.data.input_output as io
+import shutterbug.data.sanitize as sanitize
 
 from pandas.errors import DtypeWarning
 
@@ -97,7 +97,7 @@ def cli(
     diff_y_scale: float,
 ):
     remove = sanitize.to_remove_to_list(remove)
-    runner.initialize(
+    bug.initialize(
         output_folder=output_folder,
         uniform=uniform,
         output_excel=output_excel,
@@ -108,21 +108,24 @@ def cli(
         diff_y_scale=diff_y_scale,
     )
 
-    manager = bars.manager
     status = bars.status
 
     files = io.get_file_list(input_file)
-    pbar = manager.counter(
-        desc="Processing datasets", unit="Datasets", total=len(files)
-    )
+    run(files=files)
+    status.update(stage="Finished")
 
+
+@bars.progress(
+    p_name="Dataset",
+    desc="Processing dataset",
+    unit="dataset",
+    leave=True,
+    status_str="Processing data",
+    countable_var="files",
+)
+def run(files: Path):
     for data_file in files:
-        status.update(demo="Processing file")
         logging.info("Processing file %s", data_file.stem)
-        runner.run(input_file=data_file)
-        bars.close_progress_bars()
-        pbar.update()
-    status.update(demo="Finished")
-    pbar.close()
-    runner.teardown()
+        bug.process(data_file)
+    bug.teardown()
     logging.info("Program finished, exiting.")

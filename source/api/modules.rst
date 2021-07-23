@@ -1,7 +1,7 @@
-peeper Package
+shutterbug Package
 ============================================================
 
 .. toctree::
     :maxdepth 4
 
-    peeper
+    shutterbug

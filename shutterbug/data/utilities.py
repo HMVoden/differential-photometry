@@ -3,6 +3,8 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
+import logging
+
 
 def extract_samples_stars(dataframe: pd.DataFrame) -> Tuple[int, int]:
     """Determines and returns the number of different star samples and number of stars as integers
@@ -96,7 +98,7 @@ def arrange_for_dataframe(*arrays):
         yield a.ravel()
 
 
-def arrange_time_star(df: pd.DataFrame, columns: list):
+def arrange_time_star(num_samples: int, num_stars: int, *arrays):
     """Finds out how many samples and stars are in a given dataframe
     then rearranges the columns in a way that each time increases on columns
     and stars change on each row
@@ -113,14 +115,8 @@ def arrange_time_star(df: pd.DataFrame, columns: list):
     np.ndarray
         Numpy array of rearranged data columns
     """
-    samples, stars = extract_samples_stars(df)
-    num_columns = len(columns)
-    # get only the columns we're interested in
-    values = df[columns]
-    # split columns into their own arrays
-    values = np.hsplit(values, num_columns)
-    arranged = arrange_iterables(samples, stars, *values)
-    return dict(zip(columns, arranged))
+
+    return arrange_iterables(num_stars, num_samples, *arrays)
 
 
 def arrange_iterables(row: int, col: int, *iterables):
@@ -201,3 +197,16 @@ def get_largest_range(**data: Dict):
         max_variation = np.abs(np.max(ptp) - np.min(ptp))
         result.append(max_variation)
     return dict(zip(data.keys(), result))
+
+
+def time_from_data(jd: List[float]) -> pd.DatetimeTZDtype:
+    time = pd.to_datetime(jd, origin="julian", unit="D")
+    unique_years = time.year.nunique()
+    unique_months = time.month.nunique()
+    unique_days = time.day.nunique()
+
+    logging.info("Number of days found in dataset: %s", unique_days)
+    logging.info("Number of months found in dataset: %s", unique_months)
+    logging.info("Number of years found in dataset: %s", unique_years)
+
+    return time.unique()

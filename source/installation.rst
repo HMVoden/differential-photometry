@@ -1,4 +1,4 @@
-Installing peeper
+Installing shutterbug
 =====================================================
 
 Prerequisites
@@ -8,7 +8,7 @@ Python version >=3.9 must be available for this installation. It is recommended 
 Installation
 -------------
 
-The simplest way to install peeper is with an active Conda installation.
+The simplest way to install shutterbug is with an active Conda installation.
 
 First, make a directory where you want to put the project, then move the .whl file you have been provided into it.
 
@@ -41,8 +41,8 @@ The next command installs the .whl package you've been provided to the local dir
 
 .. code-block:: console
 
-    (diff_eq) $pip install --target "." --no-dependencies .\peeper-0.1.xx-py3-none-any.whl  -y
-    (diff_eq) $pip install .\peeper-0.1.xx-py3-none-any.whl -y
+    (diff_eq) $pip install --target "." --no-dependencies .\shutterbug-0.1.xx-py3-none-any.whl  -y
+    (diff_eq) $pip install .\shutterbug-0.1.xx-py3-none-any.whl -y
 
 At this point the software is ready for use.
 
@@ -53,16 +53,16 @@ At this point the software is ready for use.
 Updating
 -------------
 
-To update, simply delete the folder that peeper exists in, it will be labelled something like "peeper-0.2.XX". Then run
+To update, simply delete the folder that shutterbug exists in, it will be labelled something like "shutterbug-0.2.XX". Then run
 
 .. code-block:: console
 
-    (diff_eq) $pip install --target "." --no-dependencies .\peeper-0.1.xx-py3-none-any.whl  -y
+    (diff_eq) $pip install --target "." --no-dependencies .\shutterbug-0.1.xx-py3-none-any.whl  -y
 
 to install to a local directory again (Optional)
 
 .. code-block:: console
 
-    (diff_eq) $pip install .\peeper-0.1.xx-py3-none-any.whl -y
+    (diff_eq) $pip install .\shutterbug-0.1.xx-py3-none-any.whl -y
 
 to update the software for the entire virtual environment

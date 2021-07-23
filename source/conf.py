@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath(".."))
 
 # -- Project information -----------------------------------------------------
 
-project = "peeper"
+project = "shutterbug"
 copyright = "2021, Rothney Astrophysical Observatory"
 author = "Harlan Shaw, Ruben Morales"
 

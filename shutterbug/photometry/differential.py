@@ -3,10 +3,10 @@ import logging
 from typing import List
 
 import config.manager as config
-import peeper.data.utilities as data_utils
-import peeper.photometry.math as p_math
-import peeper.progress_bars as bars
-import peeper.stats.stats as stats
+import shutterbug.data.utilities as data_utils
+import shutterbug.photometry.math as p_math
+import shutterbug.progress_bars as bars
+import shutterbug.stats.stats as stats
 import numpy as np
 import pandas as pd
 
@@ -75,6 +75,16 @@ def calculate_differential_photometry(
     return pd.concat([non_varying, varying], join="outer")
 
 
+@bars.progress(
+    p_name="iterations",
+    desc="Variable star detection iterations",
+    unit="iteration",
+    leave=False,
+    status_str="Differential Photometry per day",
+    indentation=2,
+    countable_var="iterations",
+    arg_pos=5,
+)
 def iterate_differential_photometry(
     df: pd.DataFrame,
     method: str = "chisquared",
@@ -82,18 +92,10 @@ def iterate_differential_photometry(
     null="accept",
     clip=False,
     iterations=1,
-    pbar_method=None,
     varying_flag="varying",
 ) -> pd.DataFrame:
     logging.info("Processing day %s", df.name)
-    pbar_iter = bars.get_progress_bar(
-        "iterations",
-        total=iterations,
-        desc="    Variable star detection iterations",
-        unit="iteration",
-        leave=False,
-        color="cyan",
-    )
+    pbar = bars.get("iterations")
     for i in range(0, iterations, 1):
         # Step 1, get average differential
         df = calculate_differential_photometry(df=df, varying_flag=varying_flag)
@@ -114,35 +116,35 @@ def iterate_differential_photometry(
             i + 1,
             df[df[varying_flag] == True]["id"].nunique(),
         )
-        pbar_iter.update()
-    if pbar_method is not None:
-        pbar_method()
+        pbar.update()
     gc.collect()
     return df
 
 
+@bars.progress(
+    p_name="intra_diff",
+    desc="Calculating and finding variable intra-day stars",
+    unit="day",
+    leave=False,
+    status_str="Differential Photometry per day",
+    indentation=1,
+)
 def intra_day_iter(df: pd.DataFrame) -> pd.DataFrame:
     app_config = config.get("application")
     iterations = config.get("iterations")
     status = bars.status
-    status.update(demo="Calculating photometry and finding variable stars")
+    status.update(stage="Calculating photometry and finding variable stars")
     star_detection_method = app_config["star_detection"]["method"]
     # Group by year/month/day to prevent later months from being
     # before earlier months, with an earlier day.
     # e.g. 1/7/2021 being before 22/6/2021
-    status.update(demo="Differential Photometry per day")
-    intra_pbar = bars.get_progress_bar(
+    intra_pbar = bars.get(
         name="intra_diff",
         total=df["y_m_d"].nunique(),
-        desc="  Calculating and finding variable intra-day stars",
-        unit="Days",
-        color="blue",
-        leave=False,
     )
     logging.info("Detecting intra-day variable stars...")
     varying_flag = "intra_varying"
     df[varying_flag] = False
-    # Drop=True to prevent index error with Pandas
     return (
         df.groupby("y_m_d")
         .apply(
@@ -161,7 +163,7 @@ def inter_day(df: pd.DataFrame) -> pd.DataFrame:
     app_config = config.get("application")
     star_detection_method = app_config["star_detection"]["method"]
     status = bars.status
-    status.update(demo="Differential Photometry per star")
+    status.update(stage="Differential Photometry per star")
 
     # TODO Throw in callback function for inter_pbars
     inter_pbar = bars.get_progress_bar(

@@ -21,6 +21,6 @@ inter_varying = "inter_varying"
 
 [briefly_varying]
 briefly_varying = "briefly_varying"
-
-[excel]
-excel = "excel"
+# I'm not sure why I made this
+[csv]
+csv = "csv"

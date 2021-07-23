@@ -1,7 +1,7 @@
 import logging
 from typing import List
 
-import peeper.data.utilities as data_util
+import shutterbug.data.utilities as data_util
 import numpy as np
 import pandas as pd
 from astropy.stats import sigma_clip
