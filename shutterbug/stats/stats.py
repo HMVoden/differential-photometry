@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 from typing import List
 
 import shutterbug.stats.utilities as stat_utils
@@ -44,10 +43,7 @@ def test_stationarity(
         stat_function = stat_utils.zastat
     if method == "adf_gls":  # best one so far
         stat_function = stat_utils.adf_gls
-    data = np.asanyarray(data)
     test_statistic = stat_runner(data=data, stat_func=stat_function, clip=clip)
-
-    # Combine test-statistic column with old dataframe
 
     return test_statistic
 

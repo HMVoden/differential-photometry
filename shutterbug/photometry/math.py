@@ -1,9 +1,55 @@
 from typing import Callable, List, Tuple
-from numba import guvectorize, float64, float32
+from numba import guvectorize, float64, float32, jit
+from numba.types import optional
 from math import sqrt
-from numba.core.types.scalars import Float
 
 import numpy as np
+
+
+def differential_magnitude(
+    mags: List[List[float]],
+    varying_mags: List[List[float]] = None,
+) -> Tuple[List[List[float]], List[List[float]]]:
+    diff_mag = []
+    varying_diff_mag = []
+    mags = mags.transpose()
+    if varying_mags is not None:
+        varying_mags = varying_mags.transpose()
+        for star in varying_mags:
+            vdm = np.mean((mags - star), axis=0)
+            # vdm = average((mags - star), axis=0)
+            varying_diff_mag.append(vdm)
+
+    for index, star in enumerate(mags):
+        reference = np.delete(mags, index, axis=0)
+        dm = np.mean((reference - star), axis=0)
+        # dm = average((reference - star), axis=0)
+
+        diff_mag.append(dm)
+    return np.array(diff_mag), np.array(varying_diff_mag)
+
+
+def differential_error(
+    error: List[List[float]],
+    varying_error: List[List[float]] = None,
+) -> Tuple[List[List[float]], List[List[float]]]:
+    diff_error = []
+    varying_diff_error = []
+    error = error.transpose()
+    if varying_error is not None:
+        varying_error = varying_error.transpose()
+        N = error.shape[0] + 1
+        for star in varying_error:
+            vde = np.sqrt(np.sum((error ** 2 + star ** 2), axis=0)) / N
+            # vde = average_error((error ** 2 + star ** 2), axis=0)
+            varying_diff_error.append(vde)
+    N = error.shape[0]
+    for index, star in enumerate(error):
+        reference = np.delete(error, index, axis=0)
+        de = np.sqrt(np.sum((error ** 2 + star ** 2), axis=0)) / N
+        # de = average_error((reference - star), axis=0)
+        diff_error.append(de)
+    return np.array(diff_error), np.array(varying_diff_error)
 
 
 def calculate_differential_magnitude(
@@ -20,59 +66,20 @@ def calculate_differential_uncertainty(
     return np.sqrt(target ** 2 + reference ** 2)
 
 
-def calculate_differential_average(
-    subtracted_mags: np.ndarray, calculated_errors: np.ndarray
-) -> Tuple[List[float], List[float]]:
-    avg_diff_mags = average_differential_magnitudes(subtracted_mags)
-    avg_error = average_error(calculated_errors)
-
-    return avg_diff_mags, avg_error
-
-
 # guvectorize intentionally does not return.
 @guvectorize([(float32[:], float32), (float64[:], float64)], "(n) -> ()")
-def average_differential_magnitudes(
-    subtracted_magnitudes: List[float], res: List
-) -> float:
+def average(subtracted_magnitudes: List[float], out: List) -> float:
     N = len(subtracted_magnitudes)
-    res = 0
+    out = 0
     for mag in subtracted_magnitudes:
-        res = res + mag
-    res = res / N
+        out = out + mag
+    out = subtracted_magnitudes / N
 
 
 @guvectorize([(float32[:], float32), (float64[:], float64)], "(n) -> ()")
-def average_error(errors: List[float], res: List) -> float:
+def average_error(errors: List[float], out: List) -> float:
     N = len(errors)
-    res = 0
+    out = 0
     for error in errors:
-        res = res + error ** 2
-    res = sqrt(res) / N
-
-
-def calculate_on_dataset(
-    targets: List[float],
-    func: Callable[[List[float], List[float]], List[float]],
-    excluded: List[float],
-) -> List[List]:
-    """For each star inputted into this function, this will take that star column, remove it from the dataset
-    then subtract it from the other stars, creating an entire list of numpy arrays with a series of 'target stars'
-    for use in differential photometry
-
-    Keyword arguments:
-    magnitudes -- a numpy array of star magnitudes, ordered by row=time, column=star
-    """
-    results = []
-    excluded_results = []
-    targets = np.asanyarray(targets).transpose()  # Safety check
-    excluded_targets = np.asanyarray(excluded).transpose()
-
-    for target in excluded_targets:
-        delta = func(target, targets)
-        excluded_results.append(delta)
-
-    for index, target in enumerate(targets):
-        delta = func(target, np.delete(targets, index, axis=0))
-        results.append(delta)
-
-    return results, excluded_results
+        out = out + error ** 2
+    out = sqrt(out) / N

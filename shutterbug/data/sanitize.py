@@ -48,17 +48,19 @@ def clean_data(ds: xr.Dataset, coord_names: List[str], time_name: str):
     time = util.time_from_data(ds[time_name].values)
     ds["time"] = time
     ds["star"] = np.unique(ds["star"])
-    ds.attrs["samples"] = time.nunique()
-    ds.attrs["stars"] = int(ds.dims["index"] / time.nunique())
+    ds.attrs["total_samples"] = time.nunique()
+    ds.attrs["total_stars"] = int(ds.dims["index"] / time.nunique())
     return ds
 
 
 def arrange_data(ds: xr.Dataset) -> xr.Dataset:
-    num_stars = ds.attrs["stars"]
-    num_samples = ds.attrs["samples"]
+    num_stars = ds.attrs["total_stars"]
+    num_samples = ds.attrs["total_samples"]
     arranged = util.arrange_time_star(
         num_stars, num_samples, ds["mag"], ds["error"], ds["x"], ds["y"]
     )
+    # Rebuild dataset so we can have proper dimensions. Can't figure out how to
+    # set dimensions or re-shape in-xr dataset
     ds = xr.Dataset(
         data_vars={
             "mag": (

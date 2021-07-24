@@ -4,10 +4,11 @@ from typing import List
 import shutterbug.data.utilities as data_util
 import numpy as np
 import pandas as pd
+import xarray as xr
 from astropy.stats import sigma_clip
 
 
-def correct_offset(df: pd.DataFrame) -> pd.DataFrame:
+def correct_offset(ds: xr.Dataset) -> xr.Dataset:
     """Finds the offset of an entire timeseries across many days
     by taking the weighted average of every point in timeseries and assuming
     that this is the true mean of the timeseries, then finds the mean of each
@@ -24,33 +25,26 @@ def correct_offset(df: pd.DataFrame) -> pd.DataFrame:
         Dataframe where magnitude and differential magnitude have been corrected
     """
     logging.info("Calculating offset for each star")
-    non_varying, _ = data_util.split_on(df, "intra_varying")
+    mag_mean = ds["mag"].groupby("star").mean(...)
+    dmag_mean = ds["average_diff_mags"].groupby("star").mean(...)
+    mag_day_mean = ds["mag"].groupby("time.date").mean(...)
+    dmag_day_mean = ds["average_diff_mags"].groupby("time.date").mean(...)
+
+    mag_day_offset = (mag_mean - mag_day_mean).transpose()
+    dmag_day_offset = (dmag_mean - dmag_day_mean).transpose()
+    ds = ds.assign(
+        {
+            "mag_offset": (["time.date", "star"], mag_day_offset),
+            "dmag_offset": (["time.date", "star"], dmag_day_offset),
+        }
+    )
     # Probably close to what it 'really' is across all days,
     # more data points will make it closer to real mean.
-    true_mean = non_varying.groupby("id").agg(
-        {"mag": "mean", "average_diff_mags": "mean"}
-    )
-    # Individual day means to find offset
-    day_star_mean = non_varying.groupby(["y_m_d", "id"]).agg(
-        {"mag": "mean", "average_diff_mags": "mean"}
-    )
-    offset = day_star_mean.sub(true_mean, axis="index").reset_index()
-    # Median of offsets to prevent huge outliers from mucking with data
-    per_day_offset = offset.groupby("y_m_d").mean().reset_index()
-    # rename so merge doesn't go wonky
-    per_day_offset = per_day_offset.rename(
-        columns={"mag": "mag_offset", "average_diff_mags": "diff_mag_offset"}
-    )
-    df_corrected = df.copy()
-    df_corrected = df_corrected.merge(
-        per_day_offset, left_on="y_m_d", right_on="y_m_d", how="inner"
-    )
-    df_corrected["c_mag"] = df_corrected["mag"] - df_corrected["mag_offset"]
-    df_corrected["c_average_diff_mags"] = (
-        df_corrected["average_diff_mags"] - df_corrected["diff_mag_offset"]
-    )
 
-    return df_corrected
+    # Median of offsets to prevent huge outliers from mucking with data
+    # rename so merge doesn't go wonky
+
+    return ds
 
 
 def sigma_clip_data(

@@ -3,6 +3,8 @@ from typing import Any
 import functools
 import enlighten
 
+import numbers
+
 # Best candidate to make into a class.
 manager = None
 status = None
@@ -46,7 +48,7 @@ def start(
 
 
 def progress(
-    p_name: str,
+    name: str,
     desc: str,
     unit: str,
     leave: bool,
@@ -55,25 +57,29 @@ def progress(
     arg_pos: int = 0,
     indentation: int = 0,
 ):
+    desc = "  " * indentation + desc
+
     def progress_decorator(func):
+        global status
+
         @functools.wraps(func)
         def wrapper_progress(*args, **kwargs):
-            pbar = get(p_name)
+            pbar = get(name)
             if pbar is None:
                 global status
                 total = __get_len_from_args_kwargs(
                     countable_var, arg_pos, func.__name__, *args, **kwargs
                 )
                 color = __indentation_to_colour[indentation]
-                name = "  " * indentation + p_name
                 pbar = start(name, total, desc, unit, leave, color)
                 status.update(stage=status_str)
                 pbar.refresh()
 
-            func(*args, **kwargs)
+            result = func(*args, **kwargs)
             pbar.update()
             if pbar.count == pbar.total:
-                close(p_name)
+                close(name)
+            return result
 
         return wrapper_progress
 
@@ -84,7 +90,10 @@ def __get_len_from_args_kwargs(
     countable_var: Any, arg_pos: int, func_name: str, *args, **kwargs
 ):
     if countable_var in kwargs.keys():
-        total = len(kwargs[countable_var])
+        if isinstance(kwargs[countable_var], numbers.Number):
+            total = kwargs[countable_var]
+        else:
+            total = len(kwargs[countable_var])
     else:
         try:
             total = len(args[arg_pos])
@@ -122,4 +131,10 @@ def close(name: str):
     if name in progress_bars.keys():
         progress_bars[name].close()
         progress_bars.pop(name, None)
+    return True
+
+
+def update(pbar: enlighten.Counter, attr: str, update_to: Any):
+    setattr(pbar, attr, update_to)
+    pbar.refresh()
     return True

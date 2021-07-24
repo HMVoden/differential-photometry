@@ -116,7 +116,7 @@ def cli(
 
 
 @bars.progress(
-    p_name="Dataset",
+    name="Dataset",
     desc="Processing dataset",
     unit="dataset",
     leave=True,

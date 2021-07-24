@@ -1,3 +1,4 @@
+"varying_flag" = "intra_varying"
 [logging]
 enabled = true
 

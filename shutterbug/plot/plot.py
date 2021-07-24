@@ -35,6 +35,7 @@ def plot_and_save_all(df: pd.DataFrame):
     split : bool, optional
         Splits the dataframe into varying and non-varying, by default False
     """
+    logging.info("Starting graphing...")
     plot_config = config.get("plotting")
     uniform_y_axis = config.get("uniform")
     correct = config.get("offset")

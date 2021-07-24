@@ -3,7 +3,7 @@ import logging.config
 
 from pathlib import Path
 import config.manager as config
-import pandas as pd
+import xarray as xr
 
 import shutterbug.data.input_output as io
 import shutterbug.data.sanitize as sanitize
@@ -35,6 +35,7 @@ def process(input_file: Path):
 
     config.update("filename", input_file)
     input_config = config.get("input")
+    app_config = config.get("application")
 
     # Extraction, cleanup and processing
     # io.extract returns a dataframe which we
@@ -44,7 +45,6 @@ def process(input_file: Path):
     # TODO write function that finds stars less than 0.5 mag dimmer
     # TODO convert to xarray
     # TODO @guvectorize differential photometry modules
-    # TODO write wrapper for progress bars
     # TODO write blitting functions for graphing
     df = (
         io.extract(input_file)
@@ -59,13 +59,8 @@ def process(input_file: Path):
         .pipe(photometry.intra_day_iter)
         .pipe(ts.correct_offset)
         .pipe(photometry.inter_day)
-        .pipe(data.flag_variable)
         .pipe(log_variable)
-    )
-    gc.collect()
-
-    plot.plot_and_save_all(
-        df=df.drop(columns=["mag_offset", "diff_mag_offset", "x", "y"])
+        .pipe(plot.plot_and_save_all)
     )
 
     logging.info("Finished graphing")
@@ -84,15 +79,26 @@ def process(input_file: Path):
         logging.info("Finished excel output")
 
 
-def log_variable(df: pd.DataFrame):
+def log_variable(ds: xr.Dataset):
     # Set all sets of varying stars, so that we can properly graph them
     # Extra logging
-    inter_varying_count = df[df["inter_varying"] == True]["id"].nunique()
-    intra_varying_count = df[df["intra_varying"] == True]["id"].nunique()
-    unique_varying_count = df[df["intra_varying"] | df["inter_varying"]]["id"].nunique()
+    inter_varying_count = (
+        (ds["inter_varying"] & ~ds["intra_varying"])
+        .groupby("star")
+        .all(...)
+        .sum(...)
+        .data
+    )
+    intra_varying_count = ds["intra_varying"].groupby("star").any(...).sum(...).data
+    total_varying_count = (
+        (ds["intra_varying"] | ds["inter_varying"])
+        .groupby("star")
+        .all(...)
+        .sum(...)
+        .data
+    )
     # Correct for any offset found in the data
     logging.info("Total consistently varying stars: %s", inter_varying_count)
     logging.info("Total briefly varying stars: %s", intra_varying_count)
-    logging.info("Total variable stars: %s", unique_varying_count)
-    logging.info("Starting graphing...")
-    return df
+    logging.info("Total combined variable stars: %s", total_varying_count)
+    return ds
