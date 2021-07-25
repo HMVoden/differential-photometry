@@ -111,7 +111,8 @@ def cli(
     status = bars.status
 
     files = io.get_file_list(input_file)
-    run(files=files)
+    for data_file in files:
+        run(file=data_file)
     status.update(stage="Finished")
 
 
@@ -123,9 +124,8 @@ def cli(
     status_str="Processing data",
     countable_var="files",
 )
-def run(files: Path):
-    for data_file in files:
-        logging.info("Processing file %s", data_file.stem)
-        bug.process(data_file)
+def run(file: Path):
+    logging.info("Processing file %s", file.stem)
+    bug.process(file)
     bug.teardown()
     logging.info("Program finished, exiting.")

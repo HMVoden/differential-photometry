@@ -22,6 +22,12 @@ class Singleton:
 
 
 class WorkerFigure(Singleton):
+    # nrows: int
+    # ncols: int
+    # figsize: Tuple[int, int]
+    # name: str
+    # plot_config: Dict
+
     def __init__(
         self,
         nrows: int,
@@ -44,8 +50,8 @@ class WorkerFigure(Singleton):
             self.single_day = True
         else:
             self.single_day = False
-        if self.bg is None:
-            self.fig.canvas.copy_from_bbox(self.fig.bbox)
+
+        # self.fig.canvas.copy_from_bbox(self.fig.bbox)
 
     def set_axes(self):
         sns.set_theme(**self.plot_config["seaborn"])
@@ -67,7 +73,7 @@ class WorkerFigure(Singleton):
             self.current_axis = self.axes
             return self.current_axis
         else:
-            if self.axis_index >= (self.axes.shape[0] - 1):
+            if self.axis_index >= (self.axes.shape[0]):
                 return self.axes[self.axis_index]
             else:
                 self.current_axis = self.axes[self.axis_index]

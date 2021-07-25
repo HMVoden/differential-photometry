@@ -41,22 +41,18 @@ def process(input_file: Path):
     # Extraction, cleanup and processing
     # io.extract returns a dataframe which we
     # then move around in a pipe
-    # TODO write function that removes duplicates
     # TODO write function that finds nearby stars
-    # TODO fix error graphing
-    # TODO Fix day title on graphs
-    # TODO fix csv output
     # TODO write function that finds stars less than 0.5 mag dimmer
     # TODO write blitting functions for graphing
-    ds = (
+    (
         io.extract(input_file)
         .pipe(sanitize.drop_and_clean_names, input_config["required"])
-        .pipe(sanitize.remove_incomplete_sets, config.get("remove"))
         .pipe(
             sanitize.clean_data,
             coord_names=input_config["coords"],
             time_name=input_config["time"],
         )
+        .pipe(sanitize.remove_incomplete_sets, config.get("remove"))
         .pipe(sanitize.arrange_data)
         .pipe(
             photometry.intra_day_iter,

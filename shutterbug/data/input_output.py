@@ -84,10 +84,9 @@ def save_to_csv(
     """
     if output_flag == True:
         logging.info("Outputting processed dataset as csv...")
-        ds = ds.drop_dims("time.date")
-        ds = ds.swap_dims({"varying": "star"})
-        df = ds.to_pandas()
-        df = df.sort_index(["time", "star"], key=natsort_keygen())
+
+        df = ds.to_dataframe().reset_index()
+        df = df.sort_values(["star", "time"], key=natsort_keygen())
         output_config = config.get("output")
 
         output_dict = {}
@@ -99,7 +98,7 @@ def save_to_csv(
             output_folder = Path(output_folder)
 
         if offset == True:
-            output_dict.update(**output_config["offset"])
+            output_dict.update(**output_config["corrected"])
         # end ifs
         output_folder = output_folder.joinpath(*output_dict.values())
         if not output_folder.exists():

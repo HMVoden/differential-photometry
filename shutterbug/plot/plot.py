@@ -53,6 +53,27 @@ def generate_data_folders(
     return ds
 
 
+def setup_plot_dataset(ds: xr.Dataset, offset: bool, uniform: bool) -> xr.Dataset:
+    ds = ds.pipe(generate_data_folders, uniform_y_axis=uniform, offset=offset)
+    ds = ds.reset_index("varying").swap_dims({"varying": "star"})
+    if offset == True:
+        ds["mag"] = ds["mag"].groupby("time.date") - ds["mag_offset"]
+        ds["average_diff_mags"] = (
+            ds["average_diff_mags"].groupby("time.date") - ds["dmag_offset"]
+        )
+    if uniform == True:
+        pass  # do something here
+
+    # ds = ds.stack(time_stack={"time", "time.date"})
+    return ds
+
+
+def teardown_plot_dataset(ds: xr.Dataset) -> xr.Dataset:
+    # ds = ds.unstack("time_stack")
+    # ds = ds.drop_dims("time.date", errors="ignore")
+    return ds
+
+
 def multiprocess_save(
     ds: xr.Dataset,
     plot_config: Dict,
@@ -73,7 +94,6 @@ def multiprocess_save(
         Switch to save or graph and display, by default False
     """
     global frame  # Shares for threads
-    frame = ds
     # Mulitprocess to speed up awful plotting code
     # pbar_folders = bars.get_progress_bar(
     #     name="folders",
@@ -83,12 +103,7 @@ def multiprocess_save(
     #     color="blue",
     #     leave=False,
     # )
-    frame = frame.pipe(generate_data_folders, uniform_y_axis=uniform, offset=offset)
-    frame = frame.reset_index("varying").swap_dims({"varying": "star"})
-    if offset == True:
-        frame["mag"] = frame["mag"] - frame["mag_offset"]
-        frame["average_diff_mags"] = frame["average_diff_mags"] - frame["dmag_offset"]
-        frame = frame.broadcast_like(frame["mag"])
+    frame = setup_plot_dataset(ds, offset, uniform)
     bars.status.update(stage="Plotting and saving stars")
     pbar = bars.start(
         name="plot_and_save",
@@ -99,7 +114,6 @@ def multiprocess_save(
         leave=False,
     )
     logging.info("Writing to folder %s", ds.attrs["output_folder"])
-    frame = frame.stack(time_stack={"time", "time.date"})
     # for _, stars in frame.groupby("star"):
     #     build_and_save_figure(
     #         ds=stars,
@@ -118,9 +132,15 @@ def multiprocess_save(
         }
         for future in as_completed(futures):
             pbar.update()
+            try:
+                future.result()
+            except Exception as e:
+                print("%s generated error: %s", future, e)
     # pbar_folders.update()
+    frame = teardown_plot_dataset(frame)
     gc.collect()
-    return frame.unstack("time_stack")
+
+    return frame
 
 
 def build_and_save_figure(

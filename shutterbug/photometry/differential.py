@@ -3,12 +3,10 @@ from typing import Dict
 
 from xarray.core.groupby import DatasetGroupBy
 
-import config.manager as config
 import shutterbug.photometry.math as math
 import shutterbug.progress_bars as bars
 import shutterbug.stats.stats as stats
 import numpy as np
-import pandas as pd
 import xarray as xr
 
 
@@ -181,11 +179,9 @@ def inter_day(ds: xr.Dataset, app_config: Dict, method: str) -> xr.Dataset:
     logging.info("Detecting inter-day variable stars...")
     ds.coords[method] = xr.apply_ufunc(
         stats.test_stationarity,
-        (ds["average_diff_mags"] - ds["dmag_offset"]).stack(
-            all_time={"time.date", "time"}
-        ),
+        (ds["average_diff_mags"].groupby("time.date") - ds["dmag_offset"]),
         kwargs={"method": method, "clip": clip},
-        input_core_dims=[["all_time"]],
+        input_core_dims=[["time"]],
         vectorize=True,
     )
     inter_pbar.update(len(ds.indexes["star"]))

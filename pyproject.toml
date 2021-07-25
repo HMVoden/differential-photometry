@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "shutterbug"
-version = "0.2.00"
+version = "0.2.1"
 description = "Conducts differential photometry on arbitrary datasets"
 authors = [
     "Harlan Shaw <harlan.shaw@ucalgary.ca>",
@@ -15,7 +15,7 @@ license = "MIT"
 exclude = ["data/*"]
 
 [tool.poetry.dependencies]
-python = ">=3.9 <4.0.0"
+python = ">=3.9 <3.10"
 pandas = ">=1.2"
 numpy = ">=1.2"
 numba = ">=0.53"
@@ -28,14 +28,19 @@ statsmodels = ">=0.12"
 arch = ">=4.19"
 natsort = ">=7.1"
 click = ">=8.0"
-enlighten = "^1.10.1"
-openpyxl = "^3.0.7"
+enlighten = ">=1.10"
+openpyxl = ">=3.0"
+xarray = ">=0.19"
+h5py = ">=3.3"
+h5netcdf = ">=0.11"
+scipy = ">=1.7"
+dask = ">=2021.7"
 
 
 [tool.poetry.dev-dependencies]
 Sphinx = ">=4.0"
 sphinx-click = "^3.0.1"
-rinohtype = "^0.5.3"
+asv = "^0.4.2"
 
 [tool.poetry.scripts]
 shutterbug = "shutterbug.cli:runner"

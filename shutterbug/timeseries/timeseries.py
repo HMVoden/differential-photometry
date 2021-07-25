@@ -1,7 +1,6 @@
 import logging
 from typing import List
 
-import shutterbug.data.utilities as data_util
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -25,24 +24,16 @@ def correct_offset(ds: xr.Dataset) -> xr.Dataset:
         Dataframe where magnitude and differential magnitude have been corrected
     """
     logging.info("Calculating offset for each star")
-    mag_mean = ds["mag"].groupby("star").mean(...)
-    dmag_mean = ds["average_diff_mags"].groupby("star").mean(...)
-    mag_day_mean = ds["mag"].groupby("time.date").mean(...)
-    dmag_day_mean = ds["average_diff_mags"].groupby("time.date").mean(...)
+    mag_true = ds["mag"].groupby("star").median(...)
+    dmag_true = ds["average_diff_mags"].groupby("star").median(...)
+    mag_day = ds["mag"].groupby("time.date").median(...)
+    dmag_day = ds["average_diff_mags"].groupby("time.date").median(...)
 
-    mag_day_offset = (mag_mean - mag_day_mean).transpose()
-    dmag_day_offset = (dmag_mean - dmag_day_mean).transpose()
-    ds = ds.assign(
-        {
-            "mag_offset": (["time.date", "star"], mag_day_offset),
-            "dmag_offset": (["time.date", "star"], dmag_day_offset),
-        }
-    )
+    ds["mag_offset"] = mag_true - mag_day
+    ds["dmag_offset"] = dmag_true - dmag_day
+
     # Probably close to what it 'really' is across all days,
     # more data points will make it closer to real mean.
-
-    # Median of offsets to prevent huge outliers from mucking with data
-    # rename so merge doesn't go wonky
 
     return ds
 

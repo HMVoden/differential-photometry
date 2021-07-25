@@ -22,7 +22,7 @@ copyright = "2021, Rothney Astrophysical Observatory"
 author = "Harlan Shaw, Ruben Morales"
 
 # The full version, including alpha/beta/rc tags
-release = "0.1.34"
+release = "0.2.1"
 
 # -- General configuration ---------------------------------------------------
 

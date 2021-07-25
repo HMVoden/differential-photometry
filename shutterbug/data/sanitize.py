@@ -22,14 +22,14 @@ columns_fix_function = {
 }
 
 
-def check_and_coerce_column(data: List[Any]) -> List[Any]:
-    if data.name in columns_check_function.keys():
-        if not columns_check_function[data.name](data.values):
+def check_and_coerce_dataarray(da: xr.DataArray) -> xr.DataArray:
+    if da.name in columns_check_function.keys():
+        if not columns_check_function[da.name](da.values):
             logging.warning(
-                "Data column '%s' is not the proper type, attempting to fix", data.name
+                "Data column '%s' is not the proper type, attempting to fix", da.name
             )
-            data = columns_fix_function[data.name](data, errors="coerce")
-    return data
+            da.values = columns_fix_function[da.name](da, errors="coerce")
+    return da
 
 
 def clean_names(names: List[str]) -> Dict:
@@ -41,23 +41,38 @@ def clean_names(names: List[str]) -> Dict:
     return from_to
 
 
+def drop_duplicates(da: xr.DataArray):
+    da = da.set_index(time_star=("time", "star"))
+    da = da.drop_duplicates("time_star")
+    da = da.reset_index("time_star")
+    da = da.swap_dims({"time_star": "star"})
+    return da
+
+
 def clean_data(ds: xr.Dataset, coord_names: List[str], time_name: str):
     logging.info("Cleaning data")
-    ds = ds.apply(check_and_coerce_column)
     ds = ds.set_coords(coord_names)
+    ds = ds.swap_dims({"index": "star"})
+    ds = ds.drop_vars(["index"])
+    ds = ds.map(check_and_coerce_dataarray)
     time = util.time_from_data(ds[time_name].values)
-    ds["time"] = time
-    ds["star"] = np.unique(ds["star"])
-    ds.attrs["total_samples"] = time.nunique()
-    ds.attrs["total_stars"] = int(ds.dims["index"] / time.nunique())
+    ds.coords["time"] = ("star", time)
+    logging.info("Dropping duplicate entries")
+    ds = ds.map(drop_duplicates)
+    logging.info("Cleaned data")
     return ds
 
 
 def arrange_data(ds: xr.Dataset) -> xr.Dataset:
-    num_stars = ds.attrs["total_stars"]
-    num_samples = ds.attrs["total_samples"]
+    ds.attrs["total_samples"] = len(np.unique(ds["time"]))
+    ds.attrs["total_stars"] = len(np.unique(ds["star"]))
     arranged = util.arrange_time_star(
-        num_stars, num_samples, ds["mag"], ds["error"], ds["x"], ds["y"]
+        ds.attrs["total_samples"],
+        ds.attrs["total_stars"],
+        ds["mag"],
+        ds["error"],
+        ds["x"],
+        ds["y"],
     )
     # Rebuild dataset so we can have proper dimensions. Can't figure out how to
     # set dimensions or re-shape in-xr dataset
@@ -76,8 +91,8 @@ def arrange_data(ds: xr.Dataset) -> xr.Dataset:
             "jd": ("time", np.unique(ds["jd"])),
             "x": ("star", next(arranged)[0]),
             "y": ("star", next(arranged)[0]),
-            "time": ("time", ds["time"]),
-            "star": ("star", natsorted(ds["star"].values)),
+            "time": ("time", np.unique(ds["time"])),
+            "star": ("star", np.unique(ds["star"])),
         },
         attrs=ds.attrs,
     )
@@ -124,17 +139,20 @@ def remove_incomplete_sets(
     stars, counts = np.unique(ds["star"].values, return_counts=True)
     star_mode = np.amax(counts)  # most common value
     bad_stars = np.extract((counts != star_mode), stars).tolist()
+    nan_stars = ds.where(ds["mag"].isnull() | ds["error"].isnull(), drop=True)[
+        "star"
+    ].data.tolist()
+    bad_stars.extend(nan_stars)
 
     if len(bad_stars) > 0:
         logging.warning(
             "Stars %s have been found without sufficient amount of information",
-            bad_stars,
+            np.unique(bad_stars),
         )
     if stars_to_remove is not None:
         bad_stars.extend(stars_to_remove)
-
     ds = ds.where(~ds["star"].isin(bad_stars), drop=True)
-
+    bad_stars = np.unique(bad_stars)
     logging.info("Removed stars: %s", bad_stars)
     logging.info("Removed star count %s", len(bad_stars))
     return ds

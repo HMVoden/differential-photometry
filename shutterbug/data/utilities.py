@@ -98,7 +98,7 @@ def arrange_for_dataframe(*arrays):
         yield a.ravel()
 
 
-def arrange_time_star(num_samples: int, num_stars: int, *arrays):
+def arrange_time_star(time: int, stars: int, *arrays):
     """Finds out how many samples and stars are in a given dataframe
     then rearranges the columns in a way that each time increases on columns
     and stars change on each row
@@ -116,7 +116,7 @@ def arrange_time_star(num_samples: int, num_stars: int, *arrays):
         Numpy array of rearranged data columns
     """
 
-    return arrange_iterables(num_stars, num_samples, *arrays)
+    return arrange_iterables(time, stars, *arrays)
 
 
 def arrange_iterables(row: int, col: int, *iterables):
@@ -184,4 +184,4 @@ def time_from_data(jd: List[float]) -> pd.DatetimeTZDtype:
     logging.info("Number of months found in dataset: %s", unique_months)
     logging.info("Number of years found in dataset: %s", unique_years)
 
-    return time.unique()
+    return time
