@@ -27,20 +27,17 @@ def extract(filename: Path) -> pd.DataFrame:
     input_config = config.get("input")
     filetype = input_config["types"][filename.suffix]
     file_config = input_config[filetype]
-    required_column_names = input_config["required"]
     if file_config["module"] == "pd":
         ds = open_pandas(
             filename=filename,
             reader=file_config["reader"],
             settings=file_config["settings"],
-            required_columns=required_column_names,
         )
     elif file_config["module"] == "xr":
         ds = open_xr(
             filename=filename,
             reader=file_config["reader"],
             settings=file_config["settings"],
-            required_columns=required_column_names,
         )
     else:
         raise NotImplementedError
@@ -49,27 +46,24 @@ def extract(filename: Path) -> pd.DataFrame:
 
 
 # TODO make these one function
-def open_pandas(
-    filename: Path, reader: str, settings: Dict, required_columns: List[str]
-):
+def open_pandas(filename: Path, reader: str, settings: Dict):
     reader_func = getattr(pd, reader)
     df = reader_func(filename, **settings)
     df = df.to_xarray()
     return df
 
 
-def open_xr(filename: Path, reader: str, settings: Dict, required_columns: List[str]):
+def open_xr(filename: Path, reader: str, settings: Dict):
     reader_func = getattr(xr, reader)
     ds = reader_func(filename, **settings)
     return ds
 
 
 def save_to_csv(
-    df: pd.DataFrame,
+    ds: xr.Dataset,
     filename: str,
-    sort_on: List[str] = None,
-    split_on: List[str] = None,
-    corrected: bool = None,
+    output_flag: bool,
+    offset: bool = None,
     output_folder: Path = None,
 ):
     """Saves specified dataframe to csv, changes filename based on inputted filename,
@@ -88,40 +82,40 @@ def save_to_csv(
     output_folder: Path, optional
         Root directory to output files to, by default None
     """
-    output_config = config.get("output")
+    if output_flag == True:
+        logging.info("Outputting processed dataset as csv...")
+        ds = ds.drop_dims("time.date")
+        ds = ds.swap_dims({"varying": "star"})
+        df = ds.to_pandas()
+        df = df.sort_index(["time", "star"], key=natsort_keygen())
+        output_config = config.get("output")
 
-    output_dict = {}
-    if output_folder is None:
-        output_folder = Path.cwd()
-        output_dict.update(**output_config["base"])
-        output_dict.update(**output_config["csv"])
-    else:
-        output_folder = Path(output_folder)
-    if sort_on is not None:
-        df = df.sort_values(by=sort_on, key=natsort_keygen()).reset_index(drop=True)
-    if corrected == True:
-        output_dict.update(**output_config["corrected"])
-    # end ifs
-    output_folder = output_folder.joinpath(*output_dict.values())
-    if not output_folder.exists():
-        logging.info("Creating directory %s", output_folder)
-        output_folder.mkdir(parents=True, exist_ok=True)
-    if split_on is not None:
-        to_write = df.groupby(split_on)
-        for name, frame in to_write:
-            out_name = "{0}_{1}_{2}.csv".format(split_on, name, filename)
-            out_file = output_folder.joinpath(out_name)
-            logging.info("Writing out %s", out_file)
-            frame.to_excel(out_name)
-    else:
+        output_dict = {}
+        if output_folder is None:
+            output_folder = Path.cwd()
+            output_dict.update(**output_config["base"])
+            output_dict.update(**output_config["csv"])
+        else:
+            output_folder = Path(output_folder)
+
+        if offset == True:
+            output_dict.update(**output_config["offset"])
+        # end ifs
+        output_folder = output_folder.joinpath(*output_dict.values())
+        if not output_folder.exists():
+            logging.info("Creating directory %s", output_folder)
+            output_folder.mkdir(parents=True, exist_ok=True)
+
         out_name = "processed_{0}.csv".format(filename)
         out_file = output_folder.joinpath(out_name)
         logging.info("Writing out %s", out_file)
         df.to_csv(out_file)
+        logging.info("Finished excel output")
+    return ds
 
 
 def generate_graph_output_path(
-    corrected: bool = False,
+    offset: bool = False,
     inter_varying: bool = False,
     intra_varying: bool = False,
     uniform: bool = False,
@@ -131,8 +125,8 @@ def generate_graph_output_path(
 
     Parameters
     ----------
-    corrected : bool, optional
-        Whether or not the dataframe has been corrected, by default False.
+    offset : bool, optional
+        Whether or not the dataframe has been offset corrected, by default False.
     varying : bool, optional
         Whether or not the dataframe data is varying, by default False.
     brief : bool, optional
@@ -162,7 +156,7 @@ def generate_graph_output_path(
     output_dict["input_filename"] = dataset.stem
     if uniform == True:
         output_dict.update(**output_config["uniform"])
-    if corrected == True:
+    if offset == True:
         output_dict.update(**output_config["corrected"])
     if inter_varying == True and intra_varying == True:
         output_dict.update(**output_config["always_varying"])

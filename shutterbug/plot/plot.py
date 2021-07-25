@@ -8,105 +8,56 @@ from multiprocessing import cpu_count
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-import config.manager as config
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import xarray as xr
 import shutterbug.data.input_output as io
-import shutterbug.data.utilities as data_util
 import shutterbug.plot.utilities as plot_util
 import shutterbug.progress_bars as bars
 import seaborn as sns
-from pandas.core.groupby.generic import DataFrameGroupBy
 
 manager = None
 status = None
 
 
-def plot_and_save_all(df: pd.DataFrame):
-    """Setup function for plotting and saving the entire dataframe as a series of graphs
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Dataframe with mag, average_diff_mags, error and average uncertainty as numerical columns
-    uniform_y_axis : bool, optional
-        Sets the entire dataset to be graphed with the same y-limit plus or minus from median, by default False
-    split : bool, optional
-        Splits the dataframe into varying and non-varying, by default False
-    """
+def plot_and_save_all(
+    ds: xr.Dataset, plot_config: Dict, uniform_y_axis: bool, offset: bool
+):
+    # np.array(np.meshgrid([True, False], [True, False])).reshape((-1,2))
     logging.info("Starting graphing...")
-    plot_config = config.get("plotting")
-    uniform_y_axis = config.get("uniform")
-    correct = config.get("offset")
-    mag_max_variation, diff_max_variation = get_max_variation(df)
+    ds = ds.swap_dims({"star": "intra_varying"})
+    ds = ds.set_index(varying=("intra_varying", "inter_varying"))
 
-    df.groupby(["inter_varying", "graph_intra"]).pipe(
-        generate_data_folders, uniform_y_axis=uniform_y_axis, correct=correct
-    ).pipe(
+    ds.groupby("varying").map(
         multiprocess_save,
-        correct=correct,
-        mag_max_variation=mag_max_variation,
-        diff_max_variation=diff_max_variation,
+        offset=offset,
+        uniform=uniform_y_axis,
         plot_config=plot_config,
     )
 
+    logging.info("Finished graphing")
+    return ds.reset_index("varying")
+
 
 def generate_data_folders(
-    group: DataFrameGroupBy, uniform_y_axis: bool, correct: bool
+    ds: xr.Dataset, uniform_y_axis: bool, offset: bool
 ) -> List[Tuple[pd.DataFrame, Path]]:
-    for inter, intra in group.groups:
-        folder = io.generate_graph_output_path(
-            corrected=correct,
-            uniform=uniform_y_axis,
-            inter_varying=inter,
-            intra_varying=intra,
-        )
-        group.groups[(inter, intra)].output_folder = folder
-    return group
-
-
-def get_max_variation(df: pd.DataFrame) -> Tuple[float, float]:
-    mag_y_scale = config.get("mag_y_scale")
-    diff_y_scale = config.get("diff_y_scale")
-    uniform_y_axis = config.get("uniform")
-
-    mag_max_variation = None
-    diff_max_variation = None
-    if mag_y_scale is not None or diff_y_scale is not None:
-        mag_max_variation = mag_y_scale
-        diff_max_variation = diff_y_scale
-        if mag_y_scale is None or diff_y_scale is None:
-            logging.warning(
-                "The magnitude or differential magnitude plotting scale is not set."
-            )
-            logging.warning("Continuing with defaults for unset scale.")
-
-    if uniform_y_axis is True:
-        # Calculate the largest deviation along the y-axis
-        # for the entire dataset
-        columns = ["mag", "average_diff_mags"]
-        max_variation = data_util.get_largest_range(
-            **data_util.arrange_time_star(df, columns)
-        )
-
-        # Divide by 2 to keep most data in viewing range as
-        # this encompasses the entire range (half above, half below)
-        mag_max_variation = np.round(max_variation["mag"] / 2, decimals=1)
-        diff_max_variation = np.round(
-            max_variation["average_diff_mags"] / 2, decimals=1
-        )
-    logging.info("Magnitude y-axis range is: %s", mag_max_variation)
-    logging.info("Differential y-axis range is: %s", diff_max_variation)
-    return mag_max_variation, diff_max_variation
+    intra, inter = np.unique(ds["varying"])[0]
+    ds.attrs["output_folder"] = io.generate_graph_output_path(
+        offset=offset,
+        uniform=uniform_y_axis,
+        intra_varying=intra,
+        inter_varying=inter,
+    )
+    return ds
 
 
 def multiprocess_save(
-    star_frames: pd.DataFrame,
+    ds: xr.Dataset,
     plot_config: Dict,
-    correct: bool,
-    mag_max_variation: float = None,
-    diff_max_variation: float = None,
+    uniform: bool,
+    offset: bool,
 ):
     """Runner function, sets up multiprocess graphing for system
 
@@ -121,106 +72,92 @@ def multiprocess_save(
     save : bool, optional
         Switch to save or graph and display, by default False
     """
-    global frames  # Shares for threads
+    global frame  # Shares for threads
+    frame = ds
     # Mulitprocess to speed up awful plotting code
-    pbar_folders = bars.get_progress_bar(
-        name="folders",
-        total=len(star_frames),
-        desc="Plotting folders",
-        unit="folders",
-        color="blue",
+    # pbar_folders = bars.get_progress_bar(
+    #     name="folders",
+    #     total=len(star_frames),
+    #     desc="Plotting folders",
+    #     unit="folders",
+    #     color="blue",
+    #     leave=False,
+    # )
+    frame = frame.pipe(generate_data_folders, uniform_y_axis=uniform, offset=offset)
+    frame = frame.reset_index("varying").swap_dims({"varying": "star"})
+    if offset == True:
+        frame["mag"] = frame["mag"] - frame["mag_offset"]
+        frame["average_diff_mags"] = frame["average_diff_mags"] - frame["dmag_offset"]
+        frame = frame.broadcast_like(frame["mag"])
+    bars.status.update(stage="Plotting and saving stars")
+    pbar = bars.start(
+        name="plot_and_save",
+        total=frame["star"].size,
+        desc="  Plotting and saving stars",
+        unit="stars",
+        color="magenta",
         leave=False,
     )
-    for (name), group in star_frames:
-        output_folder = star_frames.groups[name].output_folder
-        bars.status.update(stage="Plotting and saving stars")
-        pbar = bars.get_progress_bar(
-            name="plot_and_save",
-            total=group.id.nunique(),
-            desc="  Plotting and saving stars",
-            unit="stars",
-            color="magenta",
-            leave=False,
-        )
-        pbar.refresh()
-        logging.info("Writing to folder %s", output_folder)
+    logging.info("Writing to folder %s", ds.attrs["output_folder"])
+    frame = frame.stack(time_stack={"time", "time.date"})
+    # for _, stars in frame.groupby("star"):
+    #     build_and_save_figure(
+    #         ds=stars,
+    #         plot_config=plot_config,
+    #     )
+    #     pbar.update()
 
-        group["id"] = group.id.cat.remove_unused_categories().cat.as_ordered()
-
-        # for _, stars in group.groupby("id"):
-        #     build_and_save_figure(
-        #         df=stars,
-        #         plot_config=plot_config,
-        #         correct=correct,
-        #         output_folder=output_folder,
-        #         mag_max_variation=mag_max_variation,
-        #         diff_max_variation=diff_max_variation,
-        #     )
-        #     pbar.update()
-
-        with ProcessPoolExecutor(max_workers=(cpu_count() - 1)) as executor:
-            futures = {
-                executor.submit(
-                    build_and_save_figure,
-                    df=stars,
-                    plot_config=plot_config,
-                    correct=correct,
-                    output_folder=output_folder,
-                    mag_max_variation=mag_max_variation,
-                    diff_max_variation=diff_max_variation,
-                )
-                for _, stars in group.groupby("id")
-            }
-            for future in as_completed(futures):
-                pbar.update()
-        pbar_folders.update()
-        gc.collect()
+    with ProcessPoolExecutor(max_workers=(cpu_count() - 1)) as executor:
+        futures = {
+            executor.submit(
+                build_and_save_figure,
+                ds=stars,
+                plot_config=plot_config,
+            )
+            for _, stars in frame.groupby("star")
+        }
+        for future in as_completed(futures):
+            pbar.update()
+    # pbar_folders.update()
+    gc.collect()
+    return frame.unstack("time_stack")
 
 
 def build_and_save_figure(
-    df: pd.DataFrame,
-    output_folder: Path,
+    ds: xr.Dataset,
     plot_config: Dict,
-    correct: bool = False,
-    mag_max_variation: float = None,
-    diff_max_variation: float = None,
 ) -> bool:
-    mag_y = "mag"
-    diff_y = "average_diff_mags"
-    if correct is True:
-        mag_y = "c_" + mag_y
-        diff_y = "c_" + diff_y
 
-    mag_lim = limits_from_median(df[mag_y], mag_max_variation)
-    diff_lim = limits_from_median(df[diff_y], diff_max_variation)
+    mag_lim = limits_from_median(ds["mag"], ds.attrs["mag_var"])
+    diff_lim = limits_from_median(ds["average_diff_mags"], ds.attrs["diff_var"])
 
     # Needs to be set here so each worker
     # Has the same settings
     figure = plot_util.WorkerFigure(
         nrows=4,
-        ncols=df.y_m_d.nunique(),
-        figsize=(5 * df.y_m_d.nunique(), 15),
+        ncols=len(np.unique(ds["time.date"])),
+        figsize=(5 * len(np.unique(ds["time.date"])), 15),
         name="fig1",
-        output_folder=output_folder,
+        output_folder=ds.attrs["output_folder"],
         plot_config=plot_config,
     )
 
-    df.groupby("y_m_d").apply(
+    ds.groupby("time.date").map(
         create_4x1_raw_diff_plot,
         figure=figure,
-        correct=correct,
         plot_config=plot_config,
         mag_lim=mag_lim,
         diff_lim=diff_lim,
     )
+
     figure.share_columns_x()
     figure.share_rows_y()
     figure.set_label_outer()
     figure.set_date_formatter()
-    figure.set_super_title(df["id"].unique()[0])
-    figure.save(df["id"].unique()[0])
+    figure.set_super_title(str(ds["star"].data))
+    figure.save(str(ds["star"].data))
     figure.reset_figure()
-    return df  # placeholder
+    return ds  # placeholder
 
 
 def limits_from_median(
@@ -233,9 +170,8 @@ def limits_from_median(
 
 
 def create_4x1_raw_diff_plot(
-    df: pd.DataFrame,
+    ds: xr.Dataset,
     figure: plot_util.WorkerFigure,
-    correct: bool,
     plot_config: Dict,
     mag_lim: float = None,
     diff_lim: float = None,
@@ -260,41 +196,34 @@ def create_4x1_raw_diff_plot(
     figure
         Matplotlib figure of a column representing a timeseries day
     """
-
-    mag_y = "mag"
-    diff_y = "average_diff_mags"
-    if correct is True:
-        mag_y = "c_" + mag_y
-        diff_y = "c_" + diff_y
-
     axes = figure.get_next_axis()
 
     # Raw Magnitude
     plot_line_scatter(
-        x=df["time"],
-        y=df[mag_y],
+        x=ds["time"].values,
+        y=ds["mag"].values,
         ylabel=plot_config["magnitude"]["ylabel"],
         xlabel=plot_config["magnitude"]["xlabel"],
         color=plot_config["magnitude"]["color"],
-        error=df["error"],
+        error=ds["error"].values,
         axes=axes[:2],
         yrange=mag_lim,
         plot_config=plot_config,
     )
     # Differential Magnitude
     plot_line_scatter(
-        x=df["time"],
-        y=df[diff_y],
+        x=ds["time"].values,
+        y=ds["average_diff_mags"].values,
         ylabel=plot_config["differential_magnitude"]["ylabel"],
         xlabel=plot_config["differential_magnitude"]["xlabel"],
         color=plot_config["differential_magnitude"]["color"],
-        error=df["average_uncertainties"],
+        error=ds["average_uncertainties"].values,
         axes=axes[2:],
         yrange=diff_lim,
         plot_config=plot_config,
     )
-    figure.set_current_column_title(df.name)
-    return df  # If you want to pipe this
+    figure.set_current_column_title(str(np.unique(ds["time.date"])[0]))
+    return ds
 
 
 def plot_line_scatter(
@@ -337,8 +266,8 @@ def plot_line_scatter(
 
     fill_between = {
         "x": x,
-        "y1": error_plus.values,
-        "y2": error_neg.values,
+        "y1": error_plus,
+        "y2": error_neg,
         "color": color,
         **plot_config["error"]["fill"],
     }

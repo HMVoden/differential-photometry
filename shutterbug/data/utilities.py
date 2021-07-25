@@ -58,25 +58,25 @@ def split_varying(df: pd.DataFrame):
     return non_varying, intra_varying, inter_varying
 
 
-def flag_variable(df: pd.DataFrame) -> pd.DataFrame:
-    """Goes through each star and if any star has any day flagged as
-    variable, this flags every day as variable. For use before plotting
+# def flag_variable(df: pd.DataFrame) -> pd.DataFrame:
+#     """Goes through each star and if any star has any day flagged as
+#     variable, this flags every day as variable. For use before plotting
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Dataframe to flag
+#     Parameters
+#     ----------
+#     df : pd.DataFrame
+#         Dataframe to flag
 
-    Returns
-    -------
-    pd.DataFrame
-        Flagged dataframe
-    """
+#     Returns
+#     -------
+#     pd.DataFrame
+#         Flagged dataframe
+#     """
 
-    df["graph_intra"] = df.groupby("id")["intra_varying"].transform(pd.DataFrame.any)
-    df["varying"] = df["graph_intra"] | df["inter_varying"]
+#     df["graph_intra"] = df.groupby("id")["intra_varying"].transform(pd.DataFrame.any)
+#     df["varying"] = df["graph_intra"] | df["inter_varying"]
 
-    return df
+#     return df
 
 
 def arrange_for_dataframe(*arrays):
@@ -172,31 +172,6 @@ def group_by_year_month_day(df: pd.DataFrame) -> pd.DataFrame:
 
 def group_by_day_month_year(df: pd.DataFrame) -> pd.DataFrame:
     return df.groupby([df["time"].dt.day, df["time"].dt.month, df["time"].dt.year])
-
-
-def get_largest_range(**data: Dict):
-    """Finds the largest range in one part of a timeseries dataset, for example
-    if you have three days of timeseries, this will find the largest range that
-    can be found in a single day
-
-    Returns
-    -------
-    Dict
-        Dictionary of the data name passed in and the entire dataset of values as the
-        dictionary value.
-
-    Returns
-    -------
-    Dict
-        Dictionary of the data name and the largest range for the entire dataset
-    """
-    result = []
-    for d in data.values():
-        # max_variation = np.abs(np.ptp(d))
-        ptp = np.ptp(d, axis=0)
-        max_variation = np.abs(np.max(ptp) - np.min(ptp))
-        result.append(max_variation)
-    return dict(zip(data.keys(), result))
 
 
 def time_from_data(jd: List[float]) -> pd.DatetimeTZDtype:

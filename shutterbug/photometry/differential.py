@@ -1,11 +1,9 @@
-import gc
 import logging
-from typing import List
+from typing import Dict
 
 from xarray.core.groupby import DatasetGroupBy
 
 import config.manager as config
-import shutterbug.data.utilities as data_utils
 import shutterbug.photometry.math as math
 import shutterbug.progress_bars as bars
 import shutterbug.stats.stats as stats
@@ -133,13 +131,13 @@ def iterate_differential_photometry(
     status_str="Differential Photometry per day",
     indentation=1,
 )
-def intra_day_iter(ds: xr.Dataset) -> pd.DataFrame:
-    app_config = config.get("application")
-    iterations = config.get("iterations")
-    star_detection_method = app_config["star_detection"]["method"]
-    # Group by year/month/day to prevent later months from being
-    # before earlier months, with an earlier day.
-    # e.g. 1/7/2021 being before 22/6/2021
+def intra_day_iter(
+    ds: xr.Dataset,
+    varying_flag: str,
+    app_config: Dict,
+    method: str,
+    iterations: int,
+) -> xr.Dataset:
     intra_pbar = bars.get(
         name="intra_diff",
     )
@@ -147,26 +145,25 @@ def intra_day_iter(ds: xr.Dataset) -> pd.DataFrame:
         pbar=intra_pbar, attr="total", update_to=len(np.unique(ds["time.date"]))
     )
     logging.info("Detecting intra-day variable stars...")
-    varying_flag = "intra_varying"
+    # No stars varying initially, need for organizing
     ds.coords[varying_flag] = ("star", np.full(ds.attrs["total_stars"], False))
-    ds = ds.groupby("time.date").map(
+    ds = ds.groupby("time.date", restore_coord_dims=True).map(
         iterate_differential_photometry,
-        method=star_detection_method,
+        method=method,
         iterations=iterations,
         pbar_method=intra_pbar.update,
-        **app_config[star_detection_method],
+        **app_config[method],
         varying_flag=varying_flag,
     )
+    ds[varying_flag] = ds[varying_flag].groupby("star").any(...)
     logging.info(
         "Detected total of %s intra-day varying stars",
-        ds[varying_flag].groupby("star").any(...).sum(...).values,
+        ds[varying_flag].sum(...).values,
     )
     return ds
 
 
-def inter_day(ds: xr.Dataset) -> pd.DataFrame:
-    app_config = config.get("application")
-    method = app_config["star_detection"]["method"]
+def inter_day(ds: xr.Dataset, app_config: Dict, method: str) -> xr.Dataset:
     clip = app_config[method]["clip"]
     status = bars.status
     status.update(stage="Differential Photometry per star")
@@ -184,12 +181,13 @@ def inter_day(ds: xr.Dataset) -> pd.DataFrame:
     logging.info("Detecting inter-day variable stars...")
     ds.coords[method] = xr.apply_ufunc(
         stats.test_stationarity,
-        (ds["average_diff_mags"] - ds["dmag_offset"]),
+        (ds["average_diff_mags"] - ds["dmag_offset"]).stack(
+            all_time={"time.date", "time"}
+        ),
         kwargs={"method": method, "clip": clip},
-        input_core_dims=[["time"]],
+        input_core_dims=[["all_time"]],
         vectorize=True,
     )
-
     inter_pbar.update(len(ds.indexes["star"]))
     p_value = app_config[method]["p_value"]
     null = app_config[method]["null"]

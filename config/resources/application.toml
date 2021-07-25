@@ -1,12 +1,9 @@
 "varying_flag" = "intra_varying"
-[logging]
-enabled = true
-
-[star_detection]
 # Change to one of the below to change
 # star varying test
-method = "adf_gls"
-
+"detection_method" = "adf_gls"
+[logging]
+enabled = true
 
 [chisquared]
 p_value = 4     # Not really a p-value, just a threshold.

@@ -7,9 +7,9 @@ import xarray as xr
 
 import shutterbug.data.input_output as io
 import shutterbug.data.sanitize as sanitize
-import shutterbug.data.utilities as data
 import shutterbug.photometry.differential as photometry
 import shutterbug.plot.plot as plot
+import shutterbug.plot.utilities as plot_util
 import shutterbug.progress_bars as bars
 import shutterbug.timeseries.timeseries as ts
 
@@ -36,67 +36,69 @@ def process(input_file: Path):
     config.update("filename", input_file)
     input_config = config.get("input")
     app_config = config.get("application")
+    plot_config = config.get("plotting")
 
     # Extraction, cleanup and processing
     # io.extract returns a dataframe which we
     # then move around in a pipe
     # TODO write function that removes duplicates
     # TODO write function that finds nearby stars
+    # TODO fix error graphing
+    # TODO Fix day title on graphs
+    # TODO fix csv output
     # TODO write function that finds stars less than 0.5 mag dimmer
-    # TODO convert to xarray
-    # TODO @guvectorize differential photometry modules
     # TODO write blitting functions for graphing
-    df = (
+    ds = (
         io.extract(input_file)
         .pipe(sanitize.drop_and_clean_names, input_config["required"])
         .pipe(sanitize.remove_incomplete_sets, config.get("remove"))
         .pipe(
             sanitize.clean_data,
-            input_config["coords"],
-            input_config["time"],
+            coord_names=input_config["coords"],
+            time_name=input_config["time"],
         )
         .pipe(sanitize.arrange_data)
-        .pipe(photometry.intra_day_iter)
-        .pipe(ts.correct_offset)
-        .pipe(photometry.inter_day)
-        .pipe(log_variable)
-        .pipe(plot.plot_and_save_all)
-    )
-
-    logging.info("Finished graphing")
-    output_excel = config.get("output_excel")
-    if output_excel == True:
-        logging.info("Outputting processed dataset as excel...")
-        output_folder = config.get("output_folder")
-        correct = config.get("offset")
-        io.save_to_excel(
-            df=df,
-            filename=input_file.stem,
-            sort_on=["time", "id"],
-            corrected=correct,
-            output_folder=output_folder,
+        .pipe(
+            photometry.intra_day_iter,
+            varying_flag=app_config["varying_flag"],
+            app_config=app_config,
+            method=app_config["detection_method"],
+            iterations=config.get("iterations"),
         )
-        logging.info("Finished excel output")
+        .pipe(ts.correct_offset)
+        .pipe(
+            photometry.inter_day,
+            app_config=app_config,
+            method=app_config["detection_method"],
+        )
+        .pipe(log_variable)
+        .pipe(
+            plot_util.max_variation,
+            uniform_y_axis=config.get("uniform"),
+            mag_y_scale=config.get("mag_y_scale"),
+            diff_y_scale=config.get("diff_y_scale"),
+        )
+        .pipe(
+            plot.plot_and_save_all,
+            plot_config=plot_config,
+            uniform_y_axis=config.get("uniform"),
+            offset=config.get("offset"),
+        )
+        .pipe(
+            io.save_to_csv,
+            filename=input_file.stem,
+            offset=config.get("offset"),
+            output_folder=config.get("output_folder"),
+            output_flag=config.get("output_excel"),
+        )
+    )
 
 
 def log_variable(ds: xr.Dataset):
-    # Set all sets of varying stars, so that we can properly graph them
     # Extra logging
-    inter_varying_count = (
-        (ds["inter_varying"] & ~ds["intra_varying"])
-        .groupby("star")
-        .all(...)
-        .sum(...)
-        .data
-    )
-    intra_varying_count = ds["intra_varying"].groupby("star").any(...).sum(...).data
-    total_varying_count = (
-        (ds["intra_varying"] | ds["inter_varying"])
-        .groupby("star")
-        .all(...)
-        .sum(...)
-        .data
-    )
+    inter_varying_count = ds["inter_varying"].sum(...).data
+    intra_varying_count = (ds["intra_varying"] & ~ds["inter_varying"]).sum(...).data
+    total_varying_count = (ds["intra_varying"] | ds["inter_varying"]).sum(...).data
     # Correct for any offset found in the data
     logging.info("Total consistently varying stars: %s", inter_varying_count)
     logging.info("Total briefly varying stars: %s", intra_varying_count)

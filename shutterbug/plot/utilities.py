@@ -1,6 +1,8 @@
 import logging
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
+
+import xarray as xr
 
 import matplotlib
 import matplotlib.dates as mdates
@@ -42,6 +44,8 @@ class WorkerFigure(Singleton):
             self.single_day = True
         else:
             self.single_day = False
+        if self.bg is None:
+            self.fig.canvas.copy_from_bbox(self.fig.bbox)
 
     def set_axes(self):
         sns.set_theme(**self.plot_config["seaborn"])
@@ -54,6 +58,7 @@ class WorkerFigure(Singleton):
             ncols=self.ncols,
             sharex=False,
         )
+        self.fig.subplots_adjust(wspace=0.025)
         self.axes = np.asanyarray(self.axes).transpose()
         self.axis_index = 0
 
@@ -108,14 +113,66 @@ class WorkerFigure(Singleton):
                 ax.label_outer()
 
     def save(self, file_name: str):
-        """Generates output path, calls plotting function then saves figure to specified file"""
         if not self.output_folder.exists():
             logging.info("Creating directory %s", self.output_folder)
             self.output_folder.mkdir(parents=True, exist_ok=True)
         output_file = self.output_folder.joinpath(file_name + ".png")
-        self.fig.subplots_adjust(wspace=0.025)
         self.fig.autofmt_xdate()
         self.fig.savefig(fname=output_file, transparent=False, bbox_inches="tight")
 
     def set_super_title(self, name):
         self.fig.suptitle("Raw and differential magnitude of star " + name)
+
+
+def max_variation(
+    ds: xr.Dataset,
+    uniform_y_axis: bool = False,
+    mag_y_scale: float = None,
+    diff_y_scale: float = None,
+) -> Tuple[float, float]:
+
+    if mag_y_scale is not None or diff_y_scale is not None:
+        ds.attrs["mag_var"] = mag_y_scale
+        ds.attrs["diff_var"] = diff_y_scale
+        if mag_y_scale is None or diff_y_scale is None:
+            logging.warning(
+                "The magnitude or differential magnitude plotting scale is not set."
+            )
+            logging.warning("Continuing with defaults for unset scale.")
+
+    if uniform_y_axis is True:
+        # Calculate the largest deviation along the y-axis
+        # for the entire dataset
+
+        ds.attrs["mag_var"] = get_largest_range((ds["mag"] - ds["mag_offset"]).values)
+        ds.attrs["diff_var"] = get_largest_range(
+            (ds["average_diff_mags"] - ds["dmag_offset"]).values
+        )
+    logging.info("Magnitude y-axis range is: +/- %s", ds.attrs["mag_var"])
+    logging.info("Differential y-axis range is: +/- %s", ds.attrs["diff_var"])
+    return ds
+
+
+def get_largest_range(data: List[float]) -> float:
+    """Finds the largest range in one part of a timeseries dataset, for example
+    if you have three days of timeseries, this will find the largest range that
+    can be found in a single day
+
+    Returns
+    -------
+    Dict
+        Dictionary of the data name passed in and the entire dataset of values as the
+        dictionary value.
+
+    Returns
+    -------
+    Dict
+        Dictionary of the data name and the largest range for the entire dataset
+    """
+    # max_variation = np.abs(np.ptp(d))
+    ptp = np.ptp(data, axis=0)
+    max_variation = np.max(np.abs(ptp))
+    max_variation = np.round(max_variation / 2, decimals=1)
+    # Divide by 2 to keep most data in viewing range as
+    # this encompasses the entire range (half above, half below)
+    return max_variation

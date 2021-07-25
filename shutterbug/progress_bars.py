@@ -40,7 +40,7 @@ def start(
     global progress_bars
     pbar = get(name)
     if pbar is not None:
-        return pbar
+        pbar.close()
 
     pbar = manager.counter(total=total, desc=desc, unit=unit, leave=leave, color=color)
     progress_bars[name] = pbar
@@ -76,9 +76,10 @@ def progress(
                 pbar.refresh()
 
             result = func(*args, **kwargs)
-            pbar.update()
             if pbar.count == pbar.total:
                 close(name)
+            else:
+                pbar.update()
             return result
 
         return wrapper_progress
