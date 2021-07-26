@@ -9,6 +9,8 @@ import shutterbug.shutterbug as bug
 import shutterbug.data.input_output as io
 import shutterbug.data.sanitize as sanitize
 
+from typing import List
+
 from pandas.errors import DtypeWarning
 
 
@@ -108,12 +110,10 @@ def cli(
         diff_y_scale=diff_y_scale,
     )
 
-    status = bars.status
-
     files = io.get_file_list(input_file)
-    for data_file in files:
-        run(file=data_file)
-    status.update(stage="Finished")
+    run(files)
+
+    bars.status.update(stage="Finished")
 
 
 @bars.progress(
@@ -124,8 +124,9 @@ def cli(
     status_str="Processing data",
     countable_var="files",
 )
-def run(file: Path):
-    logging.info("Processing file %s", file.stem)
-    bug.process(file)
-    bug.teardown()
-    logging.info("Program finished, exiting.")
+def run(files: List[Path]):
+    for data_file in files:
+        logging.info("Processing file %s", data_file.stem)
+        bug.process(data_file)
+        bug.teardown()
+        logging.info("Program finished, exiting.")

@@ -28,7 +28,7 @@ def check_and_coerce_dataarray(da: xr.DataArray) -> xr.DataArray:
             logging.warning(
                 "Data column '%s' is not the proper type, attempting to fix", da.name
             )
-            da.values = columns_fix_function[da.name](da, errors="coerce")
+            da.values = columns_fix_function[da.name](da.values, errors="coerce")
     return da
 
 

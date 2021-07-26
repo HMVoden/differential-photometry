@@ -20,7 +20,7 @@ def init():
     manager = enlighten.get_manager()  # set up universal progress bar manager
 
     status = manager.status_bar(
-        status_format=u"{fill}Stage: {stage}{fill}{elapsed}",
+        status_format="{fill}Stage: {stage}{fill}{elapsed}",
         color="bold_underline_bright_white_on_lightslategray",
         justify=enlighten.Justify.CENTER,
         stage="Processing data",
@@ -100,13 +100,11 @@ def __get_len_from_args_kwargs(
             total = len(args[arg_pos])
         except IndexError:
             raise ValueError(
-                "Improperly set up progress bar, unable to get total from function %s",
-                func_name,
+                f"Improperly set up progress bar, unable to get total from function {func_name}"
             )
     if total == 0:
         raise ValueError(
-            "Improperly set up progress bar, unable to get total from function %s",
-            func_name,
+            f"Improperly set up progress bar, unable to get total from function {func_name}"
         )
     return total
 
