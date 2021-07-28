@@ -109,14 +109,10 @@ def drop_and_clean_names(ds: xr.Dataset, required_data: List[str]) -> xr.Dataset
         cleaned.pop(name, None)
     ds = ds.drop_vars(to_drop)
     ds = ds.rename(cleaned)
-    try:
+    if "obj" in ds.keys():
         ds = ds.rename(obj="star")
-    except ValueError:
-        pass
-    try:
+    if "name"  in ds.keys():
         ds = ds.rename(name="star")
-    except ValueError:
-        pass
     return ds
 
 
