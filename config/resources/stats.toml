@@ -1,0 +1,28 @@
+[chisquared]
+# documentation here: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chisquare.html#scipy.stats.chisquare
+ddof = 1
+expected = "weighted_mean" # "weighted mean", "mean", "median", "none"
+
+[adfuller]
+# documentation here: https://arch.readthedocs.io/en/latest/unitroot/generated/arch.unitroot.ADF.html
+max_lags = 0
+trend = "c" # "c", "ct", "ctt" or "nc"
+method = "AIC" # "AIC", "BIC" "t-stat" or comment out
+
+[kpss]
+# documentation here: https://arch.readthedocs.io/en/latest/unitroot/generated/arch.unitroot.KPSS.html
+trend = "c" # "c" or "ct"
+lags = 1
+
+[zivot_andrews]
+# documentation here: https://arch.readthedocs.io/en/latest/unitroot/generated/arch.unitroot.ZivotAndrews.html
+trend = "c" # "c" or "ct"
+trim = 0.15
+method = "AIC"
+max_lags = 1
+
+[adf_gls]
+# documentation here: https://arch.readthedocs.io/en/latest/unitroot/generated/arch.unitroot.DFGLS.html#arch.unitroot.DFGLS
+max_lags = 0
+trend = "c" # "c", "ct"
+method = "AIC" # "AIC", "BIC" "t-stat" or comment out

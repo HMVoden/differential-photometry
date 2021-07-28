@@ -1,0 +1,26 @@
+# Where we put the output
+# Each entry corresponds to a new folder
+# Order matters
+[base]
+directory = "output"
+
+[uniform]
+uniform = "uniform"
+
+[corrected]
+corrected = "corrected"
+
+[non_varying]
+non_varying = "non_varying"
+
+[always_varying]
+always_varying = "always_varying"
+
+[inter_varying]
+inter_varying = "inter_varying"
+
+[briefly_varying]
+briefly_varying = "briefly_varying"
+# I'm not sure why I made this
+[csv]
+csv = "csv"

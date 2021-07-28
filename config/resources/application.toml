@@ -1,0 +1,36 @@
+"varying_flag" = "intra_varying"
+# Change to one of the below to change
+# star varying test
+"detection_method" = "adf_gls"
+[logging]
+enabled = true
+
+[chisquared]
+p_value = 4     # Not really a p-value, just a threshold.
+null = "accept" # >> 1 means varying
+clip = true     # Protect against outliers
+[adfuller]
+# Null is timeseries is non-stationary
+# if we accept then we know the star is varying
+p_value = 0.05
+null = "accept"
+clip = true     # unnecessary
+[kpss]
+# Null is timeseries is stationary
+# if we reject then we know the star is varying
+p_value = 0.05
+null = "reject"
+clip = false    # unnecessary
+[zivot_andrews]
+# Null is timeseries is non-stationary
+# if we accept then we know the star is varying
+p_value = 0.05
+null = "accept"
+clip = false    # unnecessary
+[adf_gls]
+# NOTE: This one seems to work best
+# Null is timeseries is stationary
+# if we accept then we know the star is varying
+p_value = 0.05  # small p, less variation on multiple iterations
+null = "accept"
+clip = false
