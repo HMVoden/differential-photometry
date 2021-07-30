@@ -1,15 +1,15 @@
 import gc
 import logging.config
-
 from pathlib import Path
-import config.manager as config
+
 import xarray as xr
 
+import shutterbug.config.manager as config
 import shutterbug.data.input_output as io
 import shutterbug.data.sanitize as sanitize
 import shutterbug.photometry.differential as photometry
-import shutterbug.plot.plot as plot
-import shutterbug.plot.utilities as plot_util
+import shutterbug.plotting.plot as plot
+import shutterbug.plotting.utilities as plot_util
 import shutterbug.progress_bars as bars
 import shutterbug.timeseries.timeseries as ts
 
@@ -39,6 +39,8 @@ def process(input_file: Path):
     plot_config = config.get("plotting")
 
     # NEED
+    # TODO make test dataset
+    # TODO fix star indexing
     # TODO write function that finds nearby stars
     # TODO write function that finds stars less than 0.5 mag dimmer
     # TODO write function that scales restrictions to get minimum # of stars
@@ -48,6 +50,7 @@ def process(input_file: Path):
     # TODO write documentation
     # TODO write function docstrings
     # TODO improve progess bar code
+    # TODO fix progress bars not finishing
     # TODO add machine learning for star detection
     # TODO write tests for all functions
     # TODO write benchmark code to test memory/CPU use
@@ -56,13 +59,13 @@ def process(input_file: Path):
     # then move around in a pipe
     (
         io.extract(input_file)
-        .pipe(sanitize.drop_and_clean_names, input_config["required"])
+        .pipe(sanitize.drop_and_clean_names, required_data=input_config["required"])
         .pipe(
             sanitize.clean_data,
             coord_names=input_config["coords"],
             time_name=input_config["time"],
         )
-        .pipe(sanitize.remove_incomplete_sets, config.get("remove"))
+        .pipe(sanitize.remove_incomplete_sets, stars_to_remove=config.get("remove"))
         .pipe(sanitize.arrange_data)
         .pipe(
             photometry.intra_day_iter,

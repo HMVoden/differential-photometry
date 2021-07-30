@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 import toml
 
-import config.resources as resources
+import shutterbug.config.resources as resources
 
 __config = {}
 
@@ -37,8 +37,7 @@ def get(config_name: str) -> Dict:
 
 def add(config_name: str, config_data: Any) -> bool:
     if config_name in __config.keys():
-        logging.warning("Rejected attempt to overwrite configuration %s",
-                        config_name)
+        logging.warning("Rejected attempt to overwrite configuration %s", config_name)
         return False
     else:
         __config[config_name] = config_data
@@ -59,7 +58,8 @@ def __load_from_config(config_name: str, config_dict: Dict) -> Any:
     except KeyError:
         logging.warning(
             "Unable to load configuration from %s, not found in configuration",
-            config_name)
+            config_name,
+        )
         return None
 
 
@@ -67,8 +67,7 @@ def __check_config():
     uniform = get("uniform")
     mag_y_scale = get("mag_y_scale")
     diff_y_scale = get("diff_y_scale")
-    if uniform is True and (mag_y_scale is not None
-                            or diff_y_scale is not None):
+    if uniform is True and (mag_y_scale is not None or diff_y_scale is not None):
         logging.warning(
             "Manual y-axis scaling and uniform y-axis flag are both set, disabling uniform flag."
         )

@@ -1,14 +1,12 @@
-from typing import Callable, List, Tuple
+from typing import List, Tuple
 from numba import guvectorize, float64, float32, jit
-from numba.types import optional
 from math import sqrt
 
 import numpy as np
 
 
 def differential_magnitude(
-    mags: List[List[float]],
-    varying_mags: List[List[float]] = None,
+    mags: List[List[float]], varying_mags: List[List[float]] = None,
 ) -> Tuple[List[List[float]], List[List[float]]]:
     diff_mag = []
     varying_diff_mag = []
@@ -26,12 +24,11 @@ def differential_magnitude(
         # dm = average((reference - star), axis=0)
 
         diff_mag.append(dm)
-    return np.array(diff_mag), np.array(varying_diff_mag)
+    return np.asanyarray(diff_mag), np.asanyarray(varying_diff_mag)
 
 
 def differential_error(
-    error: List[List[float]],
-    varying_error: List[List[float]] = None,
+    error: List[List[float]], varying_error: List[List[float]] = None,
 ) -> Tuple[List[List[float]], List[List[float]]]:
     diff_error = []
     varying_diff_error = []

@@ -6,41 +6,45 @@ authors = [
     "Harlan Shaw <harlan.shaw@ucalgary.ca>",
     "Ruben Morales <ruben.morales1@ucalgary.ca>",
 ]
-packages = [
-    { include = "shutterbug" },
-    { include = "config" },
-    { include = "source" },
-]
+packages = [{ include = "shutterbug", from = "src" }]
 license = "MIT"
-exclude = ["data/*"]
+exclude = ["src/docs"]
+readme = "README.md"
+homepage = "https://github.com/RothneyAO/differential-photometry"
+
 
 [tool.poetry.dependencies]
 python = ">=3.9 <3.10"
-pandas = ">=1.2"
-numpy = ">=1.2"
-numba = ">=0.53"
-wotan = ">=1.9"
-feets = ">=0.4"
-matplotlib = ">=3.4"
-seaborn = ">=0.11"
-toml = ">=0.10"
-statsmodels = ">=0.12"
-arch = ">=4.19"
-natsort = ">=7.1"
-click = ">=8.0"
-enlighten = ">=1.10"
-openpyxl = ">=3.0"
-xarray = ">=0.19"
-h5py = ">=3.3"
-h5netcdf = ">=0.11"
-scipy = ">=1.7"
-dask = ">=2021.7"
+pandas = "^1.2"
+numpy = "^1.2"
+numba = "^0.53"
+wotan = "^1.9"
+feets = "^0.4"
+matplotlib = "^3.4"
+seaborn = "^0.11"
+toml = "^0.10"
+statsmodels = "^0.12"
+natsort = "^7.1"
+click = "^8.0"
+enlighten = "^1.10"
+openpyxl = "^3.0"
+xarray = "^0.19"
+h5py = "^3.3"
+h5netcdf = "^0.11"
+scipy = "^1.7"
+dask = "^2021.7"
+arch = "^5.0.1"
 
 
 [tool.poetry.dev-dependencies]
 Sphinx = ">=4.0"
 sphinx-click = "^3.0.1"
 asv = "^0.4.2"
+poetry = "^1.1.7"
+pytest = "^6.2.4"
+pytest-cov = "^2.12.1"
+pytest-randomly = "^3.8.0"
+tox = "^3.24.0"
 
 [tool.poetry.scripts]
 shutterbug = "shutterbug.cli:runner"
@@ -48,3 +52,11 @@ shutterbug = "shutterbug.cli:runner"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra --import-mode=importlib -p no:warnings"
+testpaths = [
+    "tests",
+    # "integration",
+]

@@ -36,34 +36,34 @@ def clean_names(names: List[str]) -> Dict:
     from_to = {}
     for name in names:
         new_name = clean_header(name)
-        if name != new_name:
-            from_to[name] = new_name
+        from_to[name] = new_name
     return from_to
 
 
 def drop_duplicates(da: xr.DataArray):
-    da = da.set_index(time_star=("time", "star"))
     da = da.drop_duplicates("time_star")
-    da = da.reset_index("time_star")
-    da = da.swap_dims({"time_star": "star"})
+
     return da
 
 
 def clean_data(ds: xr.Dataset, coord_names: List[str], time_name: str):
     logging.info("Cleaning data")
     ds = ds.set_coords(coord_names)
-    ds = ds.swap_dims({"index": "star"})
-    ds = ds.drop_vars(["index"])
+
     ds = ds.map(check_and_coerce_dataarray)
-    time = util.time_from_data(ds[time_name].values)
-    ds.coords["time"] = ("star", time)
+    ds.coords["time"] = ("index", util.time_from_data(ds[time_name].data))
     logging.info("Dropping duplicate entries")
+    ds = ds.swap_dims({"index": "star"}).set_index(time_star=("time", "star"))
     ds = ds.map(drop_duplicates)
+    ds = ds.reset_index("time_star")
+    ds = ds.swap_dims({"time_star": "star"})
+
     logging.info("Cleaned data")
     return ds
 
 
 def arrange_data(ds: xr.Dataset) -> xr.Dataset:
+
     ds.attrs["total_samples"] = len(np.unique(ds["time"]))
     ds.attrs["total_stars"] = len(np.unique(ds["star"]))
     arranged = util.arrange_time_star(
@@ -92,7 +92,7 @@ def arrange_data(ds: xr.Dataset) -> xr.Dataset:
             "x": ("star", next(arranged)[0]),
             "y": ("star", next(arranged)[0]),
             "time": ("time", np.unique(ds["time"])),
-            "star": ("star", np.unique(ds["star"])),
+            "star": ("star", natsorted(np.unique(ds["star"]))),
         },
         attrs=ds.attrs,
     )
@@ -100,7 +100,7 @@ def arrange_data(ds: xr.Dataset) -> xr.Dataset:
 
 
 def drop_and_clean_names(ds: xr.Dataset, required_data: List[str]) -> xr.Dataset:
-    cleaned = clean_names(ds.keys())
+    cleaned = clean_names(list(ds.keys()))
     to_drop = []
     for name, clean_name in cleaned.items():
         if clean_name not in required_data:
@@ -111,7 +111,7 @@ def drop_and_clean_names(ds: xr.Dataset, required_data: List[str]) -> xr.Dataset
     ds = ds.rename(cleaned)
     if "obj" in ds.keys():
         ds = ds.rename(obj="star")
-    if "name"  in ds.keys():
+    if "name" in ds.keys():
         ds = ds.rename(name="star")
     return ds
 

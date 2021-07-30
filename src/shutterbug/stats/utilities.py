@@ -4,7 +4,7 @@ from typing import List
 from arch.unitroot import ADF, DFGLS, KPSS, ZivotAndrews
 from scipy.stats import chisquare
 
-import config.manager as config
+import shutterbug.config.manager as config
 
 
 from typing import Any

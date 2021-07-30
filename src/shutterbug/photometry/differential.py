@@ -144,7 +144,7 @@ def intra_day_iter(
     )
     logging.info("Detecting intra-day variable stars...")
     # No stars varying initially, need for organizing
-    ds.coords[varying_flag] = ("star", np.full(ds.attrs["total_stars"], False))
+    ds.coords[varying_flag] = ("time_star", np.full(ds["star"].size, False))
     ds = ds.groupby("time.date", restore_coord_dims=True).map(
         iterate_differential_photometry,
         method=method,

@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-import config.manager as config
+import shutterbug.config.manager as config
 import pandas as pd
 import xarray as xr
 from natsort import natsort_keygen
@@ -86,7 +86,7 @@ def save_to_csv(
         logging.info("Outputting processed dataset as csv...")
 
         df = ds.to_dataframe().reset_index()
-        df = df.sort_values(["star", "time"], key=natsort_keygen())
+        df = df.sort_values(["time", "star"], key=natsort_keygen())
         output_config = config.get("output")
 
         output_dict = {}
@@ -109,7 +109,7 @@ def save_to_csv(
         out_file = output_folder.joinpath(out_name)
         logging.info("Writing out %s", out_file)
         df.to_csv(out_file)
-        logging.info("Finished excel output")
+        logging.info("Finished csv output")
     return ds
 
 

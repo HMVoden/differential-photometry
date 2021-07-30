@@ -147,9 +147,12 @@ def build_and_save_figure(
     ds: xr.Dataset,
     plot_config: Dict,
 ) -> bool:
-
-    mag_lim = limits_from_median(ds["mag"], ds.attrs["mag_var"])
-    diff_lim = limits_from_median(ds["average_diff_mags"], ds.attrs["diff_var"])
+    if ["mag_var", "diff_var"] in list(ds.attrs.keys()):
+        mag_lim = limits_from_median(ds["mag"], ds.attrs["mag_var"])
+        diff_lim = limits_from_median(ds["average_diff_mags"], ds.attrs["diff_var"])
+    else:
+        mag_lim = None
+        diff_lim = None
 
     # Needs to be set here so each worker
     # Has the same settings
@@ -220,24 +223,24 @@ def create_4x1_raw_diff_plot(
 
     # Raw Magnitude
     plot_line_scatter(
-        x=ds["time"].values,
-        y=ds["mag"].values,
+        x=ds["time"].data,
+        y=ds["mag"].data,
         ylabel=plot_config["magnitude"]["ylabel"],
         xlabel=plot_config["magnitude"]["xlabel"],
         color=plot_config["magnitude"]["color"],
-        error=ds["error"].values,
+        error=ds["error"].data,
         axes=axes[:2],
         yrange=mag_lim,
         plot_config=plot_config,
     )
     # Differential Magnitude
     plot_line_scatter(
-        x=ds["time"].values,
-        y=ds["average_diff_mags"].values,
+        x=ds["time"].data,
+        y=ds["average_diff_mags"].data,
         ylabel=plot_config["differential_magnitude"]["ylabel"],
         xlabel=plot_config["differential_magnitude"]["xlabel"],
         color=plot_config["differential_magnitude"]["color"],
-        error=ds["average_uncertainties"].values,
+        error=ds["average_uncertainties"].data,
         axes=axes[2:],
         yrange=diff_lim,
         plot_config=plot_config,

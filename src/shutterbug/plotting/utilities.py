@@ -136,7 +136,6 @@ def max_variation(
     mag_y_scale: float = None,
     diff_y_scale: float = None,
 ) -> Tuple[float, float]:
-
     if mag_y_scale is not None or diff_y_scale is not None:
         ds.attrs["mag_var"] = mag_y_scale
         ds.attrs["diff_var"] = diff_y_scale
@@ -150,12 +149,13 @@ def max_variation(
         # Calculate the largest deviation along the y-axis
         # for the entire dataset
 
-        ds.attrs["mag_var"] = get_largest_range((ds["mag"] - ds["mag_offset"]).values)
+        ds.attrs["mag_var"] = get_largest_range((ds["mag"] - ds["mag_offset"]).data)
         ds.attrs["diff_var"] = get_largest_range(
-            (ds["average_diff_mags"] - ds["dmag_offset"]).values
+            (ds["average_diff_mags"] - ds["dmag_offset"]).data
         )
-    logging.info("Magnitude y-axis range is: +/- %s", ds.attrs["mag_var"])
-    logging.info("Differential y-axis range is: +/- %s", ds.attrs["diff_var"])
+    if ["mag_var", "diff_var"] in list(ds.attrs.keys()):
+        logging.info("Magnitude y-axis range is: +/- %s", ds.attrs["mag_var"])
+        logging.info("Differential y-axis range is: +/- %s", ds.attrs["diff_var"])
     return ds
 
 
