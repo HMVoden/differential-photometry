@@ -65,7 +65,7 @@ def clean_data(dataframe: pd.DataFrame) -> pd.DataFrame:
     dataframe[["mag", "error"]] = dataframe[["mag", "error"]].apply(
         pd.to_numeric, downcast="float"
     )
-
+    dataframe = dataframe.drop_duplicates()
     return dataframe
 
 
