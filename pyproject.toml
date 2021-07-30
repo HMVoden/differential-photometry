@@ -55,7 +55,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra --import-mode=importlib -p no:warnings"
+addopts = "-ra -p no:warnings"
 testpaths = [
     "tests",
     # "integration",

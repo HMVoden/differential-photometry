@@ -42,21 +42,24 @@ def clean_names(names: List[str]) -> Dict:
 
 def drop_duplicates(da: xr.DataArray):
     da = da.drop_duplicates("time_star")
-
     return da
 
 
-def clean_data(ds: xr.Dataset, coord_names: List[str], time_name: str):
+def add_time_information(ds: xr.Dataset, time_name):
+    ds.coords["time"] = ("index", util.time_from_data(ds[time_name].data))
+    return ds
+
+
+def clean_data(ds: xr.Dataset, coord_names: List[str]):
     logging.info("Cleaning data")
     ds = ds.set_coords(coord_names)
-
     ds = ds.map(check_and_coerce_dataarray)
-    ds.coords["time"] = ("index", util.time_from_data(ds[time_name].data))
-    logging.info("Dropping duplicate entries")
-    ds = ds.swap_dims({"index": "star"}).set_index(time_star=("time", "star"))
-    ds = ds.map(drop_duplicates)
-    ds = ds.reset_index("time_star")
-    ds = ds.swap_dims({"time_star": "star"})
+
+    # logging.info("Dropping duplicate entries")
+    # ds = ds.swap_dims({"index": "star"}).set_index(time_star=("time", "star"))
+    # ds = ds.map(drop_duplicates)
+    # ds = ds.reset_index("time_star")
+    # ds = ds.swap_dims({"time_star": "star"})
 
     logging.info("Cleaned data")
     return ds
@@ -78,14 +81,8 @@ def arrange_data(ds: xr.Dataset) -> xr.Dataset:
     # set dimensions or re-shape in-xr dataset
     ds = xr.Dataset(
         data_vars={
-            "mag": (
-                ["time", "star"],
-                next(arranged),
-            ),
-            "error": (
-                ["time", "star"],
-                next(arranged),
-            ),
+            "mag": (["time", "star"], next(arranged),),
+            "error": (["time", "star"], next(arranged),),
         },
         coords={
             "jd": ("time", np.unique(ds["jd"])),
@@ -116,22 +113,9 @@ def drop_and_clean_names(ds: xr.Dataset, required_data: List[str]) -> xr.Dataset
     return ds
 
 
-def remove_incomplete_sets(
+def remove_incomplete_stars(
     ds: xr.Dataset, stars_to_remove: list[str] = None
 ) -> List[float]:
-    """Founds the most common row counts by virtue of the star names in the dataset
-    then removes any stars that do not have the same amount as the most common row count
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Dataframe to be cleaned, must contain "id" column
-
-    Returns
-    -------
-    pd.DataFrame
-        Dataframe cleaned
-    """
     stars, counts = np.unique(ds["star"].values, return_counts=True)
     star_mode = np.amax(counts)  # most common value
     bad_stars = np.extract((counts != star_mode), stars).tolist()
@@ -176,6 +160,7 @@ def clean_header(header: str) -> str:
         .replace("<", "")
         .replace(">", "")
         .replace("?", "")
+        .replace("/", "-")
     )
     # Cleanup of headers, could be made more succinct with a simple REGEX or two
 

@@ -136,7 +136,6 @@ profiles/
 # Extra files
 *.pdf
 *.xlsx
-*.csv
 *.png
 *.jpeg
 *.jpg
@@ -145,3 +144,4 @@ profiles/
 working.toml
 output/
 results/
+data/

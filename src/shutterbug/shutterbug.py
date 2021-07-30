@@ -65,7 +65,7 @@ def process(input_file: Path):
             coord_names=input_config["coords"],
             time_name=input_config["time"],
         )
-        .pipe(sanitize.remove_incomplete_sets, stars_to_remove=config.get("remove"))
+        .pipe(sanitize.remove_incomplete_stars, stars_to_remove=config.get("remove"))
         .pipe(sanitize.arrange_data)
         .pipe(
             photometry.intra_day_iter,
