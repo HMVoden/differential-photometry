@@ -18,14 +18,8 @@ def calculate_differential_photometry(groups: DatasetGroupBy) -> xr.Dataset:
         de, _ = math.differential_error(non_varying["error"].values)
         non_varying = non_varying.assign(
             {
-                "average_diff_mags": (
-                    ["time", "star"],
-                    dm.transpose(),
-                ),
-                "average_uncertainties": (
-                    ["time", "star"],
-                    de.transpose(),
-                ),
+                "average_diff_mags": (["time", "star"], dm,),
+                "average_uncertainties": (["time", "star"], de,),
             }
         )
         return non_varying
@@ -42,26 +36,14 @@ def calculate_differential_photometry(groups: DatasetGroupBy) -> xr.Dataset:
         )
         non_varying = non_varying.assign(
             {
-                "average_diff_mags": (
-                    ["time", "star"],
-                    dm.transpose(),
-                ),
-                "average_uncertainties": (
-                    ["time", "star"],
-                    de.transpose(),
-                ),
+                "average_diff_mags": (["time", "star"], dm,),
+                "average_uncertainties": (["time", "star"], de,),
             }
         )
         varying = varying.assign(
             {
-                "average_diff_mags": (
-                    ["time", "star"],
-                    vdm.transpose(),
-                ),
-                "average_uncertainties": (
-                    ["time", "star"],
-                    vde.transpose(),
-                ),
+                "average_diff_mags": (["time", "star"], vdm,),
+                "average_uncertainties": (["time", "star"], vde,),
             }
         )
 
@@ -130,22 +112,16 @@ def iterate_differential_photometry(
     indentation=1,
 )
 def intra_day_iter(
-    ds: xr.Dataset,
-    varying_flag: str,
-    app_config: Dict,
-    method: str,
-    iterations: int,
+    ds: xr.Dataset, varying_flag: str, app_config: Dict, method: str, iterations: int,
 ) -> xr.Dataset:
-    intra_pbar = bars.get(
-        name="intra_diff",
-    )
+    intra_pbar = bars.get(name="intra_diff",)
     bars.update(
         pbar=intra_pbar, attr="total", update_to=len(np.unique(ds["time.date"]))
     )
     logging.info("Detecting intra-day variable stars...")
     # No stars varying initially, need for organizing
-    ds.coords[varying_flag] = ("time_star", np.full(ds["star"].size, False))
-    ds = ds.groupby("time.date", restore_coord_dims=True).map(
+    ds.coords[varying_flag] = ("star", np.full(ds["star"].size, False))
+    ds = ds.groupby("time.date", restore_coord_dims=True, squeeze=False).map(
         iterate_differential_photometry,
         method=method,
         iterations=iterations,

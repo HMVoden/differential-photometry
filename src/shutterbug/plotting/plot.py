@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import shutterbug.data.input_output as io
-import shutterbug.plot.utilities as plot_util
+import shutterbug.plotting.utilities as plot_util
 import shutterbug.progress_bars as bars
 import seaborn as sns
 
@@ -45,10 +45,7 @@ def generate_data_folders(
 ) -> List[Tuple[pd.DataFrame, Path]]:
     intra, inter = np.unique(ds["varying"])[0]
     ds.attrs["output_folder"] = io.generate_graph_output_path(
-        offset=offset,
-        uniform=uniform_y_axis,
-        intra_varying=intra,
-        inter_varying=inter,
+        offset=offset, uniform=uniform_y_axis, intra_varying=intra, inter_varying=inter,
     )
     return ds
 
@@ -75,10 +72,7 @@ def teardown_plot_dataset(ds: xr.Dataset) -> xr.Dataset:
 
 
 def multiprocess_save(
-    ds: xr.Dataset,
-    plot_config: Dict,
-    uniform: bool,
-    offset: bool,
+    ds: xr.Dataset, plot_config: Dict, uniform: bool, offset: bool,
 ):
     """Runner function, sets up multiprocess graphing for system
 
@@ -123,11 +117,7 @@ def multiprocess_save(
 
     with ProcessPoolExecutor(max_workers=(cpu_count() - 1)) as executor:
         futures = {
-            executor.submit(
-                build_and_save_figure,
-                ds=stars,
-                plot_config=plot_config,
-            )
+            executor.submit(build_and_save_figure, ds=stars, plot_config=plot_config,)
             for _, stars in frame.groupby("star")
         }
         for future in as_completed(futures):
@@ -143,10 +133,7 @@ def multiprocess_save(
     return frame
 
 
-def build_and_save_figure(
-    ds: xr.Dataset,
-    plot_config: Dict,
-) -> bool:
+def build_and_save_figure(ds: xr.Dataset, plot_config: Dict,) -> bool:
     if ["mag_var", "diff_var"] in list(ds.attrs.keys()):
         mag_lim = limits_from_median(ds["mag"], ds.attrs["mag_var"])
         diff_lim = limits_from_median(ds["average_diff_mags"], ds.attrs["diff_var"])

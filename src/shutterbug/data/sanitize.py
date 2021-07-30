@@ -6,6 +6,7 @@ import xarray as xr
 import numpy as np
 import shutterbug.data.utilities as util
 from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
+from functools import cache
 
 from natsort import natsorted
 
@@ -40,9 +41,32 @@ def clean_names(names: List[str]) -> Dict:
     return from_to
 
 
-def drop_duplicates(da: xr.DataArray):
-    da = da.drop_duplicates("time_star")
-    return da
+def drop_duplicates(ds: xr.Dataset):
+    logging.info("Removing duplicates")
+    ds = ds.swap_dims({"index": "time"})
+
+    def drop(ds: xr.Dataset):
+        ds = ds.map(lambda x: x.drop_duplicates("time"))
+        return ds
+
+    ds = ds.groupby("star").map(drop)
+    ds = ds.swap_dims({"time": "index"})
+    return ds
+
+
+def arrange_star_time(ds: xr.Dataset):
+    ds = ds.sortby("time", "star")
+    ds = (
+        ds.assign_coords(star=np.unique(ds["star"]), time=np.unique(ds["time"]))
+        .stack(dim=("time", "star"))
+        .reset_index("index", drop=True)
+        .rename(dim="index")
+        .unstack("index")
+    )
+    ds.attrs["total_samples"] = ds["star"].size
+    ds.attrs["total_stars"] = ds["time"].size
+
+    return ds
 
 
 def add_time_information(ds: xr.Dataset, time_name):
@@ -54,45 +78,6 @@ def clean_data(ds: xr.Dataset, coord_names: List[str]):
     logging.info("Cleaning data")
     ds = ds.set_coords(coord_names)
     ds = ds.map(check_and_coerce_dataarray)
-
-    # logging.info("Dropping duplicate entries")
-    # ds = ds.swap_dims({"index": "star"}).set_index(time_star=("time", "star"))
-    # ds = ds.map(drop_duplicates)
-    # ds = ds.reset_index("time_star")
-    # ds = ds.swap_dims({"time_star": "star"})
-
-    logging.info("Cleaned data")
-    return ds
-
-
-def arrange_data(ds: xr.Dataset) -> xr.Dataset:
-
-    ds.attrs["total_samples"] = len(np.unique(ds["time"]))
-    ds.attrs["total_stars"] = len(np.unique(ds["star"]))
-    arranged = util.arrange_time_star(
-        ds.attrs["total_samples"],
-        ds.attrs["total_stars"],
-        ds["mag"],
-        ds["error"],
-        ds["x"],
-        ds["y"],
-    )
-    # Rebuild dataset so we can have proper dimensions. Can't figure out how to
-    # set dimensions or re-shape in-xr dataset
-    ds = xr.Dataset(
-        data_vars={
-            "mag": (["time", "star"], next(arranged),),
-            "error": (["time", "star"], next(arranged),),
-        },
-        coords={
-            "jd": ("time", np.unique(ds["jd"])),
-            "x": ("star", next(arranged)[0]),
-            "y": ("star", next(arranged)[0]),
-            "time": ("time", np.unique(ds["time"])),
-            "star": ("star", natsorted(np.unique(ds["star"]))),
-        },
-        attrs=ds.attrs,
-    )
     return ds
 
 

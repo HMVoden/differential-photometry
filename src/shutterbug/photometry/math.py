@@ -24,7 +24,9 @@ def differential_magnitude(
         # dm = average((reference - star), axis=0)
 
         diff_mag.append(dm)
-    return np.asanyarray(diff_mag), np.asanyarray(varying_diff_mag)
+    diff_mag = np.asanyarray(diff_mag).transpose()
+    varying_diff_mag = np.asanyarray(varying_diff_mag).transpose()
+    return diff_mag, varying_diff_mag
 
 
 def differential_error(
@@ -46,7 +48,9 @@ def differential_error(
         de = np.sqrt(np.sum((error ** 2 + star ** 2), axis=0)) / N
         # de = average_error((reference - star), axis=0)
         diff_error.append(de)
-    return np.array(diff_error), np.array(varying_diff_error)
+    diff_error = np.asanyarray(diff_error).transpose()
+    varying_diff_error = np.asanyarray(varying_diff_error).transpose()
+    return diff_error, varying_diff_error
 
 
 def calculate_differential_magnitude(
