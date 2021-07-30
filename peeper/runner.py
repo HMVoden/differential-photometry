@@ -48,8 +48,8 @@ def run(input_file: PathLike):
     # TODO
     df = (
         io.extract(input_file)
-        .pipe(sanitize.remove_incomplete_sets)
         .pipe(sanitize.clean_data)
+        .pipe(sanitize.remove_incomplete_sets)
         .pipe(photometry.intra_day_iter)
         .pipe(ts.correct_offset)
         .pipe(photometry.inter_day)
