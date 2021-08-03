@@ -45,6 +45,7 @@ pytest = "^6.2.4"
 pytest-cov = "^2.12.1"
 pytest-randomly = "^3.8.0"
 tox = "^3.24.0"
+coverage = "^5.5"
 
 [tool.poetry.scripts]
 shutterbug = "shutterbug.cli:runner"

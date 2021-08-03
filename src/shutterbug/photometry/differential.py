@@ -1,13 +1,25 @@
 import logging
 from typing import Dict
 
-from xarray.core.groupby import DatasetGroupBy
-
+import numpy as np
+import scipy.spatial
 import shutterbug.photometry.math as math
 import shutterbug.progress_bars as bars
 import shutterbug.stats.stats as stats
-import numpy as np
 import xarray as xr
+from xarray.core.groupby import DatasetGroupBy
+
+
+def find_nearby_stars(ds: xr.Dataset, tolerance: float, star: str):
+    pass
+
+
+def find_magnitude_stars(ds: xr.Dataset, max: int, min: int) -> xr.Dataset:
+    pass
+
+
+def expanding_star_search(ds: xr.Dataset):
+    pass
 
 
 def calculate_differential_photometry(groups: DatasetGroupBy) -> xr.Dataset:
@@ -18,8 +30,14 @@ def calculate_differential_photometry(groups: DatasetGroupBy) -> xr.Dataset:
         de, _ = math.differential_error(non_varying["error"].values)
         non_varying = non_varying.assign(
             {
-                "average_diff_mags": (["time", "star"], dm,),
-                "average_uncertainties": (["time", "star"], de,),
+                "average_diff_mags": (
+                    ["time", "star"],
+                    dm,
+                ),
+                "average_uncertainties": (
+                    ["time", "star"],
+                    de,
+                ),
             }
         )
         return non_varying
@@ -36,14 +54,26 @@ def calculate_differential_photometry(groups: DatasetGroupBy) -> xr.Dataset:
         )
         non_varying = non_varying.assign(
             {
-                "average_diff_mags": (["time", "star"], dm,),
-                "average_uncertainties": (["time", "star"], de,),
+                "average_diff_mags": (
+                    ["time", "star"],
+                    dm,
+                ),
+                "average_uncertainties": (
+                    ["time", "star"],
+                    de,
+                ),
             }
         )
         varying = varying.assign(
             {
-                "average_diff_mags": (["time", "star"], vdm,),
-                "average_uncertainties": (["time", "star"], vde,),
+                "average_diff_mags": (
+                    ["time", "star"],
+                    vdm,
+                ),
+                "average_uncertainties": (
+                    ["time", "star"],
+                    vde,
+                ),
             }
         )
 
@@ -112,9 +142,15 @@ def iterate_differential_photometry(
     indentation=1,
 )
 def intra_day_iter(
-    ds: xr.Dataset, varying_flag: str, app_config: Dict, method: str, iterations: int,
+    ds: xr.Dataset,
+    varying_flag: str,
+    app_config: Dict,
+    method: str,
+    iterations: int,
 ) -> xr.Dataset:
-    intra_pbar = bars.get(name="intra_diff",)
+    intra_pbar = bars.get(
+        name="intra_diff",
+    )
     bars.update(
         pbar=intra_pbar, attr="total", update_to=len(np.unique(ds["time.date"]))
     )

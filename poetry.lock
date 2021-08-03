@@ -233,7 +233,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 name = "coverage"
 version = "5.5"
 description = "Code coverage measurement for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
 
@@ -1323,7 +1323,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9 <3.10"
-content-hash = "6efefc19fd628776e8e55e137f7e90d5ee9c858bf71d4192b2146ab681bd7433"
+content-hash = "433f30b84651ba6cdf89c5b71aef41813657e4c2eaaf63617055407674728571"
 
 [metadata.files]
 alabaster = [

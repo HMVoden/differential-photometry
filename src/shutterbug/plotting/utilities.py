@@ -1,14 +1,13 @@
 import logging
 from pathlib import Path
-from typing import Dict, Tuple, List
-
-import xarray as xr
+from typing import Dict, List, Tuple
 
 import matplotlib
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+import xarray as xr
 from matplotlib.figure import Figure
 
 
@@ -135,7 +134,7 @@ def max_variation(
     uniform_y_axis: bool = False,
     mag_y_scale: float = None,
     diff_y_scale: float = None,
-) -> Tuple[float, float]:
+) -> xr.Dataset:
     if mag_y_scale is not None or diff_y_scale is not None:
         ds.attrs["mag_var"] = mag_y_scale
         ds.attrs["diff_var"] = diff_y_scale

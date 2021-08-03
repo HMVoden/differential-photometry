@@ -1,14 +1,14 @@
 import logging
+from functools import cache
 from typing import Any, Dict, List
 
-import pandas as pd
-import xarray as xr
 import numpy as np
+import pandas as pd
 import shutterbug.data.utilities as util
-from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
-from functools import cache
-
+import xarray as xr
 from natsort import natsorted
+from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
+from scipy.stats import mode
 
 columns_check_function = {
     "mag": is_numeric_dtype,
@@ -41,7 +41,7 @@ def clean_names(names: List[str]) -> Dict:
     return from_to
 
 
-def drop_duplicates(ds: xr.Dataset):
+def drop_duplicate_time(ds: xr.Dataset):
     logging.info("Removing duplicates")
     ds = ds.swap_dims({"index": "time"})
 
@@ -65,6 +65,8 @@ def arrange_star_time(ds: xr.Dataset):
     )
     ds.attrs["total_samples"] = ds["star"].size
     ds.attrs["total_stars"] = ds["time"].size
+    ds["x"] = ("star", ds["x"].values[0])
+    ds["y"] = ("star", ds["y"].values[0])
 
     return ds
 
@@ -91,8 +93,6 @@ def drop_and_clean_names(ds: xr.Dataset, required_data: List[str]) -> xr.Dataset
         cleaned.pop(name, None)
     ds = ds.drop_vars(to_drop)
     ds = ds.rename(cleaned)
-    if "obj" in ds.keys():
-        ds = ds.rename(obj="star")
     if "name" in ds.keys():
         ds = ds.rename(name="star")
     return ds
@@ -100,39 +100,59 @@ def drop_and_clean_names(ds: xr.Dataset, required_data: List[str]) -> xr.Dataset
 
 def remove_incomplete_stars(
     ds: xr.Dataset, stars_to_remove: list[str] = None
-) -> List[float]:
-    stars, counts = np.unique(ds["star"].values, return_counts=True)
-    star_mode = np.amax(counts)  # most common value
-    bad_stars = np.extract((counts != star_mode), stars).tolist()
-    nan_stars = ds.where(ds["mag"].isnull() | ds["error"].isnull(), drop=True)[
-        "star"
-    ].data.tolist()
-    bad_stars.extend(nan_stars)
+) -> xr.Dataset:
+    logging.info("Removing stars")
+    original_stars = np.unique(ds["star"].values)
+    ds = ds.pipe(remove_nan_stars).pipe(remove_wrong_count_stars)
+    if stars_to_remove is not None:
+        ds = remove_stars(ds, stars_to_remove)
+    removed_stars = np.setdiff1d(original_stars, ds["star"].values)
+    logging.info("Total removed stars: %s ", len(removed_stars))
+    logging.debug("Removed stars with names: %s", removed_stars)
+    return ds
 
+
+def remove_wrong_count_stars(ds: xr.Dataset):
+    stars, counts = np.unique(ds["star"], return_counts=True)
+    mode_list, _ = mode(counts, axis=None)
+    star_mode = mode_list[0]
+    bad_stars = np.extract((counts != star_mode), stars).tolist()
+    ds = remove_stars(ds, bad_stars)
     if len(bad_stars) > 0:
         logging.warning(
             "Stars %s have been found without sufficient amount of information",
             np.unique(bad_stars),
         )
-    if stars_to_remove is not None:
-        bad_stars.extend(stars_to_remove)
-    ds = ds.where(~ds["star"].isin(bad_stars), drop=True)
-    bad_stars = np.unique(bad_stars)
-    logging.info("Removed stars: %s", bad_stars)
-    logging.info("Removed star count %s", len(bad_stars))
     return ds
 
 
-def to_remove_to_list(to_remove: str) -> List[str]:
+def remove_nan_stars(ds: xr.Dataset):
+    nan_stars = ds.where(ds.isnull(), drop=True)
+    nan_list = nan_stars["star"].values.tolist()
+    if len(nan_list) > 0:
+        logging.warning(
+            "Stars %s have been found with junk data",
+            np.unique(nan_list),
+        )
+    ds = remove_stars(ds, nan_list)
+    return ds
+
+
+def remove_stars(ds: xr.Dataset, stars_to_remove: list[str]):
+    removal_index_array = ~ds["star"].isin(stars_to_remove)
+    ds = ds.where(removal_index_array, drop=True)
+    return ds
+
+
+def to_remove_to_list(to_remove: str = None) -> List[str]:
+    result = []
     if to_remove is not None:
         if "," in to_remove:
-            to_remove.str.replace(" ", "")
-            to_remove = to_remove.split(",")
+            to_remove = to_remove.replace(" ", "")
+            result = to_remove.split(",")
         else:
-            to_remove = to_remove.split(" ")
-    else:
-        to_remove = []
-    return to_remove
+            result = to_remove.split(" ")
+    return result
 
 
 def clean_header(header: str) -> str:

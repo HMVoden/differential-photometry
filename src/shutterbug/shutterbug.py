@@ -59,8 +59,11 @@ def process(input_file: Path):
         io.extract(input_file)
         .pipe(sanitize.drop_and_clean_names, required_data=input_config["required"])
         .pipe(sanitize.add_time_information, time_name=input_config["time"])
-        .pipe(sanitize.clean_data, coord_names=input_config["coords"],)
-        .pipe(sanitize.drop_duplicates)
+        .pipe(
+            sanitize.clean_data,
+            coord_names=input_config["coords"],
+        )
+        .pipe(sanitize.drop_duplicate_time)
         .pipe(sanitize.remove_incomplete_stars, stars_to_remove=config.get("remove"))
         .pipe(sanitize.arrange_star_time)
         .pipe(
