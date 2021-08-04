@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 import shutterbug.data.sanitize as sanitize
 from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
+from tests.conftest import compare_double_test_data, compare_single_test_data
 
 required_cols = ["obj", "name", "mag", "error", "x", "y", "jd"]
 
@@ -129,3 +130,27 @@ def test_remove_incomplete(pre_cleaned_duplicates, stars_to_remove):
     data = sanitize.remove_incomplete_stars(data, stars_to_remove)
     assert np.unique(data["star"]).size < initial_star_count
     assert np.unique(data["time"]).size <= initial_time_count
+
+
+class TestCompare:
+    @pytest.mark.parametrize(
+        "in_data", [compare_single_test_data, compare_double_test_data]
+    )
+    def test_compare_columns(self, in_data):
+        raw, good = in_data
+        data = sanitize.drop_and_clean_names(raw, required_cols)
+        data = sanitize.add_time_information(data, "jd")
+        data = sanitize.clean_data(data, ["star", "x", "y", "jd", "time"])
+        data = sanitize.remove_nan_stars(data)
+        data = sanitize.remove_wrong_count_stars(data)
+        data = sanitize.drop_duplicate_time(data)
+        good = sanitize.drop_and_clean_names(
+            good, ["mag", "error", "x", "y", "star", "jd", "time"]
+        )
+        good = good.set_coords(["star", "time", "x", "y"])
+        data = data.drop_vars("jd")  # not in 'clean' set
+        good = good.transpose().sortby("star")
+        data = data.sortby("star")
+        assert np.array_equal(data["mag"].values, good["mag"].values)
+        assert np.array_equal(data["error"].values, good["error"].values)
+        assert np.array_equal(data["star"].values, good["star"].values)

@@ -11,7 +11,12 @@ from xarray.core.groupby import DatasetGroupBy
 
 
 def find_nearby_stars(ds: xr.Dataset, tolerance: float, star: str):
-    pass
+
+    star_xy = ds.sel(star=star)["x", "y"]
+    delta_xy = ds["x", "y"] - star_xy
+    distance = np.sqrt(delta_xy["x"] ** 2 + delta_xy["y"] ** 2)
+    nearby_stars = ds.where(distance < tolerance, drop=True)["star"].tolist
+    return nearby_stars
 
 
 def find_magnitude_stars(ds: xr.Dataset, max: int, min: int) -> xr.Dataset:

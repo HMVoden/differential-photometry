@@ -1,4 +1,4 @@
-,id,mag,error,x,y,time,y_m_d,intra_varying,average_diff_mags,average_uncertainties,adf_gls,mag_offset,diff_mag_offset,c_mag,c_average_diff_mags,inter_varying,graph_intra,varying
+,star,mag,error,x,y,time,y_m_d,intra_varying,average_diff_mags,average_uncertainties,adf_gls,mag_offset,diff_mag_offset,c_mag,c_average_diff_mags,inter_varying,graph_intra,varying
 0,Mira-1,13.3591,0.0232,1441.922,780.772,2021-05-19 05:12:20.998086400,2021-05-19,True,0.122423396,0.0043471367,0.9992131510275105,0.0,0.0,13.3591,0.122423396,True,True,True
 1,Mira-2,15.3407,0.0471,1026.035,1157.063,2021-05-19 05:12:20.998086400,2021-05-19,True,-1.8852501,0.0063807685,0.3047254425137027,0.0,0.0,15.3407,-1.8852501,True,True,True
 2,Mira-3,15.5488,0.1031,1086.012,772.016,2021-05-19 05:12:20.998086400,2021-05-19,False,-2.0960884,0.012244659,0.0069132845426845045,0.0,0.0,15.5488,-2.0960884,False,False,False

@@ -13,6 +13,8 @@ raw = [x for x in files(raw).iterdir() if x.suffix == ".csv"]
 single = [x for x in files(single).iterdir() if x.suffix == ".csv"]
 double = [x for x in files(double).iterdir() if x.suffix == ".csv"]
 duplicates = [x for x in files(dup).iterdir() if x.suffix == ".csv"]
+raw_good_single = ((raw[1], single[0]), (raw[1], single[1]))
+raw_good_double = ((raw[0], double[0]), (raw[0], double[1]))
 
 
 @pytest.fixture(scope="session", params=raw)
@@ -33,3 +35,17 @@ def dual_night_test_data(request):
 @pytest.fixture(scope="session", params=duplicates)
 def dup_test_data(request):
     yield pd.read_csv(request.param).to_xarray()
+
+
+@pytest.fixture(scope="session", params=raw_good_single)
+def compare_single_test_data(request):
+    raw = pd.read_csv(request.param[0]).to_xarray()
+    good = pd.read_csv(request.param[1]).to_xarray()
+    yield raw, good
+
+
+@pytest.fixture(scope="session", params=raw_good_double)
+def compare_double_test_data(request):
+    raw = pd.read_csv(request.param[0]).to_xarray()
+    good = pd.read_csv(request.param[1]).to_xarray()
+    yield raw, good
