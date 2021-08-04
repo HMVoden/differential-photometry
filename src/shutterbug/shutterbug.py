@@ -42,16 +42,16 @@ def process(input_file: Path):
     # TODO write function that finds nearby stars
     # TODO write function that finds stars less than 0.5 mag dimmer
     # TODO write function that scales restrictions to get minimum # of stars
-    # TODO write blitting functions for graphing
     # WANT
     # TODO Re-organize by program section (input, sanitization, etc)
     # TODO write documentation
     # TODO write function docstrings
     # TODO improve progess bar code
-    # TODO fix progress bars not finishing
     # TODO add machine learning for star detection
     # TODO write tests for all functions
     # TODO write benchmark code to test memory/CPU use
+    # TODO modify diff phot code for xarray
+    # TODO refactor plotting for xarray
     # Extraction, cleanup and processing
     # io.extract returns a dataframe which we
     # then move around in a pipe

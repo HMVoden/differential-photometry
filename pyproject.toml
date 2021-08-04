@@ -48,7 +48,7 @@ tox = "^3.24.0"
 coverage = "^5.5"
 
 [tool.poetry.scripts]
-shutterbug = "shutterbug.cli:runner"
+shutterbug = "shutterbug.cli:cli"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

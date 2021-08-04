@@ -189,9 +189,10 @@ def inter_day(ds: xr.Dataset, app_config: Dict, method: str) -> xr.Dataset:
     )
     # Detecting if stars are varying across entire dataset
     logging.info("Detecting inter-day variable stars...")
+
     ds.coords[method] = xr.apply_ufunc(
         stats.test_stationarity,
-        (ds["average_diff_mags"].groupby("time.date") - ds["dmag_offset"]),
+        (ds["average_diff_mags"] - ds["dmag_offset"]),
         kwargs={"method": method, "clip": clip},
         input_core_dims=[["time"]],
         vectorize=True,

@@ -2,13 +2,15 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-import matplotlib
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import seaborn as sns
 import xarray as xr
+from matplotlib.backends.backend_agg import FigureCanvasAgg, RendererAgg
 from matplotlib.figure import Figure
+from matplotlib.transforms import BboxBase
 
 
 class Singleton:
@@ -20,40 +22,34 @@ class Singleton:
         return cls._instance
 
 
+# TODO refactor this so it's not so abhorrent
 class WorkerFigure(Singleton):
-    # nrows: int
-    # ncols: int
-    # figsize: Tuple[int, int]
-    # name: str
-    # plot_config: Dict
+    nrows: int
+    ncols: int
+    figsize: Tuple[int, int]
+    name: str = "worker"
+    plot_config: Dict
+    output_folder: Path
+    axes: npt.NDArray
+    _bg: BboxBase
+    _renderer: RendererAgg
+    canvas: FigureCanvasAgg
+    fig: Figure
 
     def __init__(
         self,
         nrows: int,
         ncols: int,
         figsize: Tuple[int, int],
-        name: str,
         plot_config: Dict,
         output_folder: Path,
     ):
         plt.ioff()
-
         self.plot_config = plot_config
+        sns.set_theme(**self.plot_config["seaborn"])
         self.nrows = nrows
         self.ncols = ncols
         self.figsize = figsize
-        self.name = name
-        self.set_axes()
-        self.output_folder = output_folder
-        if self.axes.ndim == 1:
-            self.single_day = True
-        else:
-            self.single_day = False
-
-        # self.fig.canvas.copy_from_bbox(self.fig.bbox)
-
-    def set_axes(self):
-        sns.set_theme(**self.plot_config["seaborn"])
         self.fig, self.axes = plt.subplots(
             num=self.name,
             clear=True,
@@ -65,7 +61,38 @@ class WorkerFigure(Singleton):
         )
         self.fig.subplots_adjust(wspace=0.025)
         self.axes = np.asanyarray(self.axes).transpose()
+        self.canvas = self.fig.canvas
+        self.cid = self.canvas.mpl_connect("draw_event", self.on_draw)
+
+        self.output_folder = output_folder
+        if self.axes.ndim == 1:
+            self.single_day = True
+        else:
+            self.single_day = False
         self.axis_index = 0
+        for ax in self.axes.flatten():
+            ax.set_animated(True)
+        self.canvas.draw()
+
+    def on_draw(self, event):
+        cv = self.canvas
+        if event is not None:
+            if event.canvas != cv:
+                raise RuntimeError
+        self._bg = cv.copy_from_bbox(cv.figure.bbox)
+        self._renderer = cv.get_renderer()
+        self._draw_plots()
+
+    def update(self):
+        cv = self.canvas
+        fig = cv.figure
+        if self._bg is None:
+            self.on_draw(None)
+        else:
+            cv.restore_region(self._bg)
+            self._draw_plots
+            cv.blit(fig.bbox)
+        cv.flush_events()
 
     def get_next_axis(self):
         if self.single_day:
@@ -78,9 +105,6 @@ class WorkerFigure(Singleton):
                 self.current_axis = self.axes[self.axis_index]
                 self.axis_index += 1
                 return self.current_axis
-
-    def reset_figure(self):
-        self.set_axes()
 
     def share_rows_y(self):
         if self.single_day:
@@ -117,13 +141,22 @@ class WorkerFigure(Singleton):
             for ax in self.axes.flatten():
                 ax.label_outer()
 
+    def _draw_plots(self):
+        renderer = self._renderer
+        for ax in self.axes.flatten():
+            ax.draw(renderer)
+
     def save(self, file_name: str):
+        self._create_folder()
+        output_file = self.output_folder.joinpath(file_name + ".png")
+        self.fig.autofmt_xdate()
+        self.update()
+        self.fig.savefig(fname=output_file, transparent=False, bbox_inches="tight")
+
+    def _create_folder(self):
         if not self.output_folder.exists():
             logging.info("Creating directory %s", self.output_folder)
             self.output_folder.mkdir(parents=True, exist_ok=True)
-        output_file = self.output_folder.joinpath(file_name + ".png")
-        self.fig.autofmt_xdate()
-        self.fig.savefig(fname=output_file, transparent=False, bbox_inches="tight")
 
     def set_super_title(self, name):
         self.fig.suptitle("Raw and differential magnitude of star " + name)

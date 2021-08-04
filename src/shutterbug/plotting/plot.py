@@ -11,11 +11,11 @@ from typing import Dict, List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import xarray as xr
+import seaborn as sns
 import shutterbug.data.input_output as io
 import shutterbug.plotting.utilities as plot_util
 import shutterbug.progress_bars as bars
-import seaborn as sns
+import xarray as xr
 
 manager = None
 status = None
@@ -24,7 +24,6 @@ status = None
 def plot_and_save_all(
     ds: xr.Dataset, plot_config: Dict, uniform_y_axis: bool, offset: bool
 ):
-    # np.array(np.meshgrid([True, False], [True, False])).reshape((-1,2))
     logging.info("Starting graphing...")
     ds = ds.swap_dims({"star": "intra_varying"})
     ds = ds.set_index(varying=("intra_varying", "inter_varying"))
@@ -45,7 +44,10 @@ def generate_data_folders(
 ) -> List[Tuple[pd.DataFrame, Path]]:
     intra, inter = np.unique(ds["varying"])[0]
     ds.attrs["output_folder"] = io.generate_graph_output_path(
-        offset=offset, uniform=uniform_y_axis, intra_varying=intra, inter_varying=inter,
+        offset=offset,
+        uniform=uniform_y_axis,
+        intra_varying=intra,
+        inter_varying=inter,
     )
     return ds
 
@@ -72,7 +74,10 @@ def teardown_plot_dataset(ds: xr.Dataset) -> xr.Dataset:
 
 
 def multiprocess_save(
-    ds: xr.Dataset, plot_config: Dict, uniform: bool, offset: bool,
+    ds: xr.Dataset,
+    plot_config: Dict,
+    uniform: bool,
+    offset: bool,
 ):
     """Runner function, sets up multiprocess graphing for system
 
@@ -117,15 +122,16 @@ def multiprocess_save(
 
     with ProcessPoolExecutor(max_workers=(cpu_count() - 1)) as executor:
         futures = {
-            executor.submit(build_and_save_figure, ds=stars, plot_config=plot_config,)
+            executor.submit(
+                build_and_save_figure,
+                ds=stars,
+                plot_config=plot_config,
+            )
             for _, stars in frame.groupby("star")
         }
         for future in as_completed(futures):
             pbar.update()
-            try:
-                future.result()
-            except Exception as e:
-                print("%s generated error: %s", future, e)
+            future.result()
     # pbar_folders.update()
     frame = teardown_plot_dataset(frame)
     gc.collect()
@@ -133,7 +139,10 @@ def multiprocess_save(
     return frame
 
 
-def build_and_save_figure(ds: xr.Dataset, plot_config: Dict,) -> bool:
+def build_and_save_figure(
+    ds: xr.Dataset,
+    plot_config: Dict,
+) -> xr.Dataset:
     if ["mag_var", "diff_var"] in list(ds.attrs.keys()):
         mag_lim = limits_from_median(ds["mag"], ds.attrs["mag_var"])
         diff_lim = limits_from_median(ds["average_diff_mags"], ds.attrs["diff_var"])
@@ -147,7 +156,6 @@ def build_and_save_figure(ds: xr.Dataset, plot_config: Dict,) -> bool:
         nrows=4,
         ncols=len(np.unique(ds["time.date"])),
         figsize=(5 * len(np.unique(ds["time.date"])), 15),
-        name="fig1",
         output_folder=ds.attrs["output_folder"],
         plot_config=plot_config,
     )
@@ -166,7 +174,6 @@ def build_and_save_figure(ds: xr.Dataset, plot_config: Dict,) -> bool:
     figure.set_date_formatter()
     figure.set_super_title(str(ds["star"].data))
     figure.save(str(ds["star"].data))
-    figure.reset_figure()
     return ds  # placeholder
 
 
@@ -185,27 +192,7 @@ def create_4x1_raw_diff_plot(
     plot_config: Dict,
     mag_lim: float = None,
     diff_lim: float = None,
-) -> pd.DataFrame:
-    """Creates a column plot of 2 scatter and 2 line plots, one of each is for raw
-    magnitude and one of each is for differential magnitude.
-    Requires errors for both.
-
-    Parameters
-    ----------
-    star : pd.Dataframe
-        Dataframe containing necessary values, specifically
-        numerical columns "mag", "average_diff_mags",
-        "error", "average_uncertainty"
-    mag_max_variation : float, optional
-        The maximum dataset variation found in a single day for raw magnitude, by default None
-    diff_max_variation : float, optional
-        The maximum dataset variation found in a single day for differential magnitude, by default None
-
-    Returns
-    -------
-    figure
-        Matplotlib figure of a column representing a timeseries day
-    """
+) -> xr.Dataset:
     axes = figure.get_next_axis()
 
     # Raw Magnitude
@@ -283,9 +270,9 @@ def plot_line_scatter(
     }
     error_settings = {"x": x, **plot_config["error"]["bar"]}
 
-    sns.lineplot(ax=axes[0], x=x, y=y, ci=None, color=color)
+    sns.lineplot(ax=axes[0], x=x, y=y, ci=None, color=color, animated=True)
     axes[0].fill_between(**fill_between)
-    sns.scatterplot(ax=axes[1], x=x, y=y, ci=None, color=color)
+    sns.scatterplot(ax=axes[1], x=x, y=y, ci=None, color=color, animated=True)
     axes[1].errorbar(y=y, yerr=error, label="Error", **error_settings)
     for ax in axes:
         ax.set_xlabel(xlabel)
