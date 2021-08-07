@@ -1,6 +1,6 @@
 required = ["obj", "name", "mag", "error", "x", "y", "jd"]
 coords = ["star", "x", "y", "jd"]
-time = "jd"
+time_col_name="jd"
 
 [excel]
 "module" = "pd"

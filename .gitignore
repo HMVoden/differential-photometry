@@ -142,7 +142,7 @@ profiles/
 *.jpg
 *.hd5
 *.nc
-working.toml
+*.org
 output/
 results/
 data/

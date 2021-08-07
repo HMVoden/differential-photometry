@@ -1,7 +1,7 @@
-# Version doesn't mean anything
-version = 1 # required for logging config to work
 # formatters format, use . to make a new one then name it
-# in he handlers
+# in the handlers
+[logging]
+enabled = true
 [formatters.detailed]
 class = "logging.Formatter"
 #8s right-justifies level name, -8s will left-justify

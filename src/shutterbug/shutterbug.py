@@ -1,47 +1,38 @@
-import gc
 import logging.config
 from pathlib import Path
 
 import xarray as xr
 
-import shutterbug.config.manager as config
-import shutterbug.data.input_output as io
-import shutterbug.data.sanitize as sanitize
-import shutterbug.photometry.differential as photometry
-import shutterbug.plotting.plot as plot
-import shutterbug.plotting.utilities as plot_util
-import shutterbug.progress_bars as bars
-import shutterbug.timeseries.timeseries as ts
+import shutterbug.config.config as config
+import shutterbug.input.input as input
+import shutterbug.logging.log as log
+import shutterbug.output.output as output
+import shutterbug.photometry.photometry as photometry
+import shutterbug.ux.progress_bars as bars
 
 
-def initialize(**settings):
-    config.load_file_configuration()
+def initialize(**cli_settings):
     # Setup logging for verbose output
-    if config.get("application")["logging"]["enabled"] == True:
-        log_config = config.get("logging")
-        logging.config.dictConfig(log_config)
-        logging.debug("Logging configured")
-    logging.info("Application initialized successfully")
 
     bars.init()
-    config.init_configuration(**settings)
+    config.ConfigDirector(**cli_settings)
 
 
 def teardown():
     bars.close_all()
+    ConfigDirector().clear_runtime()
 
 
 def process(input_file: Path):
-
-    config.update("filename", input_file)
+    config = config.ConfigDirector()
+    runtime_config = config.get("runtime")
+    runtime_config.add("runtime", input_file)
     input_config = config.get("input")
     app_config = config.get("application")
     plot_config = config.get("plotting")
+    cli_config = config.get("cli")
 
-    # NEED
-    # TODO write function that finds nearby stars
-    # TODO write function that finds stars less than 0.5 mag dimmer
-    # TODO write function that scales restrictions to get minimum # of stars
+
     # WANT
     # TODO Re-organize by program section (input, sanitization, etc)
     # TODO write documentation
@@ -57,21 +48,21 @@ def process(input_file: Path):
     # then move around in a pipe
     (
         io.extract(input_file)
-        .pipe(sanitize.drop_and_clean_names, required_data=input_config["required"])
-        .pipe(sanitize.add_time_information, time_name=input_config["time"])
+        .pipe(sanitize.drop_and_clean_names, required_data=input_config.get("required"))
+        .pipe(sanitize.add_time_information, time_name=input_config.get("time_col_name")
         .pipe(
             sanitize.clean_data,
-            coord_names=input_config["coords"],
+            coord_names=input_config.get("coords"),
         )
         .pipe(sanitize.drop_duplicate_time)
-        .pipe(sanitize.remove_incomplete_stars, stars_to_remove=config.get("remove"))
+        .pipe(sanitize.remove_incomplete_stars, stars_to_remove=cli_config.get("remove"))
         .pipe(sanitize.arrange_star_time)
         .pipe(
             photometry.intra_day_iter,
             varying_flag=app_config["varying_flag"],
             app_config=app_config,
             method=app_config["detection_method"],
-            iterations=config.get("iterations"),
+            iterations=cli_config.get("iterations"),
         )
         .pipe(ts.correct_offset)
         .pipe(

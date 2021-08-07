@@ -2,7 +2,7 @@ from importlib.resources import files
 
 import pandas as pd
 import pytest
-import xarray as xr
+import shutterbug.data.sanitize as sanitize
 
 import tests.datasets.double as double
 import tests.datasets.duplicates as dup
@@ -41,11 +41,25 @@ def dup_test_data(request):
 def compare_single_test_data(request):
     raw = pd.read_csv(request.param[0]).to_xarray()
     good = pd.read_csv(request.param[1]).to_xarray()
-    yield raw, good
+    yield (raw, good)
 
 
 @pytest.fixture(scope="session", params=raw_good_double)
 def compare_double_test_data(request):
     raw = pd.read_csv(request.param[0]).to_xarray()
     good = pd.read_csv(request.param[1]).to_xarray()
-    yield raw, good
+    yield (raw, good)
+
+
+@pytest.fixture(scope="session", params=raw)
+def clean_data(request):
+    data = pd.read_csv(request.param).to_xarray()
+    data = sanitize.drop_and_clean_names(
+        data, required_data=["mag", "error", "x", "y", "jd", "name"]
+    )
+    data = sanitize.add_time_information(data, "jd")
+    data = sanitize.clean_data(data, ["x", "y", "jd", "time", "star"])
+    data = sanitize.drop_duplicate_time(data)
+    data = sanitize.remove_incomplete_stars(data)
+    data = sanitize.arrange_star_time(data)
+    yield data

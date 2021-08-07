@@ -34,6 +34,7 @@ h5netcdf = "^0.11"
 scipy = "^1.7"
 dask = "^2021.7"
 arch = "^5.0.1"
+pydantic = "^1.8.2"
 
 
 [tool.poetry.dev-dependencies]
@@ -46,9 +47,10 @@ pytest-cov = "^2.12.1"
 pytest-randomly = "^3.8.0"
 tox = "^3.24.0"
 coverage = "^5.5"
+pytest-lazy-fixture = "^0.6.3"
 
 [tool.poetry.scripts]
-shutterbug = "shutterbug.cli:cli"
+shutterbug = "shutterbug.ux.cli:cli"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
