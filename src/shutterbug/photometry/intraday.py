@@ -1,98 +1,11 @@
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
 import numpy as np
 import numpy.typing as npt
-import shutterbug.config.manager as config
-import shutterbug.photometry.math as math
-import shutterbug.progress_bars as bars
 import shutterbug.stats.stats as stats
 import xarray as xr
-from scipy.spatial import KDTree
 from xarray.core.groupby import DatasetGroupBy
-
-
-def find_nearby_stars(ds: xr.Dataset, tree: KDTree, tolerance: float, target: str):
-    """Finds stars that are nearby target star, within radius tolerance, using a
-    KDtree
-
-
-        Parameters
-        ----------
-        ds : xr.Dataset
-            Clean dataset with target star
-        tree : KDTree
-            KDtree using all stars in dataset's locations
-        tolerance : float
-            Maximum radius to search within
-        target : str
-            Name of target star
-
-    """
-    target_x = ds.sel(star=target)["x"].values
-    target_y = ds.sel(star=target)["y"].values
-    target_xy = np.column_stack((target_x, target_y))[0]
-    result_indices = tree.query_ball_point(x=target_xy, r=tolerance)
-    nearby_stars = ds.isel(star=result_indices, drop=True)["star"].values
-    return nearby_stars
-
-
-def find_stars_by_magnitude(
-    ds: xr.Dataset, tolerance: float, target: str
-) -> npt.NDArray:
-    """Locates all stars that are less than (brighter) a target star's median
-    magnitude plus a tolerance
-
-
-
-        Parameters
-        ----------
-        ds : xr.Dataset
-            Already cleaned dataset
-        tolerance : float
-            The amount to add to a star's median
-        target : str
-            Target star's name
-
-        Returns
-        -------
-        npt.NDArray
-            Numpy array of all the star's names that this found
-
-    """
-    target_median = ds["mag"].sel(star=target).median("time")
-    target_median_plus_tolerance = target_median + tolerance
-    all_medians = ds.groupby("star").median("time")
-    filtered = all_medians.where(
-        all_medians.mag <= target_median_plus_tolerance, drop=True
-    )
-    filtered_stars = filtered["star"].values
-    return filtered_stars
-
-
-def build_kd_tree(x: npt.NDArray[np.float64], y: npt.NDArray[np.float64]) -> KDTree:
-    """Makes a KDtree from the x-y coordinates of each star
-
-    Parameters
-    ----------
-    x : npt.NDArray[np.float64]
-        x-coordinates for each star, in order of each star
-    y : npt.NDArray[np.float64]
-        y-coordinates of each star, in order of each star
-
-    Returns
-    -------
-    KDTree
-        scipy KDTree of all the x-y coordinates all stars
-
-    """
-    # build once and only once
-    kd_tree = config.get("kd_tree")
-    if kd_tree is None:
-        xy_coords = np.column_stack((x, y))
-        kd_tree = KDTree(xy_coords)
-        config.add("kd_tree", kd_tree)
-    return kd_tree
 
 
 def expanding_star_search(
@@ -312,43 +225,5 @@ def intra_day_iter(
     logging.info(
         "Detected total of %s intra-day varying stars",
         ds[varying_flag].sum(...).values,
-    )
-    return ds
-
-
-def inter_day(ds: xr.Dataset, app_config: Dict, method: str) -> xr.Dataset:
-    clip = app_config[method]["clip"]
-    status = bars.status
-    status.update(stage="Differential Photometry per star")
-
-    # TODO Throw in callback function for inter_pbars
-    inter_pbar = bars.start(
-        name="inter_diff",
-        total=len(ds.indexes["star"]),
-        desc="  Calculating and finding variable inter-day stars",
-        unit="Days",
-        color="blue",
-        leave=False,
-    )
-    # Detecting if stars are varying across entire dataset
-    logging.info("Detecting inter-day variable stars...")
-
-    ds.coords[method] = xr.apply_ufunc(
-        stats.test_stationarity,
-        (ds["average_diff_mags"] - ds["dmag_offset"]),
-        kwargs={"method": method, "clip": clip},
-        input_core_dims=[["time"]],
-        vectorize=True,
-    )
-    inter_pbar.update(len(ds.indexes["star"]))
-    p_value = app_config[method]["p_value"]
-    null = app_config[method]["null"]
-    if null == "accept":
-        ds.coords["inter_varying"] = ds[method] >= p_value
-    else:
-        ds.coords["inter_varying"] = ds[method] <= p_value
-    logging.info(
-        "Detected %s inter-day variable stars",
-        ds["inter_varying"].groupby("star").all(...).sum(...).data,
     )
     return ds

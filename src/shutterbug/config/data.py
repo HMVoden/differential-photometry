@@ -21,31 +21,55 @@ class ImmutableData(ConfigData):
         frozen = True
 
 
-class InputConfig(ImmutableData):
+class DataConfig(ImmutableData):
     required: List[str]
     coords: List[str]
     time_col_name: str
-    types: List[str]
+    reader: Dict
 
 
 class CLIConfig(ImmutableData):
+    input_data: List[Path]
     output_folder: Path
     uniform: bool
     output_spreadsheet: bool
     correct_offset: bool
     iterations: int
-    remove: str
+    remove: List[str]
     mag_y_scale: float
     diff_y_scale: float
 
-    @validator("uniform")
-    def mag_or_uniform(cls, uniform):
+    @validator("input_data")
+    def make_file_list(cls, input_data: List[Path]) -> List[Path]:
+        result = []
+        for path in input_data:
+            if path.is_dir():
+                files = [x for x in path.iterdir() if x.is_file()]
+                result.extend(files)
+            else:
+                result.append(path)
+        return result
+
+    @validator("remove")
+    def split_str(cls, remove: str) -> List[str]:
+        if remove is not None:
+            if "," in remove:
+                remove = remove.replace(" ", "")
+                result = remove.split(",")
+            else:
+                result = remove.split(" ")
+            return result
+        return [""]
+
+    @validator("uniform", pre=True)
+    def mag_or_uniform(cls, uniform: bool) -> bool:
         mag_or_diff = cls.mag_y_scale or cls.diff_y_scale
         if uniform is True and mag_or_diff is True:
             logging.warning(
                 "Manual y-axis scaling and uniform y-axis flag are both set, disabling uniform flag."
             )
-            cls.uniform = False
+            return False
+        return uniform
 
 
 class RuntimeConfig(MutableData):

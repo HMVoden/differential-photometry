@@ -1,13 +1,9 @@
-import logging.config
 import warnings
 from pathlib import Path
 from typing import List
 
 import click
-import shutterbug.data.input_output as io
-import shutterbug.data.sanitize as sanitize
-import shutterbug.progress_bars as bars
-import shutterbug.shutterbug as bug
+import shutterbug.shutterbug as shutterbug
 from pandas.errors import DtypeWarning
 
 # Need this to prevent it from spamming
@@ -19,7 +15,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 @click.command()
 @click.argument(
-    "input_file",
+    "input_data",
     type=click.Path(file_okay=True, dir_okay=True, exists=True, path_type=Path),
     nargs=-1,
     required=True,
@@ -83,46 +79,21 @@ warnings.filterwarnings("ignore", category=UserWarning)
     help="""Sets the differential magnitude y-scale to have this value above and below the median
               of any dataset when plotted. OVERRIDES UNIFORM""",
 )
-def cli(
-    input_file: Path,
-    output_folder: Path,
-    uniform: bool,
-    output_excel: bool,
-    offset: bool,
-    iterations: int,
-    remove: str,
-    mag_y_scale: float,
-    diff_y_scale: float,
-):
-    remove = sanitize.to_remove_to_list(remove)
-    bug.initialize(
-        output_folder=output_folder,
-        uniform=uniform,
-        output_excel=output_excel,
-        offset=offset,
-        iterations=iterations,
-        remove=remove,
-        mag_y_scale=mag_y_scale,
-        diff_y_scale=diff_y_scale,
-    )
-
-    files = io.get_file_list(input_file)
-    run(files)
-
-    bars.status.update(stage="Finished")
+def cli(**cli_settings):
+    shutterbug.application(**cli_settings)
 
 
-@bars.progress(
-    name="Dataset",
-    desc="Processing dataset",
-    unit="dataset",
-    leave=True,
-    status_str="Processing data",
-    countable_var="files",
-)
-def run(files: List[Path]):
-    for data_file in files:
-        logging.info("Processing file %s", data_file.stem)
-        bug.process(data_file)
-        bug.teardown()
-        logging.info("Program finished, exiting.")
+# @bars.progress(
+#     name="Dataset",
+#     desc="Processing dataset",
+#     unit="dataset",
+#     leave=True,
+#     status_str="Processing data",
+#     countable_var="files",
+# )
+# def run(files: List[Path]):
+#     for data_file in files:
+#         logging.info("Processing file %s", data_file.stem)
+#         bug.process(data_file)
+#         bug.teardown()
+#         logging.info("Program finished, exiting.")

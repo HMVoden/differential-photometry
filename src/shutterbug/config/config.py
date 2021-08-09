@@ -1,8 +1,8 @@
 import logging
 from typing import Dict
 
+from shutterbug.config.data import ConfigData
 from shutterbug.config.factory import ConfigFactory
-from shutterbug.config.manager import ConfigDataManager
 
 
 class Singleton:
@@ -23,7 +23,7 @@ class ConfigDirector(Singleton):
         cli = self.factory.build("cli", cli_settings)
         self.built_config["cli"] = cli
 
-    def get(self, config_name: str) -> ConfigDataManager:
+    def get(self, config_name: str) -> ConfigData:
         config = self.built_config
         to_return = None
         if config_name in config.keys():

@@ -2,37 +2,37 @@ required = ["obj", "name", "mag", "error", "x", "y", "jd"]
 coords = ["star", "x", "y", "jd"]
 time_col_name="jd"
 
-[excel]
+[reader.excel]
 "module" = "pd"
 "reader" = "read_excel"
-[excel.settings]
+[reader.excel.settings]
 "sheet_name" = 0
 "header" = 0     # header row
 # "index_col" = # Uncomment for use
 "engine" = "openpyxl"
-[csv]
+[reader.csv]
 "module" = "pd"
 "reader" = "read_csv"
-[csv.settings]
+[reader.csv.settings]
 "delimiter" = ","
 "header" = "infer"
-[parquet]
+[reader.parquet]
 "module" = "pd"
 "reader" = "read_parquet"
-[NETCDF4]
+[reader.NETCDF4]
 "module" = "xr"
 "reader" = "open_dataset"
-[NETCDF4.settings]
+[reader.NETCDF4.settings]
 "engine" = "h5netcdf"
 
-[NETCDF4_CLASSIC]
+[reader.NETCDF4_CLASSIC]
 "module" = "xr"
 "reader" = "open_dataset"
-[NETCDF4_CLASSIC.settings]
+[reader.NETCDF4_CLASSIC.settings]
 "engine" = "netcdf4"
 
 # Do not change below settings without modifying the code.
-[types]
+[reader.types]
 # Filetypes the program accepts
 ".xlsx" = "excel"
 ".xls" = "excel"
