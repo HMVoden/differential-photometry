@@ -44,7 +44,7 @@ class ConfigFactory:
         if config_name in files.keys():
             data = toml.load(files[config_name])
             data_class = ntfc[config_name]
-            data_class = data_class(data)
+            data_class = data_class.parse_obj(data)
             logging.debug("Built configuration from file %s", config_name)
             return data_class
         else:
@@ -56,7 +56,7 @@ class ConfigFactory:
         ntc = self.name_to_class
         data_class = ntc[config_name]
         if settings is not None:
-            data_class = data_class(settings)
+            data_class = data_class(**settings)
         else:
             data_class = data_class()
         logging.debug("Built configuration for non-file config %s", config_name)

@@ -9,18 +9,13 @@ import shutterbug.data.convert as convert
 import shutterbug.data.load as load
 import shutterbug.data.sanitize as sanitize
 import shutterbug.logging.log as log
-import shutterbug.output.graph as graph
-import shutterbug.output.spreadsheet as ss
+# import shutterbug.output.graph as graph
+# import shutterbug.output.spreadsheet as ss
 import shutterbug.photometry.photometry as photometry
 import shutterbug.ux.progress_bars as bars
 from shutterbug.config.data import (CLIConfig, DataConfig, LoggingConfig,
                                     OutputConfig, PhotometryConfig,
                                     RuntimeConfig)
-
-
-def teardown():
-    bars.close_all()
-    config.ConfigDirector().clear_runtime()
 
 
 def application(**cli_settings):
@@ -47,7 +42,7 @@ def application(**cli_settings):
     for file in cli_config.input_data:
         if file.suffix in data_config.reader["types"].keys():
 
-            (
+            ds = (  # Start of load/clean section
                 load.from_file(file, data_config.reader)
                 .pipe(sanitize.drop_and_clean_names, required_data=data_config.required)
                 .pipe(
@@ -60,42 +55,49 @@ def application(**cli_settings):
                 )
                 .pipe(convert.add_time, time_name=data_config.time_col_name)
                 .pipe(convert.arrange_star_time)
-                .pipe(
-                    photometry.intra_day_iter,
-                    varying_flag=app_config.varying_flag,
-                    app_config=app_config,
-                    method=app_config.detection_method,
-                    iterations=cli_config.iterations,
-                )
-                .pipe(ts.correct_offset)
-                .pipe(
-                    photometry.inter_day,
-                    app_config=app_config,
-                    method=app_config.detection_method,
-                )
-                .pipe(log_variable)
-                .pipe(
-                    plot_util.max_variation,
-                    uniform_y_axis=cli_config.uniform,
-                    mag_y_scale=cli_config.mag_y_scale,
-                    diff_y_scale=cli_config.diff_y_scale,
-                )
-                .pipe(
-                    plot.plot_and_save_all,
-                    plot_config=plot_config,
-                    uniform_y_axis=cli_config.uniform,
-                    offset=cli_config.correct_offset,
-                )
-                .pipe(
-                    io.save_to_csv,
-                    filename=input_file.stem,
-                    offset=cli_config.correct_offset,
-                    output_folder=cli_config.output_folder,
-                    output_flag=cli_config.output_spreadsheet,
-                )
-            )
-            teardown()
-        logging.info("Application finished, exiting")
+            )  # end of load/clean section
+
+            ()  # start of every star section  # end of every star section
+
+            ()  # start of per-star section  # end of per-star section
+        #         .pipe(
+        #             photometry.intra_day_iter,
+        #             varying_flag=app_config.varying_flag,
+        #             app_config=app_config,
+        #             method=app_config.detection_method,
+        #             iterations=cli_config.iterations,
+        #         )
+        #         .pipe(ts.correct_offset)
+        #         .pipe(
+        #             photometry.inter_day,
+        #             app_config=app_config,
+        #             method=app_config.detection_method,
+        #         )
+        #         .pipe(log_variable)
+        #         .pipe(
+        #             plot_util.max_variation,
+        #             uniform_y_axis=cli_config.uniform,
+        #             mag_y_scale=cli_config.mag_y_scale,
+        #             diff_y_scale=cli_config.diff_y_scale,
+        #         )
+        #         .pipe(
+        #             plot.plot_and_save_all,
+        #             plot_config=plot_config,
+        #             uniform_y_axis=cli_config.uniform,
+        #             offset=cli_config.correct_offset,
+        #         )
+        #         .pipe(
+        #             io.save_to_csv,
+        #             filename=input_file.stem,
+        #             offset=cli_config.correct_offset,
+        #             output_folder=cli_config.output_folder,
+        #             output_flag=cli_config.output_spreadsheet,
+        #         )
+
+        #     bars.close_all()
+        #     config.ConfigDirector().clear_runtime()
+        #     # end for loop
+        # logging.info("Application finished, exiting")
 
 
 def log_variable(ds: xr.Dataset):

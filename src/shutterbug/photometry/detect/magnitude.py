@@ -1,29 +1,40 @@
-def find_stars_by_magnitude(
-    ds: xr.Dataset, tolerance: float, target: str
-) -> npt.NDArray:
-    """Locates all stars that are less than (brighter) a target star's median
-    magnitude plus a tolerance
+from dataclasses import dataclass
 
-        Parameters
-        ----------
-        ds : xr.Dataset
-            Already cleaned dataset
-        tolerance : float
-            The amount to add to a star's median
-        target : str
-            Target star's name
+import numpy as np
+import numpy.typing as npt
+import xarray as xr
+from shutterbug.photometry.detect.detect import DetectBase
 
-        Returns
-        -------
-        npt.NDArray
-            Numpy array of all the star's names that this found
 
-    """
-    target_median = ds["mag"].sel(star=target).median("time")
-    target_median_plus_tolerance = target_median + tolerance
-    all_medians = ds.groupby("star").median("time")
-    filtered = all_medians.where(
-        all_medians.mag <= target_median_plus_tolerance, drop=True
-    )
-    filtered_stars = filtered["star"].values
-    return filtered_stars
+@dataclass
+class MagnitudeDetector(DetectBase):
+
+    star_medians: xr.DataArray
+
+    def detect(self, target_star: str) -> npt.NDArray[np.str_]:
+        """Locates all stars that are less than (brighter) a target star's median
+        magnitude plus a tolerance
+
+            Parameters
+            ----------
+            ds : xr.Dataset
+                Already cleaned dataset
+            tolerance : float
+                The amount to add to a star's median
+            target : str
+                Target star's name
+
+            Returns
+            -------
+            npt.NDArray
+                Numpy array of all the star's names that this found
+
+        """
+        tolerance = self.tolerance
+        medians = self.star_medians
+        target_median = medians.sel(star=target_star)
+        target_median_plus_tolerance = target_median + tolerance
+        result_stars = medians.where(
+            medians <= target_median_plus_tolerance, drop=True
+        ).star.values
+        return result_stars

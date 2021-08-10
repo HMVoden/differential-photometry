@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, validator
+from pydantic.class_validators import root_validator
 
 
 class ConfigData(ABC, BaseModel):
@@ -29,15 +30,15 @@ class DataConfig(ImmutableData):
 
 
 class CLIConfig(ImmutableData):
+    mag_y_scale: Optional[float]
+    diff_y_scale: Optional[float]
     input_data: List[Path]
-    output_folder: Path
-    uniform: bool
-    output_spreadsheet: bool
-    correct_offset: bool
+    output_folder: Optional[Path]
+    output_spreadsheet: Optional[bool]
+    correct_offset: Optional[bool]
     iterations: int
-    remove: List[str]
-    mag_y_scale: float
-    diff_y_scale: float
+    remove: Optional[List[str]]
+    uniform: Optional[bool]
 
     @validator("input_data")
     def make_file_list(cls, input_data: List[Path]) -> List[Path]:
@@ -61,15 +62,18 @@ class CLIConfig(ImmutableData):
             return result
         return [""]
 
-    @validator("uniform", pre=True)
-    def mag_or_uniform(cls, uniform: bool) -> bool:
-        mag_or_diff = cls.mag_y_scale or cls.diff_y_scale
+    @root_validator
+    def mag_or_uniform(cls, values) -> Optional[bool]:
+        uniform = values.get("uniform")
+        mag_y_scale = values.get("mag_y_scale")
+        diff_y_scale = values.get("diff_y_scale")
+        mag_or_diff = mag_y_scale or diff_y_scale
         if uniform is True and mag_or_diff is True:
             logging.warning(
                 "Manual y-axis scaling and uniform y-axis flag are both set, disabling uniform flag."
             )
-            return False
-        return uniform
+            cls.uniform = False
+        return values
 
 
 class RuntimeConfig(MutableData):
@@ -79,8 +83,7 @@ class RuntimeConfig(MutableData):
 class LoggingConfig(ImmutableData):
     version: int = 1  # mandatory to work
     formatters: Dict
-    console_handler: Dict
-    file_handler: Optional[Dict]
+    handlers: Dict
     root: Dict
 
 
@@ -90,4 +93,7 @@ class OutputConfig(ImmutableData):
 
 
 class PhotometryConfig(ImmutableData):
-    pass
+    detection_method: str
+    p_value: float
+    clip: bool
+    null: str

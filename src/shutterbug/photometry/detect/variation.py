@@ -1,112 +1,103 @@
-from typing import Any, List
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
-import shutterbug.config.manager as config
+import xarray as xr
 from arch.unitroot import ADF, DFGLS, KPSS, ZivotAndrews
 from scipy.stats import chisquare
+from shutterbug.photometry.detect.detect import DetectBase
 
 
-def test_stationarity(data: List[float], method: str = "adf_gls") -> float:
-    stat_function = adf_gls
-    if method == "chisquared":
-        stat_function = reduced_chi_square
-    if method == "adfuller":
-        stat_function = augmented_dfuller
-    if method == "kpss":
-        stat_function = kpss
-    if method == "zivot_andrews":
-        stat_function = zastat
-    if method == "adf_gls":  # best one so far
-        stat_function = adf_gls
-    test_statistic = stat_function(data)
+@dataclass
+class StationarityTestStrategy(ABC):
+    test_method: str
 
-    return test_statistic
+    @abstractmethod
+    def test(self, data: npt.NDArray) -> float:
+        pass
 
 
-def reduced_chi_square(
-    data: List[float], expected: List[float] = None, parameters_estimated: int = None
-):
-    """Computes the reduced chi squared of a given dataset and returns
-    a value that should be approximately 1. If the value is greatly less than one
-    the expected dataset has errors that are overestimated for the dataset.
+@dataclass
+class VariationDetector(DetectBase):
+    p_value: float
+    clip_data: bool
+    null: str
+    tester: StationarityTestStrategy
 
-    If the value is greatly more than one the expected values are a bad fit for the
-    data.
+    def detect(self, data: npt.NDArray) -> Tuple[bool, float, str]:
+        p_value = self.p_value
+        null = self.null
+        tester = self.tester
+        test_result = tester.test(data)
+        varying = False
 
-    Parameters
-    ----------
-    data : list-like
-        Data to have the reduced chi squared performed on
-    error : list-like, optional
-        Error(sigma) of the data, by default None
-    expected : list-like, optional
-        The expected data, must be same size as data, by default None
-    parameters_estimated : int, optional
-        The parameters estimated already in calculates, by default None
-
-    Returns
-    -------
-    float
-        The reduced chi squared test statistic
-    """
-    # This is ugly and can be handled better
-    data = np.asanyarray(data)
-    if parameters_estimated is None:
-        parameters_estimated = 1
-    if expected is None:
-        parameters_estimated += 1
-        expected = np.median(data)
-    variance = np.var(data, ddof=1)
-    dof = data.shape[0] - parameters_estimated - 1
-    chi = np.sum(((data - expected) ** 2 / variance)) / dof
-    # print(chi)
-    return chi
+        if null == "accept":
+            varying = test_result >= p_value
+        else:
+            varying = test_result <= p_value
+        return varying, test_result, tester.test_method
 
 
-def regular_chi_square(data, error=None):
+@dataclass
+class ReducedChiSquare(StationarityTestStrategy):
+    expected: Optional[npt.NDArray] = None
+    parameters_estimated: Optional[int] = None
+
+    def test(self, data: npt.NDArray) -> float:
+        data = np.asanyarray(data)
+        p_est = self.parameters_estimated
+        expected = self.expected
+        if p_est is None:
+            p_est = 1
+        if expected is None:
+            p_est += 1
+            expected = np.median(data)
+        variance = np.var(data, ddof=1)
+        dof = data.shape[0] - p_est - 1
+        chi = np.sum(((data - expected) ** 2 / variance)) / dof
+        return chi
+
+
+@dataclass
+class ChiSquare(StationarityTestStrategy):
     """Performs the chi squared test on the provided data.
 
     Further reading: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chisquare.html#scipy.stats.chisquare
 
-    Configured in stats.toml
+    Configured in photometry.toml"""
 
-    Parameters
-    ----------
-    data : list-like
-        Data to be tested
-    error : list-like, optional
-        Error(sigma) of data, must be same size as data, by default None
+    ddof: Optional[int]
+    expected: Optional[str]
 
-    Returns
-    -------
-    float
-        p-value of the chi squared test
-    """
-    stats_config = config.get("stats")
-    expected_switch = stats_config["chisquared"]["expected"]
-    ddof = stats_config["chisquared"]["ddof"]
-    expected = None
-    if expected_switch == "mean":
-        expected = np.average(data)
-    elif expected_switch == "median":
-        expected = np.median(data)
-    elif expected_switch == "weighted_mean":
-        expected = np.average(data, weights=(1 / error ** 2))
+    def test(self, data):
+        ddof = self.ddof
+        expected = self.expected
+        if expected == "mean":
+            expected = np.average(data)
+        elif expected == "median":
+            expected = np.median(data)
+        elif expected == "weighted_mean":
+            expected = np.average(data, weights=(1 / error ** 2))
 
-    result = chisquare(f_obs=data, f_exp=expected, ddof=ddof)
-    print(result)
-    return result[1]  # p-value
+        result = chisquare(f_obs=data, f_exp=expected, ddof=ddof)
+        return result[1]  # p-value
 
 
-def augmented_dfuller(data: List[float]) -> float:
+@dataclass
+class AugmentedDFullerTest(StationarityTestStrategy):
+    max_lags: int
+    trend: str
+    method: str
     """Performs the augmented Dickey-Fuller test on the data.
     The null hypothesis of this test is that the timeseries inputted is NOT stationary.
 
     Further reading:
     https://arch.readthedocs.io/en/latest/unitroot/generated/arch.unitroot.ADF.html
 
-    This is configured in stats.toml
+    This is configured in photometry.toml
 
     Parameters
     ----------
@@ -118,37 +109,42 @@ def augmented_dfuller(data: List[float]) -> float:
     float
         the p-value of the test statistic
     """
-    stats_config = config.get("stats")
-    result = ADF(data, **stats_config["adfuller"])
-    # print(result)
-    return result.pvalue
+
+    def test(self, data):
+        max_lags = self.max_lags
+        trend = self.trend
+        method = self.method
+        result = ADF(data, max_lags=max_lags, trend=trend, method=method)
+        return result.pvalue
 
 
-def kpss(data: List[float]) -> float:
+@dataclass
+class KPSSTest(StationarityTestStrategy):
+    trend: str
+    lags: int
     """Performs the Kwiatkowski–Phillips–Schmidt–Shin test of stationarity on the inputted data.
     The null hypothesis of this test is that the timeseries inputted is stationary.
 
     Further reading:
     https://arch.readthedocs.io/en/latest/unitroot/generated/arch.unitroot.DFGLS.html#arch.unitroot.DFGLS
 
-    This is configured in stats.toml
+    This is configured in photometry.toml
 
-    Parameters
-    ----------
-    data : list-like
-        Timeseries to test stationarity on
-
-    Returns
-    -------
-    float
-        the p-value of the test statistic
     """
-    stats_config = config.get("stats")
-    result = KPSS(data, **stats_config["kpss"])
-    return result.pvalue
+
+    def test(self, data):
+        lags = self.lags
+        trend = self.trend
+        result = KPSS(data, trend=trend, lags=lags)
+        return result.pvalue
 
 
-def zastat(data: List[float]) -> float:
+@dataclass
+class ZivotAndrewsTest(StationarityTestStrategy):
+    trend: str
+    trim: float
+    method: str
+    max_lags: int
     """Performs the non-parametric Zivot-Andrews test of timeseries
     stationarity on the inputted data.
     The null hypothesis of this test is that the timeseries inputted is stationary.
@@ -156,24 +152,23 @@ def zastat(data: List[float]) -> float:
     Further reading:
     https://arch.readthedocs.io/en/latest/unitroot/generated/arch.unitroot.ZivotAndrews.html
 
-    This is configured in stats.toml
+    This is configured in photometry.toml
 
-    Parameters
-    ----------
-    data : list-like
-        Timeseries to test stationarity on
-
-    Returns
-    -------
-    float
-        the p-value of the test statistic
     """
-    stats_config = config.get("stats")
-    result = ZivotAndrews(data, **stats_config["zivot_andrews"])
-    return result.pvalue
+
+    def test(self, data):
+        max_lags = self.max_lags
+        trend = self.trend
+        method = self.method
+        trim = self.trim
+        result = ZivotAndrews(
+            data, trend=trend, trim=trim, method=method, max_lags=max_lags
+        )
+        return result.pvalue
 
 
-def adf_gls(data: List[float]) -> float:
+@dataclass
+class ADFGLSTest(StationarityTestStrategy):
     """Performs the GLS-version of the augmented Dickey-Fuller test on the data.
     The null hypothesis of this test is that the timeseries inputted is
     NOT stationary.
@@ -181,21 +176,20 @@ def adf_gls(data: List[float]) -> float:
     Further reading:
     https://arch.readthedocs.io/en/latest/unitroot/generated/arch.unitroot.DFGLS.html#arch.unitroot.DFGLS
 
-    This is configured in stats.toml
+    This is configured in photometry.toml
 
-    Parameters
-    ----------
-    data : list-like
-        Timeseries to test stationarity on
-
-    Returns
-    -------
-    float
-        the p-value of the test statistic
     """
-    stats_config = config.get("stats")
-    result = DFGLS(data, **stats_config["adf_gls"])
-    return result.pvalue
+
+    trend: str
+    max_lags: int
+    method: str
+
+    def test(self, data):
+        max_lags = self.max_lags
+        trend = self.trend
+        method = self.method
+        result = DFGLS(data, trend=trend, method=method, max_lags=max_lags)
+        return result.pvalue
 
 
 def normalize(data: np.ndarray) -> np.ndarray:
