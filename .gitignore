@@ -143,6 +143,6 @@ profiles/
 *.hd5
 *.nc
 *.org
-output/
+/output/
 results/
 /data/

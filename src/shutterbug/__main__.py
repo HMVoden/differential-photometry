@@ -1,5 +1,5 @@
 # this is here so we can do python -m (package_name)
-from shutterbug.cli.cli import cli
+from shutterbug.ux.cli import cli
 
 if __name__ == "__main__":
     cli()
