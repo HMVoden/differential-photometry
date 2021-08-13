@@ -34,11 +34,11 @@ class CLIConfig(ImmutableData):
     diff_y_scale: Optional[float]
     input_data: List[Path]
     output_folder: Optional[Path]
-    output_spreadsheet: Optional[bool]
-    correct_offset: Optional[bool]
+    output_spreadsheet: bool
+    correct_offset: bool
     iterations: int
     remove: Optional[List[str]]
-    uniform: Optional[bool]
+    uniform: bool
 
     @validator("input_data")
     def make_file_list(cls, input_data: List[Path]) -> List[Path]:
@@ -82,18 +82,21 @@ class RuntimeConfig(MutableData):
 
 class LoggingConfig(ImmutableData):
     version: int = 1  # mandatory to work
+    enabled: bool
     formatters: Dict
     handlers: Dict
     root: Dict
 
 
 class OutputConfig(ImmutableData):
-    seaborn: Dict
-    pass
+    plot: Dict
+    folder: Dict
 
 
 class PhotometryConfig(ImmutableData):
-    detection_method: str
-    p_value: float
-    clip: bool
-    null: str
+    stationarity: Dict
+    distance: Dict
+    magnitude: Dict
+    expanding: Dict
+    test: Dict
+    # TODO make validator for dict

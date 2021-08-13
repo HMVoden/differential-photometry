@@ -1,22 +1,6 @@
 import xarray as xr
 from shutterbug.photometry.photometry import DifferentialBase
 
-
-class InterdayDifferential(DifferentialBase):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.varying_flag = "interday"
-
-    def differential_photometry(self, ds: xr.Dataset) -> xr.Dataset:
-        ds = super().differential_photometry(ds)
-        return ds
-
-    def test_stationarity(self, ds: xr.Dataset):
-        flag = self.varying_flag
-        ds = self.variation_detector.detect(ds, flag, "star")
-        return ds
-
-
 # def inter_day(ds: xr.Dataset, app_config: Dict, method: str) -> xr.Dataset:
 #     clip = app_config[method]["clip"]
 #     status = bars.status

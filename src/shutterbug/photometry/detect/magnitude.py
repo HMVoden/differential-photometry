@@ -11,6 +11,10 @@ class MagnitudeDetector(DetectBase):
 
     star_medians: xr.DataArray
 
+    def __init__(self, ds, **kwargs):
+        super().__init__(**kwargs)
+        self.star_medians = ds["mag"].groupby("star").median(...)
+
     def detect(self, target_star: str) -> npt.NDArray[np.str_]:
         """Locates all stars that are less than (brighter) a target star's median
         magnitude plus a tolerance
@@ -32,7 +36,7 @@ class MagnitudeDetector(DetectBase):
         """
         tolerance = self.tolerance
         medians = self.star_medians
-        target_median = medians.sel(star=target_star)
+        target_median = medians.sel(star=target_star).values
         target_median_plus_tolerance = target_median + tolerance
         result_stars = medians.where(
             medians <= target_median_plus_tolerance, drop=True

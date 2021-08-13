@@ -18,7 +18,9 @@ class ExpandingConditionalDetector:
     distance_detector: DistanceDetector
 
     def detect(
-        self, non_varying_stars: xr.DataArray, target_star: str
+        self,
+        target_star: str,
+        non_varying_stars: npt.NDArray[np.str_],
     ) -> npt.NDArray[np.str_]:
         """Starting at an initial distance, finds nearby stars. If not enough stars are
         found, determined by minimum stars, expands the search. If unable to find
@@ -46,25 +48,25 @@ class ExpandingConditionalDetector:
         distance_detector = self.distance_detector
 
         if mag_stars.size <= minimum_stars:
-            return non_varying_stars.star.values
+            return non_varying_stars
 
         matching_stars = np.array([])  # so linter doesn't complain
         i = 0
         while i < self.max_iterations:
             nearby_stars = distance_detector.detect(target_star)
             matching_stars = functools.reduce(
-                np.intersect1d, (mag_stars, nearby_stars, non_varying_stars.values)
+                np.intersect1d, (mag_stars, nearby_stars, non_varying_stars)
             )
             if matching_stars.size >= minimum_stars + 1:  # no more work required
                 # +1 as results always include target star
                 break
             elif i == (self.max_iterations - 1):
                 raise RuntimeError(
-                    """Unable to find minimum number of stars with set distance and magnitude
-                    requirements, exiting program"""
+                    f"""Unable to find minimum number of stars with set distance and magnitude
+                    requirements. Required {minimum_stars}, found {matching_stars.size}, exiting program"""
                 )
             self.max_iterations -= 1
-            distance_detector.expand
+            distance_detector.expand()
 
             # end while loop
         return matching_stars

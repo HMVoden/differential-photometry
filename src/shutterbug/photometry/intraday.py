@@ -1,59 +1,9 @@
-import shutterbug.photometry.differential as diff
-import xarray as xr
-from shutterbug.photometry.detect.expand import ExpandingConditionalDetector
-from shutterbug.photometry.photometry import DifferentialBase
-
-
-class IntradayDifferential(DifferentialBase):
-    iterations: int
-    detector: ExpandingConditionalDetector
-
-    def __init__(self, iterations, detector, **kwargs):
-        super().__init__(**kwargs)
-        self.varying_flag = "intraday"
-        self.iterations = iterations
-        self.detector = detector
-
-    def differential_photometry(self, ds: xr.Dataset) -> xr.Dataset:
-        ds.coords[self.varying_flag] = False
-        ds.stack(day_star=("time.date, star"))
-        for i in range(self.iterations):
-            ds = ds.groupby("day_star").map(self._photometry_and_variation, ds)
-        return ds
-
-    def _photometry_and_variation(self, day_star: xr.Dataset, ds: xr.Dataset):
-        detector = self.detector
-        flag = self.varying_flag
-        non_varying_stars = ds.loc[{flag: False}].values
-        target_star = day_star["star"].values
-        nearby_star_names = detector.detect(non_varying_stars, target_star)[
-            1:
-        ]  # remove first, which will be our star index
-        nearby_reference_stars = ds.sel(star=nearby_star_names)
-        day_star["average_diff_mags"] = diff.data_array_magnitude(
-            day_star.mag, nearby_reference_stars.mag
-        )
-        day_star["average_uncertainties"] = diff.data_array_uncertainty(
-            day_star.error, nearby_reference_stars.error
-        )
-        day_star = self.test_stationarity(day_star)
-        return day_star
-
-    def test_stationarity(self, ds: xr.Dataset) -> xr.Dataset:
-        flag = self.varying_flag
-        varying, result, method = self.variation_detector.detect(
-            ds["average_diff_mags"].values
-        )
-        ds[flag] = varying
-        ds[method] = result
-        return ds
-
-    #     ds.coords[method] = xr.apply_ufunc(
-    #     tester.test,
-    #     ds["average_diff_mags"],
-    #     input_core_dims=[[dimension]],
-    #     vectorize=True,
-    # )
+#     ds.coords[method] = xr.apply_ufunc(
+#     tester.test,
+#     ds["average_diff_mags"],
+#     input_core_dims=[[dimension]],
+#     vectorize=True,
+# )
 
 
 # @bars.progress(

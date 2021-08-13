@@ -1,48 +1,61 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, List, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import xarray as xr
 from arch.unitroot import ADF, DFGLS, KPSS, ZivotAndrews
+from numba import float64, guvectorize
 from scipy.stats import chisquare
-from shutterbug.photometry.detect.detect import DetectBase
+from xarray.core.dataarray import DataArray
 
 
 @dataclass
 class StationarityTestStrategy(ABC):
     test_method: str
+    clip_data: bool
+    null: str
+    varying_flag: str
+    p_value: float
+    test_dimension: str
+    correct_offset: bool
 
     @abstractmethod
     def test(self, data: npt.NDArray) -> float:
         pass
 
-
-@dataclass
-class VariationDetector(DetectBase):
-    p_value: float
-    clip_data: bool
-    null: str
-    tester: StationarityTestStrategy
-
-    def detect(self, data: npt.NDArray) -> Tuple[bool, float, str]:
-        p_value = self.p_value
+    def test_dataset(self, ds: xr.Dataset) -> xr.Dataset:
         null = self.null
-        tester = self.tester
-        test_result = tester.test(data)
-        varying = False
-
-        if null == "accept":
-            varying = test_result >= p_value
+        method = self.test_method
+        test_dimension = self.test_dimension
+        flag = self.varying_flag
+        p_value = self.p_value
+        offset = self.correct_offset
+        if offset == True:
+            ds.coords[method] = xr.apply_ufunc(
+                self.test,
+                ds["average_diff_mags"] - ds["dmag_offset"],
+                input_core_dims=[[test_dimension]],
+                vectorize=True,
+            )
         else:
-            varying = test_result <= p_value
-        return varying, test_result, tester.test_method
+            ds.coords[method] = xr.apply_ufunc(
+                self.test,
+                ds["average_diff_mags"],
+                input_core_dims=[[test_dimension]],
+                vectorize=True,
+            )
+        if null == "accept":
+            ds.coords[flag] = ds[method] >= p_value
+        else:
+            ds.coords[flag] = ds[method] < p_value
+        return ds
 
 
 @dataclass
-class ReducedChiSquare(StationarityTestStrategy):
+class ReducedChiSquareTest(StationarityTestStrategy):
     expected: Optional[npt.NDArray] = None
     parameters_estimated: Optional[int] = None
 
@@ -62,7 +75,7 @@ class ReducedChiSquare(StationarityTestStrategy):
 
 
 @dataclass
-class ChiSquare(StationarityTestStrategy):
+class ChiSquareTest(StationarityTestStrategy):
     """Performs the chi squared test on the provided data.
 
     Further reading: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chisquare.html#scipy.stats.chisquare

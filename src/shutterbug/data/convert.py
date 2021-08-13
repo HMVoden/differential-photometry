@@ -9,7 +9,10 @@ import xarray as xr
 def arrange_star_time(ds: xr.Dataset):
     ds = ds.sortby("time", "star")
     ds = (
-        ds.assign_coords(star=np.unique(ds["star"]), time=np.unique(ds["time"]))
+        ds.assign_coords(
+            star=np.unique(ds["star"]),
+            time=np.unique(ds["time"]),
+        )
         .stack(dim=("time", "star"))
         .reset_index("index", drop=True)
         .rename(dim="index")
@@ -36,7 +39,7 @@ def time_from_column(jd: List[float]) -> pd.DatetimeIndex:
     return time
 
 
-def add_time(ds: xr.Dataset, time_name):
+def add_time_dimension(ds: xr.Dataset, time_name):
     ds.coords["time"] = ("index", time_from_column(ds[time_name].values))
     return ds
 

@@ -23,9 +23,9 @@ class DistanceDetector(DetectBase):
         target = self.stars.sel(star=target_star)
         target_x = target["x"].values
         target_y = target["y"].values
-        target_xy = np.column_stack((target_x, target_y))
+        target_xy = np.column_stack((target_x, target_y))[0]
         result_indices = tree.query_ball_point(x=target_xy, r=radius)
-        result_stars = self.stars.isel(result_indices).values
+        result_stars = self.stars.isel(star=result_indices).values
         return result_stars
 
     def _build_kd_tree(
@@ -35,9 +35,9 @@ class DistanceDetector(DetectBase):
 
         Parameters
         ----------
-        x : npt.NDArray[np.float64]
+        xs : npt.NDArray[np.float64]
         x-coordinates for each star, in order of each star
-        y : npt.NDArray[np.float64]
+        ys : npt.NDArray[np.float64]
         y-coordinates of each star, in order of each star
 
         Returns
