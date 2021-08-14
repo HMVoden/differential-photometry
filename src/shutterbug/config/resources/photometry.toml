@@ -1,16 +1,16 @@
 # Change to one of the below to change
 # star varying test
 [distance]
-"tolerance" = 100 # px, radius
-"increment" = 100 # px
+"tolerance" = 50 # px, radius
+"increment" = 0  # px
 
 [magnitude]
-"tolerance" = 0.5 # mag
+"tolerance" = 1.5 # mag
 "increment" = 0
 
 [expanding]
 "max_iterations" = 3
-"minimum_stars" = 5
+"minimum_stars" = 25
 
 [stationarity]
 "test_method" = "adf_gls"

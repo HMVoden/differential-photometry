@@ -1,12 +1,13 @@
 import logging
 from pathlib import Path
-from typing import Dict, List, Tuple
-
+from typing import Dict
+import numpy as np
 import pandas as pd
 import xarray as xr
 
 
 def from_file(filename: Path, reader_config: Dict) -> xr.Dataset:
+    logging.info(f"Loading file {filename.stem}")
     filetype = reader_config["types"][filename.suffix]
     file_config = reader_config[filetype]
     if file_config["module"] == "pd":
@@ -38,4 +39,5 @@ def open_pandas(filename: Path, reader: str, settings: Dict):
 def open_xr(filename: Path, reader: str, settings: Dict):
     reader_func = getattr(xr, reader)
     ds = reader_func(filename, **settings)
+    ds["index"] = np.arange(0, ds.index.size)
     return ds

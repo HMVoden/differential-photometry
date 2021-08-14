@@ -85,7 +85,7 @@ class ChiSquareTest(StationarityTestStrategy):
     ddof: Optional[int]
     expected: Optional[str]
 
-    def test(self, data):
+    def test(self, data, error=None):
         ddof = self.ddof
         expected = self.expected
         if expected == "mean":

@@ -11,5 +11,5 @@
 "class" = "logging.StreamHandler"
 "formatter" = "detailed"
 [root]
-"level" = "INFO" #Default: INFO, DEBUG for more verbose information
+"level" = "INFO"         #Default: INFO, DEBUG for more verbose information
 "handlers" = ["console"]

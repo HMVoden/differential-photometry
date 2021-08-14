@@ -1,6 +1,6 @@
 required = ["obj", "name", "mag", "error", "x", "y", "jd"]
 coords = ["star", "x", "y", "jd"]
-time_col_name="jd"
+time_col_name = "jd"
 
 [reader.excel]
 "module" = "pd"
@@ -24,6 +24,7 @@ time_col_name="jd"
 "reader" = "open_dataset"
 [reader.NETCDF4.settings]
 "engine" = "h5netcdf"
+"decode_times" = true
 
 [reader.NETCDF4_CLASSIC]
 "module" = "xr"

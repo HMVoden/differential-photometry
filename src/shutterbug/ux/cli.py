@@ -51,7 +51,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
     "-i",
     "--iterations",
     type=click.INT,
-    default=1,
+    default=2,
     help="""The number of iterations that the star variation
         detection system will go through for each differential photometry run""",
 )

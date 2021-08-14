@@ -181,11 +181,11 @@ def max_variation(
         # Calculate the largest deviation along the y-axis
         # for the entire dataset
 
-        ds.attrs["mag_var"] = get_largest_range((ds["mag"] - ds["mag_offset"]).data)
+        ds.attrs["mag_var"] = get_largest_range((ds["mag"] - ds["mag_offset"]).values)
         ds.attrs["diff_var"] = get_largest_range(
-            (ds["average_diff_mags"] - ds["dmag_offset"]).data
+            (ds["average_diff_mags"] - ds["dmag_offset"]).values
         )
-    if ["mag_var", "diff_var"] in list(ds.attrs.keys()):
+    if all(lim in ds.attrs.keys() for lim in ["mag_var", "diff_var"]):
         logging.info("Magnitude y-axis range is: +/- %s", ds.attrs["mag_var"])
         logging.info("Differential y-axis range is: +/- %s", ds.attrs["diff_var"])
     return ds

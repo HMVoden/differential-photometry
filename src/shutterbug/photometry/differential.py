@@ -4,25 +4,22 @@ from typing import List, Tuple
 
 import numpy as np
 import numpy.typing as npt
-import pandas as pd
 import xarray as xr
-from astropy.stats import sigma_clip
 from numba import float32, float64, guvectorize
 from xarray.core.groupby import DatasetGroupBy
 
 
-def sigma_clip_data(data: List[float], stat_func, error: List[float] = None) -> float:
+# def sigma_clip_data(data: List[float], stat_func, error: List[float] = None) -> float:
 
-    sample = sigma_clip(data, sigma=3, masked=True)
-    if error is not None:
-        error = np.ma.array(error, mask=sample.mask)
-        return stat_func(sample, error)
-    return stat_func(sample)
+#     sample = sigma_clip(data, sigma=3, masked=True)
+#     if error is not None:
+#         error = np.ma.array(error, mask=sample.mask)
+#         return stat_func(sample, error)
+#     return stat_func(sample)
 
 
 def magnitude(
-    mags: npt.NDArray,
-    varying_mags: npt.NDArray = None,
+    mags: npt.NDArray, varying_mags: npt.NDArray = None,
 ) -> Tuple[npt.NDArray, npt.NDArray]:
     diff_mag = []
     varying_diff_mag = []
@@ -46,8 +43,7 @@ def magnitude(
 
 
 def error(
-    error: npt.NDArray,
-    varying_error: npt.NDArray = None,
+    error: npt.NDArray, varying_error: npt.NDArray = None,
 ) -> Tuple[npt.NDArray, npt.NDArray]:
     diff_error = []
     varying_diff_error = []
@@ -122,14 +118,8 @@ def dataset(groups: DatasetGroupBy) -> xr.Dataset:
         de, _ = error(non_varying["error"].values)
         non_varying = non_varying.assign(
             {
-                "average_diff_mags": (
-                    ["time", "star"],
-                    dm,
-                ),
-                "average_uncertainties": (
-                    ["time", "star"],
-                    de,
-                ),
+                "average_diff_mags": (["time", "star"], dm,),
+                "average_uncertainties": (["time", "star"], de,),
             }
         )
         return non_varying
@@ -142,26 +132,14 @@ def dataset(groups: DatasetGroupBy) -> xr.Dataset:
         de, vde = error(non_varying["error"].values, varying["error"].values)
         non_varying = non_varying.assign(
             {
-                "average_diff_mags": (
-                    ["time", "star"],
-                    dm,
-                ),
-                "average_uncertainties": (
-                    ["time", "star"],
-                    de,
-                ),
+                "average_diff_mags": (["time", "star"], dm,),
+                "average_uncertainties": (["time", "star"], de,),
             }
         )
         varying = varying.assign(
             {
-                "average_diff_mags": (
-                    ["time", "star"],
-                    vdm,
-                ),
-                "average_uncertainties": (
-                    ["time", "star"],
-                    vde,
-                ),
+                "average_diff_mags": (["time", "star"], vdm,),
+                "average_uncertainties": (["time", "star"], vde,),
             }
         )
 

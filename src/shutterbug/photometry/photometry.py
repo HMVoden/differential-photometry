@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-
+import logging
 import numpy as np
 import shutterbug.photometry.detect.variation as variation
 import shutterbug.photometry.differential as diff
 import xarray as xr
 from shutterbug.photometry.detect.expand import ExpandingConditionalDetector
+import shutterbug.ux.progress_bars as bars
 
 
 @dataclass
@@ -14,21 +15,27 @@ class IntradayDifferential:
     stationarity_tester: variation.StationarityTestStrategy
 
     def differential_photometry(self, ds: xr.Dataset) -> xr.Dataset:
+        logging.info("Starting differential photometry")
         flag = self.stationarity_tester.varying_flag
         ds.coords[flag] = ("star", np.full(ds["star"].size, False))
-        non_varying = ds
-        # ds = ds.assign_coords(date=ds["time"].dt.date)
-        # ds = ds.set_index({"date": "date"})
-        # ds = ds.stack(day_star=("date", "star"))
+        non_varying = ds  # all stars non-varying to start
+        bars.xarray(
+            name="star_phot", desc="Intraday", unit="star", leave=False, indentation=2
+        )
+        it_bar = bars.build(
+            "iteration", "Iteration", "iteration", self.iterations, False, 1
+        )
+        with it_bar as pbar:
+            for _ in range(self.iterations):
+                ds = ds.groupby("star").progress_map(
+                    self._per_star, non_varying=non_varying
+                )
+                ds[flag] = ds[flag].groupby("star").any(...)
+                non_varying = ds.where(ds[flag] == False, drop=True)
+                pbar.update()
 
-        for i in range(self.iterations):
-            ds = ds.groupby("star").map(self._per_star, non_varying=non_varying)
-            non_varying = ds.where(ds[flag] == False, drop=True)
+        logging.info("Finished differential photometry")
 
-        # ds = ds.unstack("day_star")
-        ds[flag] = ds[flag].groupby("star").any(...)
-
-        # ds = ds.reset_index("date", drop=True)
         return ds
 
     def _per_star(self, day_star: xr.Dataset, non_varying: xr.Dataset):
@@ -39,9 +46,12 @@ class IntradayDifferential:
         nearby_star_names = detector.detect(
             target_star=target_star, non_varying_stars=non_varying_stars
         )
-        nearby_star_names = nearby_star_names[1:]
-        # remove first, which will be our star index
+
         nearby_reference_stars = non_varying.sel(star=nearby_star_names)
+
+        nearby_reference_stars = nearby_reference_stars.where(
+            ~(nearby_reference_stars.star == target_star), drop=True
+        )
         day_star["average_diff_mags"] = diff.data_array_magnitude(
             day_star.mag, nearby_reference_stars.mag
         )

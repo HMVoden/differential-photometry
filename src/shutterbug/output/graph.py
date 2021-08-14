@@ -32,8 +32,15 @@ def plot_and_save_all(
     logging.info("Starting graphing...")
     ds = ds.swap_dims({"star": "intra_varying"})
     ds = ds.set_index(varying=("intra_varying", "inter_varying"))
-
-    ds.groupby("varying").map(
+    bars.xarray(
+        name="folders",
+        desc="Plotting into folders",
+        unit="folder",
+        leave=False,
+        indentation=1,
+    )
+    bars.status.update(stage="Graphing")
+    ds.groupby("varying").progress_map(
         multiprocess_save,
         offset=offset,
         uniform=uniform_y_axis,
@@ -66,11 +73,7 @@ def generate_data_folders(
 
 
 def setup_plot_dataset(
-    ds: xr.Dataset,
-    offset: bool,
-    uniform: bool,
-    dataset: Path,
-    output_config: Dict,
+    ds: xr.Dataset, offset: bool, uniform: bool, dataset: Path, output_config: Dict,
 ) -> xr.Dataset:
     ds = ds.pipe(
         generate_data_folders,
@@ -89,12 +92,6 @@ def setup_plot_dataset(
         pass  # do something here
 
     # ds = ds.stack(time_stack={"time", "time.date"})
-    return ds
-
-
-def teardown_plot_dataset(ds: xr.Dataset) -> xr.Dataset:
-    # ds = ds.unstack("time_stack")
-    # ds = ds.drop_dims("time.date", errors="ignore")
     return ds
 
 
@@ -136,13 +133,13 @@ def multiprocess_save(
         dataset=dataset,
         output_config=output_config,
     )
-    bars.status.update(stage="Plotting and saving stars")
-    pbar = bars.start(
+
+    pbar = bars.build(
         name="plot_and_save",
         total=frame["star"].size,
-        desc="  Plotting and saving stars",
-        unit="stars",
-        color="magenta",
+        desc="Making and saving graphs",
+        unit="graph",
+        indentation=2,
         leave=False,
     )
     logging.info("Writing to folder %s", ds.attrs["output_folder"])
@@ -155,28 +152,20 @@ def multiprocess_save(
 
     with ProcessPoolExecutor(max_workers=(cpu_count() - 1)) as executor:
         futures = {
-            executor.submit(
-                build_and_save_figure,
-                ds=stars,
-                plot_config=plot_config,
-            )
+            executor.submit(build_and_save_figure, ds=stars, plot_config=plot_config,)
             for _, stars in frame.groupby("star")
         }
         for future in as_completed(futures):
             pbar.update()
             future.result()
-    # pbar_folders.update()
-    frame = teardown_plot_dataset(frame)
+    bars.close("plot_and_save")
     gc.collect()
 
     return frame
 
 
-def build_and_save_figure(
-    ds: xr.Dataset,
-    plot_config: Dict,
-) -> xr.Dataset:
-    if ["mag_var", "diff_var"] in list(ds.attrs.keys()):
+def build_and_save_figure(ds: xr.Dataset, plot_config: Dict,) -> xr.Dataset:
+    if all(lim in ds.attrs.keys() for lim in ["mag_var", "diff_var"]):
         mag_lim = limits_from_median(ds["mag"], ds.attrs["mag_var"])
         diff_lim = limits_from_median(ds["average_diff_mags"], ds.attrs["diff_var"])
     else:

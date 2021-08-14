@@ -1,9 +1,10 @@
 from typing import Any
 
-import functools
 import enlighten
 
-import numbers
+from xarray.core.dataset import Dataset
+from xarray.core.dataarray import DataArray
+from xarray.core.groupby import GroupBy, DataArrayGroupBy, DatasetGroupBy
 
 # Best candidate to make into a class.
 manager = None
@@ -11,7 +12,7 @@ status = None
 
 progress_bars = {}
 
-__indentation_to_colour = {0: "white", 1: "blue", 2: "purple"}
+_indentation_to_colour = {0: "white", 1: "blue", 2: "purple"}
 
 
 def init():
@@ -40,73 +41,21 @@ def start(
     global progress_bars
     pbar = get(name)
     if pbar is not None:
-        pbar.close()
+        close(name)
 
     pbar = manager.counter(total=total, desc=desc, unit=unit, leave=leave, color=color)
     progress_bars[name] = pbar
     return pbar
 
 
-def progress(
-    name: str,
-    desc: str,
-    unit: str,
-    leave: bool,
-    status_str: str,
-    countable_var: Any = None,
-    arg_pos: int = 0,
-    indentation: int = 0,
+def build(
+    name: str, desc: str, unit: str, total: int, leave: bool, indentation: int = 0
 ):
     desc = "  " * indentation + desc
-
-    def progress_decorator(func):
-        global status
-
-        @functools.wraps(func)
-        def wrapper_progress(*args, **kwargs):
-            pbar = get(name)
-            if pbar is None:
-                global status
-                total = __get_len_from_args_kwargs(
-                    countable_var, arg_pos, func.__name__, *args, **kwargs
-                )
-                color = __indentation_to_colour[indentation]
-                pbar = start(name, total, desc, unit, leave, color)
-                status.update(stage=status_str)
-                pbar.refresh()
-
-            result = func(*args, **kwargs)
-            if pbar.count == pbar.total:
-                close(name)
-            else:
-                pbar.update()
-            return result
-
-        return wrapper_progress
-
-    return progress_decorator
-
-
-def __get_len_from_args_kwargs(
-    countable_var: Any, arg_pos: int, func_name: str, *args, **kwargs
-):
-    if countable_var in kwargs.keys():
-        if isinstance(kwargs[countable_var], numbers.Number):
-            total = kwargs[countable_var]
-        else:
-            total = len(kwargs[countable_var])
-    else:
-        try:
-            total = len(args[arg_pos])
-        except IndexError:
-            raise ValueError(
-                f"Improperly set up progress bar, unable to get total from function {func_name}"
-            )
-    if total == 0:
-        raise ValueError(
-            f"Improperly set up progress bar, unable to get total from function {func_name}"
-        )
-    return total
+    color = _indentation_to_colour[indentation]
+    pbar = start(name=name, total=total, desc=desc, leave=leave, unit=unit, color=color)
+    pbar.refresh()
+    return pbar
 
 
 def get(name: str):
@@ -128,7 +77,10 @@ def close_all():
 def close(name: str):
     global progress_bars
     if name in progress_bars.keys():
-        progress_bars[name].close()
+        try:
+            progress_bars[name].close()
+        except KeyError:  # already closed
+            progress_bars.pop(name, None)
         progress_bars.pop(name, None)
     return True
 
@@ -137,3 +89,40 @@ def update(pbar: enlighten.Counter, attr: str, update_to: Any):
     setattr(pbar, attr, update_to)
     pbar.refresh()
     return True
+
+
+def xarray(**pbar_args):
+    # stolen from tqdm
+    def inner_generator(xr_func="map"):
+        def inner(ds, func, *args, **kwargs):
+
+            total = pbar_args.pop("total", None)
+
+            if total is None:
+                if isinstance(ds, GroupBy):
+                    total = len(ds)
+                elif isinstance(ds, DataArray):
+                    total = ds.size
+                else:
+                    total = len(ds.data_vars)
+            bar = build(total=total, **pbar_args)
+
+            def wrapper(*args, **kwargs):
+                bar.update()
+                return func(*args, **kwargs)
+
+            try:
+                return getattr(ds, xr_func)(wrapper, **kwargs)
+            finally:
+                if "name" in pbar_args.keys():
+                    close(pbar_args["name"])
+
+        return inner
+
+    # monkey patching
+    DataArray.progress_map = inner_generator()
+    DataArrayGroupBy.progress_map = inner_generator()
+
+    Dataset.progress_map = inner_generator()
+    DatasetGroupBy.progress_map = inner_generator()
+

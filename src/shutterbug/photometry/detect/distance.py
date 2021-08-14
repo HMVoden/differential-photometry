@@ -15,6 +15,9 @@ class DistanceDetector(DetectBase):
         super().__init__(**kwargs)
         self.tree = self._build_kd_tree(ds["x"].values, ds["y"].values)
         self.stars = ds.star
+        self.detector_name = "Distance"
+        self.detector_units = "px"
+        self.log()
 
     def detect(self, target_star: str) -> npt.NDArray[np.str_]:
         """Finds stars that are nearby target star, within radius tolerance, using a KDtree"""
@@ -23,7 +26,7 @@ class DistanceDetector(DetectBase):
         target = self.stars.sel(star=target_star)
         target_x = target["x"].values
         target_y = target["y"].values
-        target_xy = np.column_stack((target_x, target_y))[0]
+        target_xy = np.column_stack((target_x, target_y))[0].tolist()
         result_indices = tree.query_ball_point(x=target_xy, r=radius)
         result_stars = self.stars.isel(star=result_indices).values
         return result_stars

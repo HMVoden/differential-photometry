@@ -18,9 +18,7 @@ class ExpandingConditionalDetector:
     distance_detector: DistanceDetector
 
     def detect(
-        self,
-        target_star: str,
-        non_varying_stars: npt.NDArray[np.str_],
+        self, target_star: str, non_varying_stars: npt.NDArray[np.str_],
     ) -> npt.NDArray[np.str_]:
         """Starting at an initial distance, finds nearby stars. If not enough stars are
         found, determined by minimum stars, expands the search. If unable to find
@@ -52,21 +50,39 @@ class ExpandingConditionalDetector:
 
         matching_stars = np.array([])  # so linter doesn't complain
         i = 0
-        while i < self.max_iterations:
-            nearby_stars = distance_detector.detect(target_star)
-            matching_stars = functools.reduce(
-                np.intersect1d, (mag_stars, nearby_stars, non_varying_stars)
-            )
-            if matching_stars.size >= minimum_stars + 1:  # no more work required
-                # +1 as results always include target star
-                break
-            elif i == (self.max_iterations - 1):
-                raise RuntimeError(
-                    f"""Unable to find minimum number of stars with set distance and magnitude
-                    requirements. Required {minimum_stars}, found {matching_stars.size}, exiting program"""
-                )
-            self.max_iterations -= 1
-            distance_detector.expand()
+        # while i < self.max_iterations:
+        nearby_stars = distance_detector.detect(target_star)
+        matching_stars = functools.reduce(
+            np.intersect1d, (mag_stars, nearby_stars, non_varying_stars)
+        )
+        # if matching_stars.size >= minimum_stars + 1:  # no more work required
+        #     # +1 as results always include target star
+        #     break
+        # elif i == (self.max_iterations - 1):
+        #     break
+        # logging.debug(
+        #     f"Failed to find sufficient stars, found {nearby_stars} distance stars and {mag_stars} magnitude stars, total {matching_stars.size}, for target star {target_star}",
+        # )
+        # raise RuntimeError(
+        #     f"""Unable to find minimum number of stars with set distance and magnitude
+        #     requirements. Required {minimum_stars}, found {matching_stars.size}, exiting program"""
+        # )
+        # self.max_iterations -= 1
+        # logging.warning(
+        #     f"Iteration {self.max_iterations + i} found {matching_stars.size} stars, expanding search by {distance_detector.increment} px to {distance_detector.tolerance + distance_detector.increment}"
+        # )
+        # distance_detector.expand()
 
-            # end while loop
+        # end while loop
+        if matching_stars.size <= 1:
+            matching_stars = non_varying_stars
+            logging.debug(
+                f"{target_star}: no nearby stars in distance {distance_detector.tolerance} px and magnitude range {self.magnitude_detector.tolerance}, using all available non-varying stars as reference stars."
+            )
+        else:
+            logging.debug(
+                f"{target_star}: {matching_stars.size} non-varying reference stars in radius {distance_detector.tolerance} and magnitude tolerance {self.magnitude_detector.tolerance}"
+            )
+        if matching_stars.size == 1 or matching_stars.size == 0:
+            raise RuntimeError
         return matching_stars

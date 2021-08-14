@@ -1,4 +1,5 @@
 import logging
+import shutterbug.ux.progress_bars as bars
 from pathlib import Path
 
 import xarray as xr
@@ -30,6 +31,7 @@ def save_to_csv(
         Root directory to output files to, by default None
     """
     if output_flag == True:
+        logging.info("Writing spreadsheet")
         logging.info("Outputting processed dataset as csv...")
 
         df = ds.to_dataframe().reset_index()
