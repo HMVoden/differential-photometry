@@ -45,11 +45,9 @@ def application(**cli_settings):
     # WANT
     # TODO write documentation
     # TODO write function docstrings
-    # TODO improve progess bar code
     # TODO add machine learning for star detection
     # TODO write tests for all functions
     # TODO write benchmark code to test memory/CPU use
-    # TODO modify diff phot code for xarray
     # TODO refactor plotting for xarray
     # Extraction, cleanup and processing
     # io.extract returns a dataframe which we
@@ -68,7 +66,10 @@ def application(**cli_settings):
             ds = (  # Start of load/clean section
                 load.from_file(in_file, data_config.reader)
                 .pipe(sanitize.drop_and_clean_names, required_data=data_config.required)
-                .pipe(sanitize.clean_data, coord_names=data_config.coords,)
+                .pipe(
+                    sanitize.clean_data,
+                    coord_names=data_config.coords,
+                )
                 .pipe(convert.add_time_dimension, time_name=data_config.time_col_name)
                 .pipe(sanitize.drop_duplicate_time)
                 .pipe(
@@ -90,21 +91,21 @@ def application(**cli_settings):
                 test_dimension="time",
                 correct_offset=False,
                 varying_flag="intra_varying",
-                **test_method_settings
+                **test_method_settings,
             )
             inter_variation_test = test_fac.create_test(
                 **stationarity_settings,
                 test_dimension="time",
                 correct_offset=cli_config.correct_offset,
                 varying_flag="inter_varying",
-                **test_method_settings
+                **test_method_settings,
             )
             distance_detector = DistanceDetector(ds, **phot_config.distance)
             magnitude_detector = MagnitudeDetector(ds, **phot_config.magnitude)
             expanding_detector = ExpandingConditionalDetector(
                 magnitude_detector=magnitude_detector,
                 distance_detector=distance_detector,
-                **phot_config.expanding
+                **phot_config.expanding,
             )
             intraday = photometry.IntradayDifferential(
                 iterations=cli_config.iterations,

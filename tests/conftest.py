@@ -4,10 +4,10 @@ import pandas as pd
 import pytest
 import shutterbug.data.sanitize as sanitize
 
-import tests.datasets.double as double
-import tests.datasets.duplicates as dup
-import tests.datasets.raw as raw
-import tests.datasets.single as single
+import test_data.double as double
+import test_data.duplicates as dup
+import test_data.raw as raw
+import test_data.single as single
 
 raw = [x for x in files(raw).iterdir() if x.suffix == ".csv"]
 single = [x for x in files(single).iterdir() if x.suffix == ".csv"]
