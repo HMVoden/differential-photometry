@@ -30,7 +30,7 @@ class SanitizeSuite:
 class TimeSuite(SanitizeSuite):
     def time_check_and_coerce(self, test_data):
         raw = self.raw
-        raw.map(sanitize.check_and_coerce_dataarray)
+        raw.pipe(sanitize.check_and_coerce_dataarray)
 
     def time_clean_names(self, test_data):
         raw = self.raw
@@ -90,7 +90,7 @@ class TimeSuite(SanitizeSuite):
 class PeakMemSuite(SanitizeSuite):
     def peakmem_check_and_coerce(self, test_data):
         raw = self.raw
-        raw.map(sanitize.check_and_coerce_dataarray)
+        raw.pipe(sanitize.check_and_coerce_dataarray)
 
     def peakmem_clean_names(self, test_data):
         raw = self.raw

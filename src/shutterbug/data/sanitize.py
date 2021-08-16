@@ -24,14 +24,14 @@ columns_fix_function = {
 }
 
 
-def check_and_coerce_dataarray(da: xr.DataArray) -> xr.DataArray:
-    if da.name in columns_check_function.keys():
-        if not columns_check_function[da.name](da.values):
-            logging.warning(
-                "Variable '%s' is not the proper type, attempting to fix", da.name
+def check_and_coerce_dataarray(ds: xr.Dataset) -> xr.Dataset:
+    for variable in ds.variables.keys():
+        if variable in columns_check_function.keys():
+            ds[variable] = (
+                "index",
+                columns_fix_function[variable](ds[variable].data, errors="coerce"),
             )
-            da.values = columns_fix_function[da.name](da.values, errors="coerce")
-    return da
+    return ds
 
 
 def clean_names(names: List[str]) -> Dict:
@@ -42,31 +42,13 @@ def clean_names(names: List[str]) -> Dict:
     return from_to
 
 
-# def drop_duplicate_time(ds: xr.Dataset):
-#     logging.info("Removing duplicates")
-#     ds = ds.swap_dims({"index": "time"})
-#     ds = ds.set_index(timestar=["time", "star"])
-
-#     def drop(ds: xr.Dataset):
-#         ds = ds.drop_duplicates("timestar")
-#         return ds
-
-#     bars.xarray(
-#         name="dup", desc="Duplicate", unit="variables", indentation=1, leave=False
-#     )
-#     ds = ds.progress_map(drop)
-#     ds = ds.reset_index("timestar", drop=False)
-#     ds = ds.swap_dims({"timestar": "index"})
-#     return ds
-
-
 def drop_duplicate_time(ds: xr.Dataset):
     logging.info("Removing duplicates")
-    factorized_stars = pd.factorize(ds.star.values)[0]
-    factorized_time = pd.factorize(ds.time.values)[0]
+    factorized_stars = pd.factorize(ds.star.data)[0]
+    factorized_time = pd.factorize(ds.time.data)[0]
     time_star = np.column_stack((factorized_stars, factorized_time))
     _, indices = np.unique(time_star, return_index=True, axis=0)
-    good_indices = ds.index.values[indices]
+    good_indices = ds.index.data[indices]
     ds = ds.sel(index=good_indices)
     return ds
 
@@ -74,7 +56,7 @@ def drop_duplicate_time(ds: xr.Dataset):
 def clean_data(ds: xr.Dataset, coord_names: List[str]):
     logging.info("Ensuring data is in correct types")
     ds = ds.set_coords(coord_names)
-    ds = ds.map(check_and_coerce_dataarray)
+    ds = ds.pipe(check_and_coerce_dataarray)
     return ds
 
 
@@ -97,7 +79,7 @@ def drop_and_clean_names(ds: xr.Dataset, required_data: List[str]) -> xr.Dataset
 def remove_incomplete_stars(
     ds: xr.Dataset, stars_to_remove: list[str] = None
 ) -> xr.Dataset:
-    original_stars = np.unique(ds["star"].values)
+    original_stars = np.unique(ds["star"].data)
     nan_stars = find_nan_stars(ds)
     count_stars = find_wrong_count_stars(ds)
     stars_to_remove = functools.reduce(
@@ -105,7 +87,7 @@ def remove_incomplete_stars(
     )
     logging.info("Removing stars")
     ds = remove_stars(ds, stars_to_remove)
-    removed_stars = np.setdiff1d(original_stars, ds["star"].values)
+    removed_stars = np.setdiff1d(original_stars, ds["star"].data)
     logging.info("Total removed stars: %s ", len(removed_stars))
     logging.debug("Removed stars with names: %s", removed_stars)
     return ds
@@ -156,7 +138,7 @@ def find_wrong_count_time(ds: xr.Dataset) -> list[str]:
 def find_index_nan(ds: xr.Dataset) -> npt.NDArray[np.int_]:
     bad_indices = np.array([], dtype=np.int64)
     for variable in ds.variables:
-        nan_raw_indices = np.flatnonzero(ds[variable].isnull().values)
+        nan_raw_indices = np.flatnonzero(ds[variable].isnull().data)
 
         nan_ds_indices = ds.index[nan_raw_indices]
         bad_indices = np.union1d(bad_indices, nan_ds_indices)
@@ -166,7 +148,7 @@ def find_index_nan(ds: xr.Dataset) -> npt.NDArray[np.int_]:
 def find_nan_stars(ds: xr.Dataset) -> list[str]:
     bad_indices = find_index_nan(ds)
     nan_stars = ds.sel(index=bad_indices)
-    nan_list = nan_stars["star"].values.tolist()
+    nan_list = nan_stars["star"].data.tolist()
     if len(nan_list) > 0:
         logging.debug(
             "Stars %s have been found with junk data",
@@ -183,20 +165,20 @@ def find_nan_stars(ds: xr.Dataset) -> list[str]:
 def remove_time(ds: xr.Dataset, time_to_remove: list[str]) -> xr.Dataset:
     time_to_remove = set(time_to_remove)
     bad_indices = np.flatnonzero(
-        np.array([(1 if x in time_to_remove else 0) for x in ds.time.values])
+        np.array([(1 if x in time_to_remove else 0) for x in ds.time.data])
     )
 
-    ds = ds.drop_sel(index=ds.index.values[bad_indices])
+    ds = ds.drop_sel(index=ds.index.data[bad_indices])
     return ds
 
 
 def remove_stars(ds: xr.Dataset, stars_to_remove: list[str]) -> xr.Dataset:
     stars_to_remove = set(stars_to_remove)
     bad_indices = np.flatnonzero(
-        np.array([(1 if x in stars_to_remove else 0) for x in ds.star.values])
+        np.array([(1 if x in stars_to_remove else 0) for x in ds.star.data])
     )
 
-    ds = ds.drop_sel(index=ds.index.values[bad_indices])
+    ds = ds.drop_sel(index=ds.index.data[bad_indices])
     return ds
 
 
