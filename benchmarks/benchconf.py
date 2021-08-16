@@ -24,6 +24,7 @@ class Singleton:
 class Data(Singleton):
     """Loads all the data a single time for use"""
 
+    clean_arranged: xr.Dataset
     clean: xr.Dataset
     raw: xr.Dataset
 
@@ -33,6 +34,7 @@ class Data(Singleton):
         df = pd.read_csv(raw[0])
         self.raw = df.to_xarray()
         self.clean = self.load_and_clean()
+        self.clean_arranged = self.clean.pipe(convert.arrange_star_time)
 
     def load_and_clean(self):
         dataset = self.raw
@@ -49,7 +51,6 @@ class Data(Singleton):
             .pipe(sanitize.drop_duplicate_time)
             .pipe(sanitize.remove_incomplete_stars)
             .pipe(sanitize.remove_incomplete_time)
-            .pipe(convert.arrange_star_time)
         )
 
         return ds

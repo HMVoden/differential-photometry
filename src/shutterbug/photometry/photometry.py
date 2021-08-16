@@ -31,7 +31,7 @@ class IntradayDifferential:
                     self._per_star, non_varying=non_varying
                 )
                 ds[flag] = ds[flag].groupby("star").any(...)
-                non_varying = ds.where(ds[flag] == False, drop=True)
+                non_varying = ds.groupby(flag)[False]
                 pbar.update()
 
         logging.info("Finished differential photometry")

@@ -1,4 +1,3 @@
-import logging
 from math import sqrt
 from typing import List, Tuple
 
@@ -19,7 +18,8 @@ from xarray.core.groupby import DatasetGroupBy
 
 
 def magnitude(
-    mags: npt.NDArray, varying_mags: npt.NDArray = None,
+    mags: npt.NDArray,
+    varying_mags: npt.NDArray = None,
 ) -> Tuple[npt.NDArray, npt.NDArray]:
     diff_mag = []
     varying_diff_mag = []
@@ -43,7 +43,8 @@ def magnitude(
 
 
 def error(
-    error: npt.NDArray, varying_error: npt.NDArray = None,
+    error: npt.NDArray,
+    varying_error: npt.NDArray = None,
 ) -> Tuple[npt.NDArray, npt.NDArray]:
     diff_error = []
     varying_diff_error = []
@@ -106,7 +107,7 @@ def average_error(errors: List[float], out: float):
     N = len(errors)
     out = 0
     for error in errors:
-        out = out + error ** 2
+        out = out + (error ** 2)
     out = sqrt(out) / N
 
 
@@ -118,8 +119,14 @@ def dataset(groups: DatasetGroupBy) -> xr.Dataset:
         de, _ = error(non_varying["error"].values)
         non_varying = non_varying.assign(
             {
-                "average_diff_mags": (["time", "star"], dm,),
-                "average_uncertainties": (["time", "star"], de,),
+                "average_diff_mags": (
+                    ["time", "star"],
+                    dm,
+                ),
+                "average_uncertainties": (
+                    ["time", "star"],
+                    de,
+                ),
             }
         )
         return non_varying
@@ -132,14 +139,26 @@ def dataset(groups: DatasetGroupBy) -> xr.Dataset:
         de, vde = error(non_varying["error"].values, varying["error"].values)
         non_varying = non_varying.assign(
             {
-                "average_diff_mags": (["time", "star"], dm,),
-                "average_uncertainties": (["time", "star"], de,),
+                "average_diff_mags": (
+                    ["time", "star"],
+                    dm,
+                ),
+                "average_uncertainties": (
+                    ["time", "star"],
+                    de,
+                ),
             }
         )
         varying = varying.assign(
             {
-                "average_diff_mags": (["time", "star"], vdm,),
-                "average_uncertainties": (["time", "star"], vde,),
+                "average_diff_mags": (
+                    ["time", "star"],
+                    vdm,
+                ),
+                "average_uncertainties": (
+                    ["time", "star"],
+                    vde,
+                ),
             }
         )
 

@@ -40,21 +40,32 @@ def clean_names(names: List[str]) -> Dict:
     return from_to
 
 
+# def drop_duplicate_time(ds: xr.Dataset):
+#     logging.info("Removing duplicates")
+#     ds = ds.swap_dims({"index": "time"})
+#     ds = ds.set_index(timestar=["time", "star"])
+
+#     def drop(ds: xr.Dataset):
+#         ds = ds.drop_duplicates("timestar")
+#         return ds
+
+#     bars.xarray(
+#         name="dup", desc="Duplicate", unit="variables", indentation=1, leave=False
+#     )
+#     ds = ds.progress_map(drop)
+#     ds = ds.reset_index("timestar", drop=False)
+#     ds = ds.swap_dims({"timestar": "index"})
+#     return ds
+
+
 def drop_duplicate_time(ds: xr.Dataset):
     logging.info("Removing duplicates")
-    ds = ds.swap_dims({"index": "time"})
-    ds = ds.set_index(timestar=["time", "star"])
-
-    def drop(ds: xr.Dataset):
-        ds = ds.drop_duplicates("timestar")
-        return ds
-
-    bars.xarray(
-        name="dup", desc="Duplicate", unit="variables", indentation=1, leave=False
-    )
-    ds = ds.progress_map(drop)
-    ds = ds.reset_index("timestar", drop=False)
-    ds = ds.swap_dims({"timestar": "index"})
+    factorized_stars = pd.factorize(ds.star.values)[0]
+    factorized_time = pd.factorize(ds.time.values)[0]
+    time_star = np.column_stack((factorized_stars, factorized_time))
+    _, indices = np.unique(time_star, return_index=True, axis=0)
+    good_indices = ds.index.values[indices]
+    ds = ds.sel(index=good_indices)
     return ds
 
 
@@ -89,7 +100,7 @@ def remove_incomplete_stars(
     count_stars = find_wrong_count_stars(ds)
     stars_to_remove = functools.reduce(
         np.union1d, [nan_stars, count_stars, stars_to_remove]
-    )
+    ).tolist()
     logging.info("Removing specified stars")
     ds = remove_stars(ds, stars_to_remove)
     removed_stars = np.setdiff1d(original_stars, ds["star"].values)
