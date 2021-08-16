@@ -9,6 +9,8 @@ import xarray as xr
 from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
 import shutterbug.ux.progress_bars as bars
 
+from scipy.stats import mode
+
 columns_check_function = {
     "mag": is_numeric_dtype,
     "error": is_numeric_dtype,
@@ -100,8 +102,8 @@ def remove_incomplete_stars(
     count_stars = find_wrong_count_stars(ds)
     stars_to_remove = functools.reduce(
         np.union1d, [nan_stars, count_stars, stars_to_remove]
-    ).tolist()
-    logging.info("Removing specified stars")
+    )
+    logging.info("Removing stars")
     ds = remove_stars(ds, stars_to_remove)
     removed_stars = np.setdiff1d(original_stars, ds["star"].values)
     logging.info("Total removed stars: %s ", len(removed_stars))
@@ -111,20 +113,16 @@ def remove_incomplete_stars(
 
 def remove_incomplete_time(ds: xr.Dataset) -> xr.Dataset:
     count_time = find_wrong_count_time(ds)
+    logging.info("Removing time")
     ds = remove_time(ds, count_time)
     return ds
 
 
 # TODO make this and next into one function
 def find_wrong_count_stars(ds: xr.Dataset) -> list[str]:
-    # bad_stars = np.array([])
-    # star_counts = ds.mag.groupby("star").count()
-    # mode_index = star_counts.idxmax()
-    # mode = star_counts.sel(star=mode_index)
-    # bad_stars = xr.where(star_counts == mode, np.NaN, 1).dropna("star").star.values
     stars, counts = np.unique(ds["star"], return_counts=True)
-    star_mode = np.amax(counts)
-    bad_stars_indices = np.argwhere((counts != star_mode))
+    star_mode, _ = mode(counts)
+    bad_stars_indices = np.argwhere((counts != star_mode)).flatten()
     bad_stars = stars[bad_stars_indices]
     if len(bad_stars) > 0:
         logging.debug(
@@ -139,14 +137,9 @@ def find_wrong_count_stars(ds: xr.Dataset) -> list[str]:
 
 
 def find_wrong_count_time(ds: xr.Dataset) -> list[str]:
-    # bad_time = np.array([])
-    # time_counts = ds.mag.groupby("time").count()
-    # mode_index = time_counts.idxmax()
-    # mode = time_counts.sel(time=mode_index)
-    # bad_time = xr.where(time_counts == mode, np.NaN, 1).dropna("time").time.values
     time, counts = np.unique(ds["time"], return_counts=True)
-    time_mode = np.amax(counts)
-    bad_time_indices = np.argwhere((counts != time_mode))
+    time_mode, _ = mode(counts)
+    bad_time_indices = np.argwhere((counts != time_mode)).flatten()
     bad_time = time[bad_time_indices]
     if len(bad_time) > 0:
         logging.debug(
@@ -157,17 +150,17 @@ def find_wrong_count_time(ds: xr.Dataset) -> list[str]:
             "%s time points have been found without sufficient amounts of information",
             np.unique(bad_time).size,
         )
-    return bad_time
+    return bad_time.flatten()
 
 
 def find_index_nan(ds: xr.Dataset) -> npt.NDArray[np.int_]:
     bad_indices = np.array([], dtype=np.int64)
     for variable in ds.variables:
-        var_good_indices = ds[variable].dropna("index", "any")
-        nan_indices = np.setdiff1d(
-            ds[variable].index, var_good_indices.index, assume_unique=True
-        )
-        bad_indices = np.union1d(bad_indices, nan_indices)
+        nan_raw_indices = np.nonzero(
+            np.array([(1 if x == np.NaN else 0) for x in ds[variable].values])
+        )[0]
+        nan_ds_indices = ds.index[nan_raw_indices]
+        bad_indices = np.union1d(bad_indices, nan_ds_indices)
     return bad_indices
 
 
@@ -191,7 +184,7 @@ def find_nan_stars(ds: xr.Dataset) -> list[str]:
 def remove_time(ds: xr.Dataset, time_to_remove: list[str]) -> xr.Dataset:
     time_to_remove = set(time_to_remove)
     bad_indices = np.nonzero(
-        np.array([(1 if x in ds.time.values else 0) for x in time_to_remove])
+        np.array([(1 if x in time_to_remove else 0) for x in ds.time.values])
     )[0]
 
     bad_ds_indices = ds.index.values[bad_indices]
@@ -202,7 +195,7 @@ def remove_time(ds: xr.Dataset, time_to_remove: list[str]) -> xr.Dataset:
 def remove_stars(ds: xr.Dataset, stars_to_remove: list[str]) -> xr.Dataset:
     stars_to_remove = set(stars_to_remove)
     bad_indices = np.nonzero(
-        np.array([(1 if x in ds.star.values else 0) for x in stars_to_remove])
+        np.array([(1 if x in stars_to_remove else 0) for x in ds.star.values])
     )[0]
 
     bad_ds_indices = ds.index.values[bad_indices]

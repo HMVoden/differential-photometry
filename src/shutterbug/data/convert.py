@@ -7,9 +7,14 @@ import xarray as xr
 
 
 def arrange_star_time(ds: xr.Dataset):
+    logging.info("Cleanup finished")
+    logging.info("Re-arranging data")
     ds = ds.sortby("time", "star")
     ds = (
-        ds.assign_coords(star=np.unique(ds["star"]), time=np.unique(ds["time"]),)
+        ds.assign_coords(
+            star=np.unique(ds["star"]),
+            time=np.unique(ds["time"]),
+        )
         .stack(dim=("time", "star"))
         .reset_index("index", drop=True)
         .rename(dim="index")
