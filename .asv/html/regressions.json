@@ -1,0 +1,1 @@
+{"regressions": [["bench_sanitize.TimeSuite.time_find_nan_stars", "graphs\\arch-AMD64\\branch-HEAD\\cpu-AMD Ryzen 5 3400G @ 3.7Ghz (8 cores)\\machine-Hypatia\\num_cpu-8\\os-Windows 10\\python-3.9\\ram-16GB\\bench_sanitize.TimeSuite.time_find_nan_stars.json", {}, null, 0.013194400000000162, 0.01237895, [[null, 62, 0.01237895, 0.013194400000000162]]]]}

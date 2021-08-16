@@ -58,7 +58,7 @@ class TimeSuite(SanitizeSuite):
     def time_find_wrong_count_time(self):
         sanitize.find_wrong_count_time(self.raw_with_time)
 
-    def time_find_wrong_count_time(self):
+    def time_find_wrong_count_star(self):
         sanitize.find_wrong_count_stars(self.raw_with_time)
 
     def time_remove_incomplete_time(self):
@@ -75,7 +75,7 @@ class TimeSuite(SanitizeSuite):
     def time_remove_all_time(
         self,
     ):
-        self.raw_with_time.pipe(sanitize.remove_time, self.raw_with_time.star.values)
+        self.raw_with_time.pipe(sanitize.remove_time, self.raw_with_time.time.values)
 
     def time_remove_some_stars(
         self,
@@ -88,7 +88,7 @@ class TimeSuite(SanitizeSuite):
         self,
     ):
         self.raw_with_time.pipe(
-            sanitize.remove_time, self.raw_with_time.star.values[:3]
+            sanitize.remove_time, self.raw_with_time.time.values[:3]
         )
 
 

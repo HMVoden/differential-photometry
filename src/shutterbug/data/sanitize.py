@@ -106,15 +106,15 @@ def remove_incomplete_time(ds: xr.Dataset) -> xr.Dataset:
 
 # TODO make this and next into one function
 def find_wrong_count_stars(ds: xr.Dataset) -> list[str]:
-    bad_stars = np.array([])
-    star_counts = ds.mag.groupby("star").count()
-    mode_index = star_counts.idxmax()
-    mode = star_counts.sel(star=mode_index)
-    bad_stars = xr.where(star_counts == mode, np.NaN, 1).dropna("star").star.values
-    # stars, counts = np.unique(ds["star"], return_counts=True)
-    # star_mode = np.amax(counts)
-    # bad_stars_indices = np.argwhere((counts != star_mode))
-    # bad_stars = stars[bad_stars_indices]
+    # bad_stars = np.array([])
+    # star_counts = ds.mag.groupby("star").count()
+    # mode_index = star_counts.idxmax()
+    # mode = star_counts.sel(star=mode_index)
+    # bad_stars = xr.where(star_counts == mode, np.NaN, 1).dropna("star").star.values
+    stars, counts = np.unique(ds["star"], return_counts=True)
+    star_mode = np.amax(counts)
+    bad_stars_indices = np.argwhere((counts != star_mode))
+    bad_stars = stars[bad_stars_indices]
     if len(bad_stars) > 0:
         logging.debug(
             "Stars %s have been found without sufficient amounts of information",
@@ -128,11 +128,15 @@ def find_wrong_count_stars(ds: xr.Dataset) -> list[str]:
 
 
 def find_wrong_count_time(ds: xr.Dataset) -> list[str]:
-    bad_time = np.array([])
-    time_counts = ds.mag.groupby("time").count()
-    mode_index = time_counts.idxmax()
-    mode = time_counts.sel(time=mode_index)
-    bad_time = xr.where(time_counts == mode, np.NaN, 1).dropna("time").time.values
+    # bad_time = np.array([])
+    # time_counts = ds.mag.groupby("time").count()
+    # mode_index = time_counts.idxmax()
+    # mode = time_counts.sel(time=mode_index)
+    # bad_time = xr.where(time_counts == mode, np.NaN, 1).dropna("time").time.values
+    time, counts = np.unique(ds["time"], return_counts=True)
+    time_mode = np.amax(counts)
+    bad_time_indices = np.argwhere((counts != time_mode))
+    bad_time = time[bad_time_indices]
     if len(bad_time) > 0:
         logging.debug(
             "Time %s have been found without sufficient amounts of information",
@@ -174,18 +178,22 @@ def find_nan_stars(ds: xr.Dataset) -> list[str]:
 
 # TODO make these into one function
 def remove_time(ds: xr.Dataset, time_to_remove: list[str]) -> xr.Dataset:
-    bad_indices = np.flatnonzero(
-        np.isin(ds.time.values, time_to_remove, assume_unique=True)
-    )
+    time_to_remove = set(time_to_remove)
+    bad_indices = np.nonzero(
+        np.array([(1 if x in ds.time.values else 0) for x in time_to_remove])
+    )[0]
+
     bad_ds_indices = ds.index.values[bad_indices]
     ds = ds.drop_sel(index=bad_ds_indices)
     return ds
 
 
 def remove_stars(ds: xr.Dataset, stars_to_remove: list[str]) -> xr.Dataset:
-    bad_indices = np.flatnonzero(
-        np.isin(ds.star.values, stars_to_remove, assume_unique=True)
-    )
+    stars_to_remove = set(stars_to_remove)
+    bad_indices = np.nonzero(
+        np.array([(1 if x in ds.star.values else 0) for x in stars_to_remove])
+    )[0]
+
     bad_ds_indices = ds.index.values[bad_indices]
     ds = ds.drop_sel(index=bad_ds_indices)
     return ds
