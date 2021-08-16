@@ -156,9 +156,8 @@ def find_wrong_count_time(ds: xr.Dataset) -> list[str]:
 def find_index_nan(ds: xr.Dataset) -> npt.NDArray[np.int_]:
     bad_indices = np.array([], dtype=np.int64)
     for variable in ds.variables:
-        nan_raw_indices = np.nonzero(
-            np.array([(1 if x == np.NaN else 0) for x in ds[variable].values])
-        )[0]
+        nan_raw_indices = np.flatnonzero(ds[variable].isnull().values)
+
         nan_ds_indices = ds.index[nan_raw_indices]
         bad_indices = np.union1d(bad_indices, nan_ds_indices)
     return bad_indices
@@ -183,23 +182,21 @@ def find_nan_stars(ds: xr.Dataset) -> list[str]:
 # TODO make these into one function
 def remove_time(ds: xr.Dataset, time_to_remove: list[str]) -> xr.Dataset:
     time_to_remove = set(time_to_remove)
-    bad_indices = np.nonzero(
+    bad_indices = np.flatnonzero(
         np.array([(1 if x in time_to_remove else 0) for x in ds.time.values])
-    )[0]
+    )
 
-    bad_ds_indices = ds.index.values[bad_indices]
-    ds = ds.drop_sel(index=bad_ds_indices)
+    ds = ds.drop_sel(index=ds.index.values[bad_indices])
     return ds
 
 
 def remove_stars(ds: xr.Dataset, stars_to_remove: list[str]) -> xr.Dataset:
     stars_to_remove = set(stars_to_remove)
-    bad_indices = np.nonzero(
+    bad_indices = np.flatnonzero(
         np.array([(1 if x in stars_to_remove else 0) for x in ds.star.values])
-    )[0]
+    )
 
-    bad_ds_indices = ds.index.values[bad_indices]
-    ds = ds.drop_sel(index=bad_ds_indices)
+    ds = ds.drop_sel(index=ds.index.values[bad_indices])
     return ds
 
 
