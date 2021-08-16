@@ -26,6 +26,7 @@
     "env_dir": ".asv/env",
     "results_dir": ".asv/results",
     "html_dir": ".asv/html",
+    "benchmark_dir": "benchmarks"
     // "pythons": "3.9",
     // "include": [
     //     {

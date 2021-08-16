@@ -162,28 +162,32 @@ def find_nan_stars(ds: xr.Dataset) -> list[str]:
     nan_list = nan_stars["star"].values.tolist()
     if len(nan_list) > 0:
         logging.debug(
-            "Stars %s have been found with junk data", np.unique(nan_list),
+            "Stars %s have been found with junk data",
+            np.unique(nan_list),
         )
         logging.warning(
-            "%s stars have been found with junk data", np.unique(nan_list).size,
+            "%s stars have been found with junk data",
+            np.unique(nan_list).size,
         )
     return nan_list
 
 
 # TODO make these into one function
 def remove_time(ds: xr.Dataset, time_to_remove: list[str]) -> xr.Dataset:
-    good_indices = (
-        xr.where(ds.time.isin(time_to_remove), np.NaN, 1).dropna("index").index
+    bad_indices = np.flatnonzero(
+        np.isin(ds.time.values, time_to_remove, assume_unique=True)
     )
-    ds = ds.sel(index=good_indices)
+    bad_ds_indices = ds.index.values[bad_indices]
+    ds = ds.drop_sel(index=bad_ds_indices)
     return ds
 
 
 def remove_stars(ds: xr.Dataset, stars_to_remove: list[str]) -> xr.Dataset:
-    good_indices = (
-        xr.where(ds.star.isin(stars_to_remove), np.NaN, 1).dropna("index").index
+    bad_indices = np.flatnonzero(
+        np.isin(ds.star.values, stars_to_remove, assume_unique=True)
     )
-    ds = ds.sel(index=good_indices)
+    bad_ds_indices = ds.index.values[bad_indices]
+    ds = ds.drop_sel(index=bad_ds_indices)
     return ds
 
 
