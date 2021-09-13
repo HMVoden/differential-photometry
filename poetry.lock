@@ -463,7 +463,7 @@ lxml = ["lxml"]
 
 [[package]]
 name = "hypothesis"
-version = "6.17.4"
+version = "6.21.0"
 description = "A library for property-based testing"
 category = "dev"
 optional = false
@@ -489,6 +489,17 @@ pytest = ["pytest (>=4.6)"]
 pytz = ["pytz (>=2014.1)"]
 redis = ["redis (>=3.0.0)"]
 zoneinfo = ["importlib-resources (>=3.3.0)", "backports.zoneinfo (>=0.2.1)", "tzdata (>=2020.4)"]
+
+[[package]]
+name = "hypothesis-fspaths"
+version = "0.1"
+description = "Hypothesis extension for generating filesystem paths"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+hypothesis = "*"
 
 [[package]]
 name = "idna"
@@ -1487,7 +1498,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9 <3.10"
-content-hash = "4f285d27f4549b364271b9344b511f737d7f7e488fe626e900cd4b41a3deb239"
+content-hash = "95c7cea01a9a0cbc7f0ddea0474ee73b965d15203fcbef216908d6c953a8249c"
 
 [metadata.files]
 alabaster = [
@@ -1775,8 +1786,11 @@ html5lib = [
     {file = "html5lib-1.1.tar.gz", hash = "sha256:b2e5b40261e20f354d198eae92afc10d750afb487ed5e50f9c4eaf07c184146f"},
 ]
 hypothesis = [
-    {file = "hypothesis-6.17.4-py3-none-any.whl", hash = "sha256:47b86bda10dba94bb9e5733dcb4df27fca8b421ebe81aad2516441272c374c10"},
-    {file = "hypothesis-6.17.4.tar.gz", hash = "sha256:fd5a2207aaaaea430fe1dd0fc4392edb1c95cb21034fdf69231113cc1ab86fa0"},
+    {file = "hypothesis-6.21.0-py3-none-any.whl", hash = "sha256:b2ba0369528c139aa582bd27c47f596426a7973503fe1d1afb54167a582ffcc4"},
+    {file = "hypothesis-6.21.0.tar.gz", hash = "sha256:25d81a1579a90642e305ca711e424598d1e7eba5131f690ba3eda71c1221e410"},
+]
+hypothesis-fspaths = [
+    {file = "hypothesis-fspaths-0.1.tar.gz", hash = "sha256:d1124ddc2a37cb54cdaa573bb16a40841a37598c8fc7b83dd07babffc6b01368"},
 ]
 idna = [
     {file = "idna-3.2-py3-none-any.whl", hash = "sha256:14475042e284991034cb48e06f6851428fb14c4dc953acd9be9a5e95c7b6dd7a"},

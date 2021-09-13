@@ -1,6 +1,5 @@
 import logging
 import logging.config
-from enlighten import manager
 
 import xarray as xr
 
