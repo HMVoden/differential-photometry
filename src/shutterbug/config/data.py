@@ -32,24 +32,12 @@ class DataConfig(ImmutableData):
 class CLIConfig(ImmutableData):
     mag_y_scale: Optional[float]
     diff_y_scale: Optional[float]
-    input_data: List[Path]
     output_folder: Optional[Path]
     output_spreadsheet: bool
     correct_offset: bool
     iterations: int
     remove: Optional[List[str]]
     uniform: bool
-
-    @validator("input_data")
-    def make_file_list(cls, input_data: List[Path]) -> List[Path]:
-        result = []
-        for path in input_data:
-            if path.is_dir():
-                files = [x for x in path.iterdir() if x.is_file()]
-                result.extend(files)
-            else:
-                result.append(path)
-        return result
 
     @validator("remove")
     def split_str(cls, remove: str) -> List[str]:

@@ -78,8 +78,8 @@ warnings.filterwarnings("ignore", category=UserWarning)
     help="""Sets the differential magnitude y-scale to have this value above and below the median
               of any dataset when plotted. OVERRIDES UNIFORM""",
 )
-def cli(**cli_settings):
-    shutterbug.application(**cli_settings)
+def cli(input_data, **cli_settings):
+    shutterbug.application(input_data, **cli_settings)
 
 
 # @bars.progress(

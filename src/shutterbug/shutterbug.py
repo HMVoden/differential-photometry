@@ -3,6 +3,7 @@ import logging.config
 
 import xarray as xr
 
+import shutterbug.file_loader as loader
 import shutterbug.config.config as config
 import shutterbug.data.convert as convert
 import shutterbug.data.load as load
@@ -29,7 +30,7 @@ from shutterbug.photometry.detect.magnitude import MagnitudeDetector
 from shutterbug.photometry.timeseries import StationarityTestFactory
 
 
-def application(**cli_settings):
+def application(input_data, **cli_settings):
     con_dir = config.ConfigDirector(**cli_settings)
     log_config: LoggingConfig = con_dir.get("logging")
     log.initialize_logging(**log_config.dict())
@@ -51,20 +52,22 @@ def application(**cli_settings):
     # Extraction, cleanup and processing
     # io.extract returns a dataframe which we
     # then move around in a pipe
-    readable_files = [
-        x
-        for x in cli_config.input_data
-        if x.suffix in data_config.reader["types"].keys()
-    ]
     manager = bars.build(
-        "files", "Files processed", "file", len(readable_files), True, 0
+        "files",
+        "Files processed",
+        "file",
+        loader.get_readable_file_count(input_data),
+        True,
+        0,
     )
+    readable_files = loader.iload(input_data)
     with manager as pbar:
         for in_file in readable_files:
             logging.info("Starting data loading and sanitization")
             ds = (  # Start of load/clean section
-                load.from_file(in_file, data_config.reader)
-                .pipe(sanitize.drop_and_clean_names, required_data=data_config.required)
+                in_file.pipe(
+                    sanitize.drop_and_clean_names, required_data=data_config.required
+                )
                 .pipe(
                     sanitize.clean_data,
                     coord_names=data_config.coords,
