@@ -5,6 +5,12 @@ import xarray as xr
 from pathlib import Path
 from .converter import convert_frame
 
+# Kept as module not class-in-a-module
+# as, while this has sufficient ability to be
+# made into a class, it is used exactly once
+# then never again
+
+
 _suffix_to_loader = {
     ".xlsx": pd.read_excel,
     ".xls": pd.read_excel,
@@ -15,7 +21,10 @@ _suffix_to_loader = {
     ".parquet": pd.read_parquet,
     ".hd5": xr.open_dataset,
     ".nc": xr.open_dataset,
-}
+}  # still don't like this, but can't think of better method
+# strategy pattern?
+# TODO investigate strategy pattern and see if viable to implement here
+# TODO investigate factory pattern to see if useable with strategy in this case
 
 
 def _is_accepted_format(path: Path) -> bool:

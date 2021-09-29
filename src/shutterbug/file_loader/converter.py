@@ -4,6 +4,7 @@ from typing import Union
 
 
 def _pandas_to_xarray(frame: pd.DataFrame) -> xr.Dataset:
+    # doesn't work with xr.DataArrays
     if isinstance(frame, (xr.Dataset)):
         return frame
     return frame.to_xarray()
