@@ -502,6 +502,18 @@ python-versions = "*"
 hypothesis = "*"
 
 [[package]]
+name = "hypothesis-pytest"
+version = "0.19.0"
+description = "Pytest plugin for better integration with hypothesis"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+hypothesis = ">=1.11.2"
+pytest = ">=2.7.0"
+
+[[package]]
 name = "idna"
 version = "3.2"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -1509,7 +1521,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9 <3.10"
-content-hash = "021b030e487136e2db6ef90e6ecf9dbc35ea5dd69af549010b6c5dc384317d70"
+content-hash = "7a01e576b8113f558c1e23244a401075e7f8e432bba545b074990d3822684ed1"
 
 [metadata.files]
 alabaster = [
@@ -1802,6 +1814,9 @@ hypothesis = [
 ]
 hypothesis-fspaths = [
     {file = "hypothesis-fspaths-0.1.tar.gz", hash = "sha256:d1124ddc2a37cb54cdaa573bb16a40841a37598c8fc7b83dd07babffc6b01368"},
+]
+hypothesis-pytest = [
+    {file = "hypothesis-pytest-0.19.0.tar.gz", hash = "sha256:550fd3a651eb13d399efba3172bd010a42f6c34c2baa04cf072bda0911054e06"},
 ]
 idna = [
     {file = "idna-3.2-py3-none-any.whl", hash = "sha256:14475042e284991034cb48e06f6851428fb14c4dc953acd9be9a5e95c7b6dd7a"},

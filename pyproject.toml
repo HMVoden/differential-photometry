@@ -55,6 +55,7 @@ black = "^21.7b0"
 hypothesis = { extras = ["pandas"], version = "^6.17.4" }
 snakeviz = "^2.1.0"
 hypothesis-fspaths = "^0.1"
+hypothesis-pytest = "^0.19.0"
 
 [tool.poetry.scripts]
 shutterbug = "shutterbug.ux.cli:cli"
@@ -67,18 +68,6 @@ build-backend = "poetry.core.masonry.api"
 minversion = "6.0"
 addopts = "-ra -p no:warnings"
 testpaths = ["tests"]
-
-[tool.poe.tasks.bench]
-shell = "asv run master^! && asv run HEAD^! && asv compare master HEAD"
-help = "Benchmark current commit vs. master branch"
-
-[tool.poe.tasks.clean]
-cmd = """
-rm -rf .asv .coverage .mypy_cache .pytest_cache
-       dist betterproto.egg-info **/__pycache__
-       testsoutput_*
-"""
-help = "Clean out generated files from the workspace"
 
 [tool.black]
 target-version = ['py39']

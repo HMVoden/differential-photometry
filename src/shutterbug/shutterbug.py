@@ -3,27 +3,21 @@ import logging.config
 
 import xarray as xr
 
-import shutterbug.file_loader as loader
 import shutterbug.config.config as config
 import shutterbug.data.convert as convert
 import shutterbug.data.load as load
 import shutterbug.data.sanitize as sanitize
+import shutterbug.file_loader as loader
 import shutterbug.logging.log as log
 import shutterbug.output.figure as plot_util
 import shutterbug.output.graph as plot
 import shutterbug.output.spreadsheet as spreadsheet
-
 # import shutterbug.output.graph as graph
 # import shutterbug.output.spreadsheet as ss
 import shutterbug.photometry.photometry as photometry
 import shutterbug.ux.progress_bars as bars
-from shutterbug.config.data import (
-    CLIConfig,
-    DataConfig,
-    LoggingConfig,
-    OutputConfig,
-    PhotometryConfig,
-)
+from shutterbug.config.data import (CLIConfig, DataConfig, LoggingConfig,
+                                    OutputConfig, PhotometryConfig)
 from shutterbug.photometry.detect.distance import DistanceDetector
 from shutterbug.photometry.detect.expand import ExpandingConditionalDetector
 from shutterbug.photometry.detect.magnitude import MagnitudeDetector
@@ -39,16 +33,6 @@ def application(input_data, **cli_settings):
     phot_config: PhotometryConfig = con_dir.get("photometry")
     cli_config: CLIConfig = con_dir.get("cli")
     out_config: OutputConfig = con_dir.get("output")
-    # NEED
-    # TODO write logs to file
-    # TODO Clip exterior edge of x-y coords, ignore stars as targets but not as reference
-    # WANT
-    # TODO write documentation
-    # TODO write function docstrings
-    # TODO add machine learning for star detection
-    # TODO write tests for all functions
-    # TODO write benchmark code to test memory/CPU use
-    # TODO refactor plotting for xarray
     # Extraction, cleanup and processing
     # io.extract returns a dataframe which we
     # then move around in a pipe
