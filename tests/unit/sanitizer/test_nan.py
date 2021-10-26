@@ -1,7 +1,7 @@
 import numpy as np
 from hypothesis import given
 from hypothesis.strategies import floats, lists
-from shutterbug.data_sanitizer.clean.nan import clean_nan, find_nan
+from shutterbug.sanitizer.nan import clean_nan, find_nan
 
 
 @given(lists(floats(allow_infinity=False, allow_nan=True)))

@@ -3,7 +3,7 @@ from typing import Dict
 
 
 def generate_graph_output_path(
-    dataset: Path,
+    filename: str,
     output_config: Dict,
     offset: bool = False,
     inter_varying: bool = False,
@@ -39,8 +39,8 @@ def generate_graph_output_path(
     else:
         output_path = root
     output_dict.update(**output_config["base"])
-    output_dict["dataset"] = dataset.stem.split("_")[0]
-    output_dict["input_filename"] = dataset.stem
+    output_dict["dataset"] = filename.split("_")[0]
+    output_dict["input_filename"] = filename
     if uniform == True:
         output_dict.update(**output_config["uniform"])
     if offset == True:

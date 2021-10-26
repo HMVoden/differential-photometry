@@ -1,11 +1,12 @@
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
+
 import numpy as np
 import shutterbug.photometry.detect.variation as variation
 import shutterbug.photometry.differential as diff
+import shutterbug.ux.progress_bars as bars
 import xarray as xr
 from shutterbug.photometry.detect.expand import ExpandingConditionalDetector
-import shutterbug.ux.progress_bars as bars
 
 
 @dataclass
@@ -52,6 +53,7 @@ class IntradayDifferential:
         nearby_reference_stars = nearby_reference_stars.where(
             ~(nearby_reference_stars.star == target_star), drop=True
         )
+        day_star["reference_stars"] = len(nearby_reference_stars.star)
         day_star["average_diff_mags"] = diff.data_array_magnitude(
             day_star.mag, nearby_reference_stars.mag
         )

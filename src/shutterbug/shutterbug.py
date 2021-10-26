@@ -21,6 +21,7 @@ from shutterbug.config.data import (CLIConfig, DataConfig, LoggingConfig,
 from shutterbug.photometry.detect.distance import DistanceDetector
 from shutterbug.photometry.detect.expand import ExpandingConditionalDetector
 from shutterbug.photometry.detect.magnitude import MagnitudeDetector
+from shutterbug.photometry.reducer.reduce_area import dataset_reduce_area
 from shutterbug.photometry.timeseries import StationarityTestFactory
 
 
@@ -46,10 +47,10 @@ def application(input_data, **cli_settings):
     )
     readable_files = loader.iload(input_data)
     with manager as pbar:
-        for in_file in readable_files:
+        for filename, frame in readable_files:
             logging.info("Starting data loading and sanitization")
             ds = (  # Start of load/clean section
-                in_file.pipe(
+                frame.pipe(
                     sanitize.drop_and_clean_names, required_data=data_config.required
                 )
                 .pipe(
@@ -67,6 +68,7 @@ def application(input_data, **cli_settings):
             # generate classes for use
             logging.info("Setting up photometry")
             bars.status.update(stage="Differential Photometry")
+            ds = dataset_reduce_area(ds, reduce_by=(100, 100), image_shape=(4096, 4096))
             stationarity_settings = phot_config.stationarity
             test_method = stationarity_settings["test_method"]
             test_method_settings = phot_config.test[test_method]
@@ -119,7 +121,7 @@ def application(input_data, **cli_settings):
             logging.info("Beginning output")
             ds = ds.pipe(
                 spreadsheet.save_to_csv,
-                filename=in_file.stem,
+                filename=filename,
                 output_flag=cli_config.output_spreadsheet,
                 offset=cli_config.correct_offset,
                 output_folder=cli_config.output_folder,
@@ -130,7 +132,8 @@ def application(input_data, **cli_settings):
                 uniform_y_axis=cli_config.uniform,
                 offset=cli_config.correct_offset,
                 output_config=out_config.folder,
-                dataset=in_file,
+                filename=filename,
+                dataset=frame,
             )
             bars.status.update(stage="Finishing file")
 

@@ -28,7 +28,7 @@ csv = "csv"
 
 [plot.seaborn]
 # see https://seaborn.pydata.org/generated/seaborn.set_theme.html#seaborn.set_theme
-palette = "deep"
+palette = "colorblind"
 context = "notebook"
 style = "darkgrid"
 font = 'sans-serif'
@@ -39,7 +39,7 @@ color_codes = true
 [plot.magnitude]
 xlabel = "Time (UTC)"
 ylabel = "Raw Magnitude"
-color = "purple"
+color = "red"
 
 [plot.differential_magnitude]
 xlabel = "Time (UTC)"

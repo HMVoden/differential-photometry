@@ -20,7 +20,15 @@ def clean_names(names: List[str]) -> List[str]:
         Cleaned list of names
 
     """
-    remove = string.punctuation
+
+    cleaned = []
     for name in names:
-        name = re.sub(f"[{remove}]*", "", name.strip().lower())
-    return names
+        name = clean_name(name)
+        cleaned.append(name)
+    return cleaned
+
+
+def clean_name(name):
+    for symbol in string.punctuation:
+        name = name.replace(symbol, "")
+    return name

@@ -1,7 +1,7 @@
 # Change to one of the below to change
 # star varying test
 [distance]
-"tolerance" = 50 # px, radius
+"tolerance" = 200 # px, radius
 "increment" = 0  # px
 
 [magnitude]
@@ -13,7 +13,7 @@
 "minimum_stars" = 25
 
 [stationarity]
-"test_method" = "adf_gls"
+"test_method" = "adfuller"
 "p_value" = 0.05
 "null" = "accept"
 "clip_data" = false

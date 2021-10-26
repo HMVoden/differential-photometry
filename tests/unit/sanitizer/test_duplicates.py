@@ -1,7 +1,7 @@
 import numpy as np
 from hypothesis import given
 from hypothesis.strategies import composite, floats, lists, text
-from shutterbug.data_sanitizer.clean.duplicates import find_duplicates
+from shutterbug.sanitizer.duplicates import find_duplicates
 
 
 @composite

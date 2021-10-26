@@ -1,8 +1,9 @@
 from pathlib import Path
-from typing import Iterator, List, Union
+from typing import Iterator, List, Tuple, Union
+
 import pandas as pd
 import xarray as xr
-from pathlib import Path
+
 from .converter import convert_frame
 
 # Kept as module not class-in-a-module
@@ -61,7 +62,7 @@ def _load_and_convert(path: Path, as_type: str = "xarray", **settings):
 
 def iload(
     paths: List[Path], as_type: str = "xarray", **settings
-) -> Union[pd.DataFrame, pd.Series, xr.DataArray, xr.Dataset, None]:
+) -> Tuple[str, Union[pd.DataFrame, pd.Series, xr.DataArray, xr.Dataset, None]]:
     paths = _get_files_from_paths(paths)
     paths = list(_filter_unreadable_paths(paths))
     if len(paths) == 0:
@@ -69,17 +70,17 @@ def iload(
             f"No readable files given, readable formats are: {' '.join(_suffix_to_loader.keys())}"
         )
     for path in paths:
-        yield _load_and_convert(path, as_type, **settings)
+        yield path.stem, _load_and_convert(path, as_type, **settings)
 
 
 def load(
     path: Path, as_type: str, **settings
-) -> Union[pd.DataFrame, pd.Series, xr.DataArray, xr.Dataset, None]:
+) -> Tuple[str, Union[pd.DataFrame, pd.Series, xr.DataArray, xr.Dataset, None]]:
     if _is_accepted_format(path):
-        return _load_and_convert(path, as_type, **settings)
+        return path.stem, _load_and_convert(path, as_type, **settings)
     else:
         raise ValueError(
-            f"Not a readable type, given filetype {path.suffix}, readable formats are {_suffix_to_loader.keys()}"
+            f"Not a readable type, given filetype {path.suffix}, readable formats are {' '.join(_suffix_to_loader.keys())}"
         )
 
 

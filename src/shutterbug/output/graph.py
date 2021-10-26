@@ -28,6 +28,7 @@ def plot_and_save_all(
     offset: bool,
     dataset: Path,
     output_config: Dict,
+    filename: str,
 ):
     logging.info("Starting graphing...")
     ds = ds.swap_dims({"star": "intra_varying"})
@@ -47,6 +48,7 @@ def plot_and_save_all(
         plot_config=plot_config,
         dataset=dataset,
         output_config=output_config,
+        filename=filename,
     )
 
     logging.info("Finished graphing")
@@ -57,7 +59,7 @@ def generate_data_folders(
     ds: xr.Dataset,
     uniform_y_axis: bool,
     offset: bool,
-    dataset: Path,
+    filename: str,
     output_config: Dict,
 ) -> xr.Dataset:
     intra, inter = np.unique(ds["varying"])[0]
@@ -67,19 +69,23 @@ def generate_data_folders(
         intra_varying=intra,
         inter_varying=inter,
         output_config=output_config,
-        dataset=dataset,
+        filename=filename,
     )
     return ds
 
 
 def setup_plot_dataset(
-    ds: xr.Dataset, offset: bool, uniform: bool, dataset: Path, output_config: Dict,
+    ds: xr.Dataset,
+    offset: bool,
+    uniform: bool,
+    filename: str,
+    output_config: Dict,
 ) -> xr.Dataset:
     ds = ds.pipe(
         generate_data_folders,
         uniform_y_axis=uniform,
         offset=offset,
-        dataset=dataset,
+        filename=filename,
         output_config=output_config,
     )
     ds = ds.reset_index("varying").swap_dims({"varying": "star"})
@@ -102,6 +108,7 @@ def multiprocess_save(
     offset: bool,
     dataset: Path,
     output_config: Dict,
+    filename: str,
 ):
     """Runner function, sets up multiprocess graphing for system
 
@@ -130,7 +137,7 @@ def multiprocess_save(
         ds=ds,
         offset=offset,
         uniform=uniform,
-        dataset=dataset,
+        filename=filename,
         output_config=output_config,
     )
 
@@ -152,7 +159,11 @@ def multiprocess_save(
 
     with ProcessPoolExecutor(max_workers=(cpu_count() - 1)) as executor:
         futures = {
-            executor.submit(build_and_save_figure, ds=stars, plot_config=plot_config,)
+            executor.submit(
+                build_and_save_figure,
+                ds=stars,
+                plot_config=plot_config,
+            )
             for _, stars in frame.groupby("star")
         }
         for future in as_completed(futures):
@@ -164,7 +175,10 @@ def multiprocess_save(
     return frame
 
 
-def build_and_save_figure(ds: xr.Dataset, plot_config: Dict,) -> xr.Dataset:
+def build_and_save_figure(
+    ds: xr.Dataset,
+    plot_config: Dict,
+) -> xr.Dataset:
     if all(lim in ds.attrs.keys() for lim in ["mag_var", "diff_var"]):
         mag_lim = limits_from_median(ds["mag"], ds.attrs["mag_var"])
         diff_lim = limits_from_median(ds["average_diff_mags"], ds.attrs["diff_var"])
@@ -175,15 +189,15 @@ def build_and_save_figure(ds: xr.Dataset, plot_config: Dict,) -> xr.Dataset:
     # Needs to be set here so each worker
     # Has the same settings
     figure = plot_util.WorkerFigure(
-        nrows=4,
+        nrows=2,
         ncols=len(np.unique(ds["time.date"])),
-        figsize=(5 * len(np.unique(ds["time.date"])), 15),
+        figsize=(5 * len(np.unique(ds["time.date"])), 10),
         output_folder=ds.attrs["output_folder"],
         plot_config=plot_config,
     )
 
     ds.groupby("time.date").map(
-        create_4x1_raw_diff_plot,
+        create_2x1_raw_diff_plot,
         figure=figure,
         plot_config=plot_config,
         mag_lim=mag_lim,
@@ -194,7 +208,13 @@ def build_and_save_figure(ds: xr.Dataset, plot_config: Dict,) -> xr.Dataset:
     figure.share_rows_y()
     figure.set_label_outer()
     figure.set_date_formatter()
-    figure.set_super_title(str(ds["star"].data))
+    figure.set_super_title(
+        name=str(ds["star"].data),
+        x=ds["x"].data,
+        y=ds["y"].data,
+        comparison_stars=ds["reference_stars"].data[0],
+        test_statistic=ds["adfuller"].data,
+    )
     figure.save(str(ds["star"].data))
     return ds  # placeholder
 
@@ -208,7 +228,7 @@ def limits_from_median(
     return (median - max_variation, median + max_variation)
 
 
-def create_4x1_raw_diff_plot(
+def create_2x1_raw_diff_plot(
     ds: xr.Dataset,
     figure: plot_util.WorkerFigure,
     plot_config: Dict,
@@ -225,7 +245,7 @@ def create_4x1_raw_diff_plot(
         xlabel=plot_config["magnitude"]["xlabel"],
         color=plot_config["magnitude"]["color"],
         error=ds["error"].data,
-        axes=axes[:2],
+        axes=axes[0],
         yrange=mag_lim,
         plot_config=plot_config,
     )
@@ -237,7 +257,7 @@ def create_4x1_raw_diff_plot(
         xlabel=plot_config["differential_magnitude"]["xlabel"],
         color=plot_config["differential_magnitude"]["color"],
         error=ds["average_uncertainties"].data,
-        axes=axes[2:],
+        axes=axes[1],
         yrange=diff_lim,
         plot_config=plot_config,
     )
@@ -292,13 +312,10 @@ def plot_line_scatter(
     }
     error_settings = {"x": x, **plot_config["error"]["bar"]}
 
-    sns.lineplot(ax=axes[0], x=x, y=y, ci=None, color=color, animated=True)
-    axes[0].fill_between(**fill_between)
-    sns.scatterplot(ax=axes[1], x=x, y=y, ci=None, color=color, animated=True)
-    axes[1].errorbar(y=y, yerr=error, label="Error", **error_settings)
-    for ax in axes:
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
-        ax.legend()
-        if yrange is not None:
-            ax.set_ylim(yrange)
+    sns.scatterplot(ax=axes, x=x, y=y, ci=None, color=color, animated=True)
+    axes.errorbar(y=y, yerr=error, label="Error", **error_settings)
+    axes.set_xlabel(xlabel)
+    axes.set_ylabel(ylabel)
+    axes.legend()
+    if yrange is not None:
+        ax.set_ylim(yrange)

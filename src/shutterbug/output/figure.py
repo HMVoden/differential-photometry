@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -158,8 +158,22 @@ class WorkerFigure(Singleton):
             logging.info("Creating directory %s", self.output_folder)
             self.output_folder.mkdir(parents=True, exist_ok=True)
 
-    def set_super_title(self, name):
-        self.fig.suptitle("Raw and differential magnitude of star " + name)
+    def set_super_title(
+        self,
+        name: str,
+        x: Optional[float] = None,
+        y: Optional[float] = None,
+        comparison_stars: Optional[int] = None,
+        test_statistic: Optional[float] = None,
+    ):
+        title = f"Raw and differential magnitude of {name}"
+        if x is not None and y is not None:
+            title += f"\n X: {x}  Y: {y}"
+        if comparison_stars is not None:
+            title += f"\n Comparison stars used: {comparison_stars}"
+        if test_statistic is not None:
+            title += f"\n Augmented Dickey-Fuller value: {test_statistic:.2f}, varying when p-value: >=0.05"
+        self.fig.suptitle(title)
 
 
 def max_variation(
