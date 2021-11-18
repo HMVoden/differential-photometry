@@ -5,10 +5,9 @@ from typing import Dict, List
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+import shutterbug.ux.progress_bars as bars
 import xarray as xr
 from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
-import shutterbug.ux.progress_bars as bars
-
 from scipy.stats import mode
 
 columns_check_function = {
