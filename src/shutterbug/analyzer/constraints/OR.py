@@ -9,7 +9,7 @@ class ORConstraint(ConstraintInterface):
     def __init__(self, *constraints: Tuple[ConstraintInterface]):
         if len(constraints) < 2:
             raise ValueError("Not enough constraints given for OR")
-        self.constraints = list(constraints)
+        self.constraints = list(*constraints)
 
     def meets(self, values: Sequence) -> Iterable[int]:
         good_indices = set()
