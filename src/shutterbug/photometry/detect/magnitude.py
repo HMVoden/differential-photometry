@@ -4,7 +4,6 @@ import numpy as np
 import numpy.typing as npt
 import xarray as xr
 from shutterbug.photometry.detect.detect import DetectBase
-from xarray.core.dataset import calculate_dimensions
 
 
 @dataclass
