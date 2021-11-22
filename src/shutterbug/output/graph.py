@@ -318,4 +318,4 @@ def plot_line_scatter(
     axes.set_ylabel(ylabel)
     axes.legend()
     if yrange is not None:
-        ax.set_ylim(yrange)
+        axes.set_ylim(yrange)

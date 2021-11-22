@@ -25,7 +25,7 @@ expected = "weighted_mean" # "weighted mean", "mean", "median", "none"
 
 [test.adfuller]
 # documentation here: https://arch.readthedocs.io/en/latest/unitroot/generated/arch.unitroot.ADF.html
-max_lags = 0
+# max_lags = 0 # comment out to let the Method decide how many lags to use
 trend = "c"    # "c", "ct", "ctt" or "nc"
 method = "aic" # "aic", "bic" "t-stat" or comment out
 

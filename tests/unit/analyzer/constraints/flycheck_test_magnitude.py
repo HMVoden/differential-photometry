@@ -31,7 +31,7 @@ def mag_dataset(draw):
 
 
 @given(mag_dataset(), floats(min_value=0, allow_nan=False, allow_infinity=False))
-def test_magnitude_constraint(data, mag_range):
+def test_distance_constraint(data, mag_range):
     constraint = MagnitudeConstraint(
         radius=mag_range, magnitudes=data["mag"].to_numpy()[0]
     )

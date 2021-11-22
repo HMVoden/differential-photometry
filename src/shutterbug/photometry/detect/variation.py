@@ -101,9 +101,9 @@ class ChiSquareTest(StationarityTestStrategy):
 
 @dataclass
 class AugmentedDFullerTest(StationarityTestStrategy):
-    max_lags: int
     trend: str
     method: str
+    max_lags: Optional[int] = None
     """Performs the augmented Dickey-Fuller test on the data.
     The null hypothesis of this test is that the timeseries inputted is NOT stationary.
 
