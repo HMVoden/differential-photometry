@@ -48,7 +48,10 @@ def process(input_file: Path):
     # TODO write documentation
     # TODO write function docstrings
     # TODO improve progess bar code
+<<<<<<< HEAD:src/shutterbug/shutterbug.py
     # TODO fix progress bars not finishing
+=======
+>>>>>>> 14fa39af25ec1544244fc9637b3cec17f30b372f:shutterbug/shutterbug.py
     # TODO add machine learning for star detection
     # TODO write tests for all functions
     # TODO write benchmark code to test memory/CPU use
