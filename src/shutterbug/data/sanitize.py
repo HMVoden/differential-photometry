@@ -69,7 +69,16 @@ def drop_and_clean_names(ds: xr.Dataset, required_data: List[str]) -> xr.Dataset
         cleaned.pop(name, None)
     ds = ds.drop_vars(to_drop)
     ds = ds.rename(cleaned)
+<<<<<<< HEAD
+=======
+    if "obj" in ds.keys():
+        ds = ds.rename(obj="star")
+<<<<<<< HEAD:src/shutterbug/data/sanitize.py
+>>>>>>> main
     if "name" in ds.keys():
+=======
+    if "name"  in ds.keys():
+>>>>>>> 14fa39af25ec1544244fc9637b3cec17f30b372f:shutterbug/data/sanitize.py
         ds = ds.rename(name="star")
     return ds
 
