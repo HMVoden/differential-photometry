@@ -1,26 +1,65 @@
 # Where we put the output
 # Each entry corresponds to a new folder
 # Order matters
-[base]
+[folder.base]
 directory = "output"
 
-[uniform]
+[folder.uniform]
 uniform = "uniform"
 
-[corrected]
+[folder.corrected]
 corrected = "corrected"
 
-[non_varying]
+[folder.non_varying]
 non_varying = "non_varying"
 
-[always_varying]
+[folder.always_varying]
 always_varying = "always_varying"
 
-[inter_varying]
+[folder.inter_varying]
 inter_varying = "inter_varying"
 
-[briefly_varying]
+[folder.briefly_varying]
 briefly_varying = "briefly_varying"
 # I'm not sure why I made this
-[csv]
+[folder.csv]
 csv = "csv"
+
+
+[plot.seaborn]
+# see https://seaborn.pydata.org/generated/seaborn.set_theme.html#seaborn.set_theme
+palette = "colorblind"
+context = "notebook"
+style = "darkgrid"
+font = 'sans-serif'
+font_scale = 1
+color_codes = true
+#rc =  # overrides for above
+
+[plot.magnitude]
+xlabel = "Time (UTC)"
+ylabel = "Raw Magnitude"
+color = "red"
+
+[plot.differential_magnitude]
+xlabel = "Time (UTC)"
+ylabel = "Average Differential Magnitude"
+color = "orange"
+
+[plot.time]
+#based on https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
+fmt = "%H:%M:%S"
+# tz = #must be https://docs.python.org/3/library/datetime.html#datetime.tzinfo
+# usetex = false
+
+
+[plot.error.bar] #Error bars on both differential and normal magnitude
+# see https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.errorbar.html?highlight=errorbar#matplotlib.axes.Axes.errorbar
+fmt = "none"
+color = "black"
+capsize = 1
+
+[plot.error.fill]
+# see https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.fill_between.html?highlight=fill_between#matplotlib.axes.Axes.fill_between
+alpha = 0.45    # How seethrough the fill lines are
+label = "Error"

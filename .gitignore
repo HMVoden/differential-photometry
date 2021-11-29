@@ -42,6 +42,7 @@ pip-delete-this-directory.txt
 htmlcov/
 .tox/
 .nox/
+.coveragerc
 .coverage
 .coverage.*
 .cache
@@ -105,6 +106,7 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.asv/
 env/
 venv/
 ENV/
@@ -141,7 +143,8 @@ profiles/
 *.jpg
 *.hd5
 *.nc
-working.toml
-output/
+*.org
+*.svg
+/output/
 results/
-data/
+/data/

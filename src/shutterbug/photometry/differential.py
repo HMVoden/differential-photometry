@@ -1,25 +1,132 @@
-import logging
-from typing import Dict
+from math import sqrt
+from typing import List, Tuple
 
+import numpy as np
+import numpy.typing as npt
+import xarray as xr
+from numba import float32, float64, guvectorize
 from xarray.core.groupby import DatasetGroupBy
 
-import shutterbug.photometry.math as math
-import shutterbug.progress_bars as bars
-import shutterbug.stats.stats as stats
-import numpy as np
-import xarray as xr
+
+# def sigma_clip_data(data: List[float], stat_func, error: List[float] = None) -> float:
+
+#     sample = sigma_clip(data, sigma=3, masked=True)
+#     if error is not None:
+#         error = np.ma.array(error, mask=sample.mask)
+#         return stat_func(sample, error)
+#     return stat_func(sample)
 
 
-def calculate_differential_photometry(groups: DatasetGroupBy) -> xr.Dataset:
+def magnitude(
+    mags: npt.NDArray,
+    varying_mags: npt.NDArray = None,
+) -> Tuple[npt.NDArray, npt.NDArray]:
+    diff_mag = []
+    varying_diff_mag = []
+    mags = mags.transpose()
+    if varying_mags is not None:
+        varying_mags = varying_mags.transpose()
+        for star in varying_mags:
+            vdm = np.mean((mags - star), axis=0)
+            # vdm = average((mags - star), axis=0)
+            varying_diff_mag.append(vdm)
+
+    for index, star in enumerate(mags):
+        reference = np.delete(mags, index, axis=0)
+        dm = np.mean((reference - star), axis=0)
+        # dm = average((reference - star), axis=0)
+
+        diff_mag.append(dm)
+    diff_mag = np.asanyarray(diff_mag).transpose()
+    varying_diff_mag = np.asanyarray(varying_diff_mag).transpose()
+    return diff_mag, varying_diff_mag
+
+
+def error(
+    error: npt.NDArray,
+    varying_error: npt.NDArray = None,
+) -> Tuple[npt.NDArray, npt.NDArray]:
+    diff_error = []
+    varying_diff_error = []
+    error = error.transpose()
+    if varying_error is not None:
+        varying_error = varying_error.transpose()
+        N = error.shape[0] + 1
+        for star in varying_error:
+            vde = np.sqrt(np.sum((error ** 2 + star ** 2), axis=0)) / N
+            # vde = average_error((error ** 2 + star ** 2), axis=0)
+            varying_diff_error.append(vde)
+    N = error.shape[0]
+    for index, star in enumerate(error):
+        reference = np.delete(error, index, axis=0)
+        de = np.sqrt(np.sum((error ** 2 + star ** 2), axis=0)) / N
+        # de = average_error((reference - star), axis=0)
+        diff_error.append(de)
+    diff_error = np.asanyarray(diff_error).transpose()
+    varying_diff_error = np.asanyarray(varying_diff_error).transpose()
+    return diff_error, varying_diff_error
+
+
+def calculate_differential_magnitude(
+    target: npt.NDArray, reference: npt.NDArray
+) -> npt.NDArray:
+    """Calculates a single timeseries differential magnitude"""
+    return reference - target
+
+
+def calculate_differential_uncertainty(
+    target: npt.NDArray, reference: npt.NDArray
+) -> npt.NDArray:
+    """Calculates a single timeseries differential magnitude uncertainty"""
+    return np.sqrt(target ** 2 + reference ** 2)
+
+
+def data_array_magnitude(target: xr.DataArray, reference: xr.DataArray) -> xr.DataArray:
+    return (reference - target).mean("star")
+
+
+def data_array_uncertainty(
+    target: xr.DataArray, reference: xr.DataArray
+) -> xr.DataArray:
+    N = reference.star.size + target.star.size
+    return (reference ** 2 + target ** 2).sum("star") / N
+
+
+# guvectorize intentionally does not return.
+@guvectorize([(float32[:], float32), (float64[:], float64)], "(n) -> ()")
+def average(subtracted_magnitudes: List[float], out: float):
+    N = len(subtracted_magnitudes)
+    out = 0
+    for mag in subtracted_magnitudes:
+        out = out + mag
+    out = out / N
+
+
+@guvectorize([(float32[:], float32), (float64[:], float64)], "(n) -> ()")
+def average_error(errors: List[float], out: float):
+    N = len(errors)
+    out = 0
+    for error in errors:
+        out = out + (error ** 2)
+    out = sqrt(out) / N
+
+
+def dataset(groups: DatasetGroupBy) -> xr.Dataset:
     if len(groups) == 1:
         # non-varying only
         non_varying = groups[False]
-        dm, _ = math.differential_magnitude(non_varying["mag"].values)
-        de, _ = math.differential_error(non_varying["error"].values)
+        dm, _ = magnitude(non_varying["mag"].values)
+        de, _ = error(non_varying["error"].values)
         non_varying = non_varying.assign(
             {
-                "average_diff_mags": (["time", "star"], dm,),
-                "average_uncertainties": (["time", "star"], de,),
+                "average_diff_mags": (
+                    ["time", "star"],
+                    dm,
+                ),
+                "average_uncertainties": (
+                    ["time", "star"],
+                    de,
+                ),
             }
         )
         return non_varying
@@ -28,147 +135,31 @@ def calculate_differential_photometry(groups: DatasetGroupBy) -> xr.Dataset:
 
         varying = groups[True]
 
-        dm, vdm = math.differential_magnitude(
-            non_varying["mag"].values, varying["mag"].values
-        )
-        de, vde = math.differential_error(
-            non_varying["error"].values, varying["error"].values
-        )
+        dm, vdm = magnitude(non_varying["mag"].values, varying["mag"].values)
+        de, vde = error(non_varying["error"].values, varying["error"].values)
         non_varying = non_varying.assign(
             {
-                "average_diff_mags": (["time", "star"], dm,),
-                "average_uncertainties": (["time", "star"], de,),
+                "average_diff_mags": (
+                    ["time", "star"],
+                    dm,
+                ),
+                "average_uncertainties": (
+                    ["time", "star"],
+                    de,
+                ),
             }
         )
         varying = varying.assign(
             {
-                "average_diff_mags": (["time", "star"], vdm,),
-                "average_uncertainties": (["time", "star"], vde,),
+                "average_diff_mags": (
+                    ["time", "star"],
+                    vdm,
+                ),
+                "average_uncertainties": (
+                    ["time", "star"],
+                    vde,
+                ),
             }
         )
 
     return xr.concat([non_varying, varying], dim="star", join="outer")
-
-
-@bars.progress(
-    name="iterations",
-    desc="Variable star detection iterations",
-    unit="iteration",
-    leave=False,
-    status_str="Differential Photometry per day",
-    indentation=2,
-    countable_var="iterations",
-    arg_pos=5,
-)
-def iterate_differential_photometry(
-    ds: xr.Dataset,
-    method: str = "chisquared",
-    p_value: int = 4,
-    null="accept",
-    clip=False,
-    iterations=1,
-    pbar_method=None,
-    varying_flag="varying",
-) -> xr.Dataset:
-    logging.info("Processing day %s", ds["time.date"].values[0])
-    pbar = bars.get("iterations")
-    for i in range(0, iterations, 1):
-        # Step 1, get average differential
-        ds = calculate_differential_photometry(ds.groupby(varying_flag))
-        # Step 2, remove varying and method columns for recalculation
-        # ignore errors if columns aren't present
-        # Step 3, find varying stars via average differential
-        ds.coords[method] = xr.apply_ufunc(
-            stats.test_stationarity,
-            ds["average_diff_mags"],
-            kwargs={"method": method, "clip": clip},
-            input_core_dims=[["time"]],
-            vectorize=True,
-        )
-        if null == "accept":
-            ds.coords[varying_flag] = ds[method] >= p_value
-        else:
-            ds.coords[varying_flag] = ds[method] <= p_value
-
-        logging.info(
-            "Iteration %s found %s varying stars",
-            i + 1,
-            ds["intra_varying"].sum().data,
-        )
-        pbar.update()
-    if pbar_method is not None:
-        pbar_method()
-    bars.close("iterations")
-
-    return ds
-
-
-@bars.progress(
-    name="intra_diff",
-    desc="Calculating and finding variable intra-day stars",
-    unit="day",
-    leave=False,
-    status_str="Differential Photometry per day",
-    indentation=1,
-)
-def intra_day_iter(
-    ds: xr.Dataset, varying_flag: str, app_config: Dict, method: str, iterations: int,
-) -> xr.Dataset:
-    intra_pbar = bars.get(name="intra_diff",)
-    bars.update(
-        pbar=intra_pbar, attr="total", update_to=len(np.unique(ds["time.date"]))
-    )
-    logging.info("Detecting intra-day variable stars...")
-    # No stars varying initially, need for organizing
-    ds.coords[varying_flag] = ("star", np.full(ds["star"].size, False))
-    ds = ds.groupby("time.date", restore_coord_dims=True, squeeze=False).map(
-        iterate_differential_photometry,
-        method=method,
-        iterations=iterations,
-        pbar_method=intra_pbar.update,
-        **app_config[method],
-        varying_flag=varying_flag,
-    )
-    ds[varying_flag] = ds[varying_flag].groupby("star").any(...)
-    logging.info(
-        "Detected total of %s intra-day varying stars",
-        ds[varying_flag].sum(...).values,
-    )
-    return ds
-
-
-def inter_day(ds: xr.Dataset, app_config: Dict, method: str) -> xr.Dataset:
-    clip = app_config[method]["clip"]
-    status = bars.status
-    status.update(stage="Differential Photometry per star")
-
-    # TODO Throw in callback function for inter_pbars
-    inter_pbar = bars.start(
-        name="inter_diff",
-        total=len(ds.indexes["star"]),
-        desc="  Calculating and finding variable inter-day stars",
-        unit="Days",
-        color="blue",
-        leave=False,
-    )
-    # Detecting if stars are varying across entire dataset
-    logging.info("Detecting inter-day variable stars...")
-    ds.coords[method] = xr.apply_ufunc(
-        stats.test_stationarity,
-        (ds["average_diff_mags"].groupby("time.date") - ds["dmag_offset"]),
-        kwargs={"method": method, "clip": clip},
-        input_core_dims=[["time"]],
-        vectorize=True,
-    )
-    inter_pbar.update(len(ds.indexes["star"]))
-    p_value = app_config[method]["p_value"]
-    null = app_config[method]["null"]
-    if null == "accept":
-        ds.coords["inter_varying"] = ds[method] >= p_value
-    else:
-        ds.coords["inter_varying"] = ds[method] <= p_value
-    logging.info(
-        "Detected %s inter-day variable stars",
-        ds["inter_varying"].groupby("star").all(...).sum(...).data,
-    )
-    return ds

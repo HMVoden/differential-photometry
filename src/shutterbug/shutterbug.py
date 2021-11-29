@@ -1,105 +1,145 @@
-import gc
+import logging
 import logging.config
-from pathlib import Path
 
 import xarray as xr
 
-import shutterbug.config.manager as config
-import shutterbug.data.input_output as io
+import shutterbug.config.config as config
+import shutterbug.data.convert as convert
+import shutterbug.data.load as load
 import shutterbug.data.sanitize as sanitize
-import shutterbug.photometry.differential as photometry
-import shutterbug.plotting.plot as plot
-import shutterbug.plotting.utilities as plot_util
-import shutterbug.progress_bars as bars
-import shutterbug.timeseries.timeseries as ts
+import shutterbug.file_loader as loader
+import shutterbug.logging.log as log
+import shutterbug.output.figure as plot_util
+import shutterbug.output.graph as plot
+import shutterbug.output.spreadsheet as spreadsheet
+# import shutterbug.output.graph as graph
+# import shutterbug.output.spreadsheet as ss
+import shutterbug.photometry.photometry as photometry
+import shutterbug.ux.progress_bars as bars
+from shutterbug.config.data import (CLIConfig, DataConfig, LoggingConfig,
+                                    OutputConfig, PhotometryConfig)
+from shutterbug.photometry.detect.distance import DistanceDetector
+from shutterbug.photometry.detect.expand import ExpandingConditionalDetector
+from shutterbug.photometry.detect.magnitude import MagnitudeDetector
+from shutterbug.photometry.reducer.reduce_area import dataset_reduce_area
+from shutterbug.photometry.timeseries import StationarityTestFactory
 
 
-def initialize(**settings):
-    config.load_file_configuration()
-    # Setup logging for verbose output
-    if config.get("application")["logging"]["enabled"] == True:
-        log_config = config.get("logging")
-        logging.config.dictConfig(log_config)
-        logging.debug("Logging configured")
-    logging.info("Application initialized successfully")
-
+def application(input_data, **cli_settings):
+    con_dir = config.ConfigDirector(**cli_settings)
+    log_config: LoggingConfig = con_dir.get("logging")
+    log.initialize_logging(**log_config.dict())
     bars.init()
-    config.init_configuration(**settings)
-
-
-def teardown():
-    bars.close_all()
-
-
-def process(input_file: Path):
-
-    config.update("filename", input_file)
-    input_config = config.get("input")
-    app_config = config.get("application")
-    plot_config = config.get("plotting")
-
-    # NEED
-    # TODO write function that finds nearby stars
-    # TODO write function that finds stars less than 0.5 mag dimmer
-    # TODO write function that scales restrictions to get minimum # of stars
-    # TODO write blitting functions for graphing
-    # WANT
-    # TODO Re-organize by program section (input, sanitization, etc)
-    # TODO write documentation
-    # TODO write function docstrings
-    # TODO improve progess bar code
-<<<<<<< HEAD:src/shutterbug/shutterbug.py
-    # TODO fix progress bars not finishing
-=======
->>>>>>> 14fa39af25ec1544244fc9637b3cec17f30b372f:shutterbug/shutterbug.py
-    # TODO add machine learning for star detection
-    # TODO write tests for all functions
-    # TODO write benchmark code to test memory/CPU use
+    data_config: DataConfig = con_dir.get("data")
+    phot_config: PhotometryConfig = con_dir.get("photometry")
+    cli_config: CLIConfig = con_dir.get("cli")
+    out_config: OutputConfig = con_dir.get("output")
     # Extraction, cleanup and processing
     # io.extract returns a dataframe which we
     # then move around in a pipe
-    (
-        io.extract(input_file)
-        .pipe(sanitize.drop_and_clean_names, required_data=input_config["required"])
-        .pipe(sanitize.add_time_information, time_name=input_config["time"])
-        .pipe(sanitize.clean_data, coord_names=input_config["coords"],)
-        .pipe(sanitize.drop_duplicates)
-        .pipe(sanitize.remove_incomplete_stars, stars_to_remove=config.get("remove"))
-        .pipe(sanitize.arrange_star_time)
-        .pipe(
-            photometry.intra_day_iter,
-            varying_flag=app_config["varying_flag"],
-            app_config=app_config,
-            method=app_config["detection_method"],
-            iterations=config.get("iterations"),
-        )
-        .pipe(ts.correct_offset)
-        .pipe(
-            photometry.inter_day,
-            app_config=app_config,
-            method=app_config["detection_method"],
-        )
-        .pipe(log_variable)
-        .pipe(
-            plot_util.max_variation,
-            uniform_y_axis=config.get("uniform"),
-            mag_y_scale=config.get("mag_y_scale"),
-            diff_y_scale=config.get("diff_y_scale"),
-        )
-        .pipe(
-            plot.plot_and_save_all,
-            plot_config=plot_config,
-            uniform_y_axis=config.get("uniform"),
-            offset=config.get("offset"),
-        )
-        .pipe(
-            io.save_to_csv,
-            filename=input_file.stem,
-            offset=config.get("offset"),
-            output_folder=config.get("output_folder"),
-            output_flag=config.get("output_excel"),
-        )
+    manager = bars.build(
+        "files",
+        "Files processed",
+        "file",
+        loader.get_readable_file_count(input_data),
+        True,
+        0,
     )
+    readable_files = loader.iload(input_data)
+    with manager as pbar:
+        for filename, frame in readable_files:
+            logging.info("Starting data loading and sanitization")
+            ds = (  # Start of load/clean section
+                frame.pipe(
+                    sanitize.drop_and_clean_names, required_data=data_config.required
+                )
+                .pipe(
+                    sanitize.clean_data,
+                    coord_names=data_config.coords,
+                )
+                .pipe(convert.add_time_dimension, time_name=data_config.time_col_name)
+                .pipe(sanitize.drop_duplicate_time)
+                .pipe(
+                    sanitize.remove_incomplete_stars, stars_to_remove=cli_config.remove
+                )
+                .pipe(sanitize.remove_incomplete_time)
+                .pipe(convert.arrange_star_time)
+            )  # end of load/clean section
+            # generate classes for use
+            logging.info("Setting up photometry")
+            bars.status.update(stage="Differential Photometry")
+            ds = dataset_reduce_area(ds, reduce_by=(100, 100), image_shape=(4096, 4096))
+            stationarity_settings = phot_config.stationarity
+            test_method = stationarity_settings["test_method"]
+            test_method_settings = phot_config.test[test_method]
+
+            test_fac = StationarityTestFactory()
+            intra_variation_test = test_fac.create_test(
+                **stationarity_settings,
+                test_dimension="time",
+                correct_offset=False,
+                varying_flag="intra_varying",
+                **test_method_settings,
+            )
+            inter_variation_test = test_fac.create_test(
+                **stationarity_settings,
+                test_dimension="time",
+                correct_offset=cli_config.correct_offset,
+                varying_flag="inter_varying",
+                **test_method_settings,
+            )
+            distance_detector = DistanceDetector(ds, **phot_config.distance)
+            magnitude_detector = MagnitudeDetector(ds, **phot_config.magnitude)
+            expanding_detector = ExpandingConditionalDetector(
+                magnitude_detector=magnitude_detector,
+                distance_detector=distance_detector,
+                **phot_config.expanding,
+            )
+            intraday = photometry.IntradayDifferential(
+                iterations=cli_config.iterations,
+                expanding_detector=expanding_detector,
+                stationarity_tester=intra_variation_test,
+            )
+
+            # photometry and output
+            ds = ds.pipe(intraday.differential_photometry)
+            bars.status.update(stage="Variation detection")
+            logging.info("Beginning variation detection")
+            ds = (
+                ds.pipe(convert.add_offset_correction)
+                .pipe(inter_variation_test.test_dataset)
+                .pipe(log_variable)
+                .pipe(
+                    plot_util.max_variation,
+                    uniform_y_axis=cli_config.uniform,
+                    mag_y_scale=cli_config.mag_y_scale,
+                    diff_y_scale=cli_config.diff_y_scale,
+                )
+            )
+            logging.info("Finished detection")
+            bars.status.update(stage="Output")
+            logging.info("Beginning output")
+            ds = ds.pipe(
+                spreadsheet.save_to_csv,
+                filename=filename,
+                output_flag=cli_config.output_spreadsheet,
+                offset=cli_config.correct_offset,
+                output_folder=cli_config.output_folder,
+                output_config=out_config.folder,
+            ).pipe(
+                plot.plot_and_save_all,
+                plot_config=out_config.plot,
+                uniform_y_axis=cli_config.uniform,
+                offset=cli_config.correct_offset,
+                output_config=out_config.folder,
+                filename=filename,
+                dataset=frame,
+            )
+            bars.status.update(stage="Finishing file")
+
+            pbar.update()
+            # end for loop
+    logging.info("Application finished, exiting")
 
 
 def log_variable(ds: xr.Dataset):
