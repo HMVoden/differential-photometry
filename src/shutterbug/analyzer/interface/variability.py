@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Literal, Optional, Sequence
+from typing import Optional, Sequence, Tuple
 
 
 class VariabilityDetectionInterface(ABC):
@@ -8,5 +8,5 @@ class VariabilityDetectionInterface(ABC):
         self,
         data: Sequence[float],
         uncertainty: Optional[Sequence[float]],
-    ) -> float:
+    ) -> Tuple[float, bool]:
         raise NotImplementedError

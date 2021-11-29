@@ -2,8 +2,8 @@ from typing import Literal, Optional, Sequence
 
 import numpy as np
 import numpy.typing as npt
-from shutterbug.analyzer.core.interface.differential import \
-    DifferentialCalculatorInterface
+
+from shutterbug.interface.differential import DifferentialCalculatorInterface
 
 
 class DifferentialPhotometryCalculator(DifferentialCalculatorInterface):

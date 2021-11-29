@@ -54,14 +54,14 @@ def _load_from_suffix(path: Path, **settings):
     return _suffix_to_loader[suffix](path, **settings)
 
 
-def _load_and_convert(path: Path, as_type: str = "xarray", **settings):
+def _load_and_convert(path: Path, as_type: str = "pandas", **settings):
     frame = _load_from_suffix(path, **settings)
     frame = convert_frame(frame, as_type)
     return frame
 
 
 def iload(
-    paths: List[Path], as_type: str = "xarray", **settings
+    paths: List[Path], as_type: str = "pandas", **settings
 ) -> Tuple[str, Union[pd.DataFrame, pd.Series, xr.DataArray, xr.Dataset, None]]:
     paths = _get_files_from_paths(paths)
     paths = list(_filter_unreadable_paths(paths))

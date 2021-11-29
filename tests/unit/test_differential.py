@@ -3,7 +3,7 @@ import pytest
 from hypothesis import given
 from hypothesis.extra.numpy import array_shapes, arrays
 from hypothesis.strategies import composite, floats
-from shutterbug.analyzer.differential import DifferentialPhotometryCalculator
+from shutterbug.differential import DifferentialPhotometryCalculator
 
 
 @composite
