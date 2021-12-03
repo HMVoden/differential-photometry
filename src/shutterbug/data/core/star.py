@@ -1,22 +1,19 @@
-from typing import Iterable
+from typing import Iterable, List
 
-import attr
+from attr import define, field
 
 
-@attr.s
+@define
 class Star:
-    name: str = attr.ib(init=False)
-    dataset: str = attr.ib()
-    dataset_name: str = attr.ib()
-    x: int = attr.ib()
-    y: int = attr.ib()
-    ra: float = attr.ib(init=False)
-    dec: float = attr.ib(init=False)
-    jd: float = attr.ib()
-    mag: float = attr.ib()
-    error: float = attr.ib()
+    dataset: str = field()
+    name: str = field()
+    x: int = field()
+    y: int = field()
+    jd: List[float] = field()
+    mag: List[float] = field()
+    error: List[float] = field()
 
-    @error.validator
-    def positive_error(self, attribute, value):
-        if not value >= 0:
-            raise ValueError("Cannot have negative error")
+    # @error.validator
+    # def positive_error(self, attribute, value):
+    #     if not value >= 0:
+    #         raise ValueError("Cannot have negative error")
