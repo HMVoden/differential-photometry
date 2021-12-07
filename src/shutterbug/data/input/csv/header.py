@@ -1,9 +1,8 @@
 import csv
 import logging
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Union
 
-import numpy as np
 from attr import define, field
 
 
@@ -25,8 +24,25 @@ class Header:
 @define
 class KnownHeader(Header):
     name: str
-    used_headers: List[str]
+    timeseries_names: List[str]
+    star_names: List[str]
     star_name: str
+
+    def _get_used_indices(self, names: List[str]) -> List[int]:
+        used_indices = []
+        for header in names:
+            header_idx = self.headers.index(header)
+            used_indices.append(header_idx)
+        return used_indices
+
+    def get_timeseries_indices(self):
+        return self._get_used_indices(self.timeseries_names)
+
+    def get_star_indices(self):
+        return self._get_used_indices(self.star_names)
+
+    def get_name_index(self):
+        return self.headers.index(self.star_name)
 
 
 KNOWN_HEADERS = [
@@ -59,14 +75,8 @@ KNOWN_HEADERS = [
             "Weight",
             "Notes",
         ],
-        used_headers={
-            "Name": str,
-            "Mag": np.float32,
-            "Error": np.float32,
-            "X": int,
-            "Y": int,
-            "JD": np.datetime64,
-        },
+        timeseries_names=["JD", "Mag", "Error"],
+        star_names=["Name", "X", "Y"],
         star_name="Name",
     )
 ]
