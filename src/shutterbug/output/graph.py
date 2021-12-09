@@ -185,8 +185,8 @@ def multiprocess_save(
 def build_and_save_figure(
     ds: pd.DataFrame, plot_config: Dict, out_folder: Path
 ) -> pd.DataFrame:
-    mag_lim = limits_from_median(ds["mag"], 1.5)
-    diff_lim = limits_from_median(ds["average_diff_mags"], 1.5)
+    mag_lim = limits_from_median(ds["mag"], 1.0)
+    diff_lim = limits_from_median(ds["average_diff_mags"], 1.0)
 
     # Needs to be set here so each worker
     # Has the same settings
@@ -215,7 +215,7 @@ def build_and_save_figure(
         x=ds["x"].values[0],
         y=ds["y"].values[0],
         comparison_stars=ds["reference_stars"].values[0],
-        test_statistic=ds["adfuller"].values[0],
+        test_statistic=ds["ddsquare"].values[0],
     )
     figure.save(ds.name)
     return ds  # placeholder

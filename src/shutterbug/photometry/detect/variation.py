@@ -79,6 +79,26 @@ class ReducedChiSquareTest(StationarityTestStrategy):
 
 
 @dataclass
+class DDSquareTest(StationarityTestStrategy):
+    expected: Optional[str]
+
+    def test(self, data, error=None):
+        expected = self.expected
+        expected_value = 0
+        if expected == "mean":
+            expected_value = np.average(data)
+        elif expected == "median":
+            expected_value = np.median(data)
+        elif expected == "weighted_mean":
+            expected = np.average(data, weights=error)
+        else:
+            expected_value = np.median(data)
+        residuals = data - expected_value
+        ddsquare = np.mean(residuals ** 2)
+        return ddsquare
+
+
+@dataclass
 class ChiSquareTest(StationarityTestStrategy):
     """Performs the chi squared test on the provided data.
 

@@ -172,7 +172,9 @@ class WorkerFigure(Singleton):
         if comparison_stars is not None:
             title += f"\n Comparison stars used: {comparison_stars}"
         if test_statistic is not None:
-            title += f"\n Augmented Dickey-Fuller value: {test_statistic:.2f}, varying when p-value: >=0.05"
+            title += (
+                f"\n DDSquare value: {test_statistic:.4f}, varying when value: >=0.01"
+            )
         self.fig.suptitle(title)
 
 

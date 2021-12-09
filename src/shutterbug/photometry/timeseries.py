@@ -8,6 +8,7 @@ class StationarityTestFactory:  # this feels pointless
         "kpss": variation.KPSSTest,
         "zivot_andrews": variation.ZivotAndrewsTest,
         "adf_gls": variation.ADFGLSTest,
+        "ddsquare": variation.DDSquareTest,
     }
 
     def create_test(
@@ -19,7 +20,7 @@ class StationarityTestFactory:  # this feels pointless
         correct_offset: bool,
         p_value: float,
         test_dimension: str,
-        **kwargs
+        **kwargs,
     ):
         test_class = self._selection_dict[test_method]
         test_class = test_class(

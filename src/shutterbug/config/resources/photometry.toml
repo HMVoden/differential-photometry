@@ -13,10 +13,13 @@
 "minimum_stars" = 25
 
 [stationarity]
-"test_method" = "adfuller"
-"p_value" = 0.05
+"test_method" = "ddsquare"
+"p_value" = 0.01
 "null" = "accept"
 "clip_data" = false
+
+[test.ddsquare]
+expected = "weighted_mean"
 
 [test.chisquared]
 # documentation here: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chisquare.html#scipy.stats.chisquare
