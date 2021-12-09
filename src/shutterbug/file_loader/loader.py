@@ -1,10 +1,7 @@
 from pathlib import Path
-from typing import Iterator, List, Tuple, Union
+from typing import Generator, Iterator, List, Tuple
 
 import pandas as pd
-import xarray as xr
-
-from .converter import convert_frame
 
 # Kept as module not class-in-a-module
 # as, while this has sufficient ability to be
@@ -20,8 +17,8 @@ _suffix_to_loader = {
     ".ods": pd.read_excel,
     ".csv": pd.read_csv,
     ".parquet": pd.read_parquet,
-    ".hd5": xr.open_dataset,
-    ".nc": xr.open_dataset,
+    # ".hd5": xr.open_dataset,
+    # ".nc": xr.open_dataset,
 }  # still don't like this, but can't think of better method
 # strategy pattern?
 # TODO investigate strategy pattern and see if viable to implement here
@@ -49,20 +46,14 @@ def _get_files_from_paths(paths: List[Path]):
     return result
 
 
-def _load_from_suffix(path: Path, **settings):
+def _load_from_suffix(path: Path, **settings) -> pd.DataFrame:
     suffix = path.suffix
     return _suffix_to_loader[suffix](path, **settings)
 
 
-def _load_and_convert(path: Path, as_type: str = "pandas", **settings):
-    frame = _load_from_suffix(path, **settings)
-    frame = convert_frame(frame, as_type)
-    return frame
-
-
 def iload(
-    paths: List[Path], as_type: str = "pandas", **settings
-) -> Tuple[str, Union[pd.DataFrame, pd.Series, xr.DataArray, xr.Dataset, None]]:
+    paths: List[Path], **settings
+) -> Generator[Tuple[str, pd.DataFrame], None, None]:
     paths = _get_files_from_paths(paths)
     paths = list(_filter_unreadable_paths(paths))
     if len(paths) == 0:
@@ -70,14 +61,12 @@ def iload(
             f"No readable files given, readable formats are: {' '.join(_suffix_to_loader.keys())}"
         )
     for path in paths:
-        yield path.stem, _load_and_convert(path, as_type, **settings)
+        yield path.stem, _load_from_suffix(path, **settings)
 
 
-def load(
-    path: Path, as_type: str, **settings
-) -> Tuple[str, Union[pd.DataFrame, pd.Series, xr.DataArray, xr.Dataset, None]]:
+def load(path: Path, **settings) -> Tuple[str, pd.DataFrame]:
     if _is_accepted_format(path):
-        return path.stem, _load_and_convert(path, as_type, **settings)
+        return path.stem, _load_from_suffix(path, **settings)
     else:
         raise ValueError(
             f"Not a readable type, given filetype {path.suffix}, readable formats are {' '.join(_suffix_to_loader.keys())}"

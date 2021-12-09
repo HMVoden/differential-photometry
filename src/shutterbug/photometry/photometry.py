@@ -2,10 +2,10 @@ import logging
 from dataclasses import dataclass
 
 import numpy as np
+import pandas as pd
 import shutterbug.photometry.detect.variation as variation
 import shutterbug.photometry.differential as diff
 import shutterbug.ux.progress_bars as bars
-import xarray as xr
 from shutterbug.photometry.detect.expand import ExpandingConditionalDetector
 
 
@@ -15,52 +15,63 @@ class IntradayDifferential:
     expanding_detector: ExpandingConditionalDetector
     stationarity_tester: variation.StationarityTestStrategy
 
-    def differential_photometry(self, ds: xr.Dataset) -> xr.Dataset:
+    def differential_photometry(self, ds: pd.DataFrame) -> pd.DataFrame:
         logging.info("Starting differential photometry")
         flag = self.stationarity_tester.varying_flag
-        ds.coords[flag] = ("star", np.full(ds["star"].size, False))
+        ds[flag] = np.full(len(ds), False)
         non_varying = ds  # all stars non-varying to start
-        bars.xarray(
-            name="star_phot", desc="Intraday", unit="star", leave=False, indentation=2
-        )
-        it_bar = bars.build(
-            "iteration", "Iteration", "iteration", self.iterations, False, 1
-        )
-        with it_bar as pbar:
-            for _ in range(self.iterations):
-                ds = ds.groupby("star").progress_map(
-                    self._per_star, non_varying=non_varying
-                )
-                ds[flag] = ds[flag].groupby("star").any(...)
-                non_varying = ds.groupby(flag)[False]
-                pbar.update()
+        # bars.xarray(
+        #     name="star_phot", desc="Intraday", unit="name", leave=False, indentation=2
+        # )
+        # it_bar = bars.build(
+        #     "iteration", "Iteration", "iteration", self.iterations, False, 1
+        # )
+        # with it_bar as pbar:
+        for it in range(self.iterations):
+            logging.debug(f"Starting iteration {it+1}")
+            ds = ds.groupby(["name", ds["jd"].dt.date]).apply(
+                self._per_star, non_varying=non_varying
+            )
+            ds[flag] = ds[["name", flag]].groupby("name").transform(any)
+            non_varying = ds[ds[flag] == False]
+            # pbar.update()
 
         logging.info("Finished differential photometry")
 
         return ds
 
-    def _per_star(self, day_star: xr.Dataset, non_varying: xr.Dataset):
+    def _per_star(self, day_star: pd.DataFrame, non_varying: pd.DataFrame):
         stationarity_tester = self.stationarity_tester
         detector = self.expanding_detector
-        non_varying_stars = non_varying.star.values
-        target_star = day_star["star"].values
+        non_varying_stars = non_varying["name"].values
+        target_star = day_star.name[0]
+        logging.debug(f"Starting photometry and testing on star {target_star}")
         nearby_star_names = detector.detect(
             target_star=target_star, non_varying_stars=non_varying_stars
         )
 
-        nearby_reference_stars = non_varying.sel(star=nearby_star_names)
+        nearby_reference_stars = non_varying[
+            (non_varying["name"].isin(nearby_star_names))
+            & (non_varying["name"] != target_star)
+        ]
+        nearby_reference_stars = nearby_reference_stars[
+            nearby_reference_stars["jd"].dt.date == day_star.name[1]
+        ]
+        day_star["reference_stars"] = len(nearby_reference_stars.groupby("name"))
+        adm = np.mean(
+            nearby_reference_stars.groupby(["name"])
+            .apply(lambda x: x["mag"].values - day_star["mag"].values)
+            .values
+        )
+        day_star["average_diff_mags"] = adm
 
-        nearby_reference_stars = nearby_reference_stars.where(
-            ~(nearby_reference_stars.star == target_star), drop=True
-        )
-        day_star["reference_stars"] = len(nearby_reference_stars.star)
-        day_star["average_diff_mags"] = diff.data_array_magnitude(
-            day_star.mag, nearby_reference_stars.mag
-        )
-        day_star["average_uncertainties"] = diff.data_array_uncertainty(
-            day_star.error, nearby_reference_stars.error
-        )
-        day_star = day_star.groupby(
-            "time.date", restore_coord_dims=True, squeeze=False
-        ).map(stationarity_tester.test_dataset)
+        adu = np.sqrt(
+            np.sum(
+                nearby_reference_stars.groupby("name").apply(
+                    lambda x: (x["error"].values ** 2 + day_star["error"].values ** 2)
+                )
+            )
+        ) / (len(nearby_reference_stars.groupby("name")) + 1)
+        day_star["average_uncertainties"] = adu
+        stationarity_tester.test_dataset(day_star)
         return day_star

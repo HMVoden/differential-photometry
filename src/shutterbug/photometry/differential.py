@@ -1,12 +1,8 @@
-from math import sqrt
-from typing import List, Tuple
+from typing import Tuple
 
 import numpy as np
 import numpy.typing as npt
-import xarray as xr
-from numba import float32, float64, guvectorize
-from xarray.core.groupby import DatasetGroupBy
-
+import pandas as pd
 
 # def sigma_clip_data(data: List[float], stat_func, error: List[float] = None) -> float:
 
@@ -81,37 +77,7 @@ def calculate_differential_uncertainty(
     return np.sqrt(target ** 2 + reference ** 2)
 
 
-def data_array_magnitude(target: xr.DataArray, reference: xr.DataArray) -> xr.DataArray:
-    return (reference - target).mean("star")
-
-
-def data_array_uncertainty(
-    target: xr.DataArray, reference: xr.DataArray
-) -> xr.DataArray:
-    N = reference.star.size + target.star.size
-    return (reference ** 2 + target ** 2).sum("star") / N
-
-
-# guvectorize intentionally does not return.
-@guvectorize([(float32[:], float32), (float64[:], float64)], "(n) -> ()")
-def average(subtracted_magnitudes: List[float], out: float):
-    N = len(subtracted_magnitudes)
-    out = 0
-    for mag in subtracted_magnitudes:
-        out = out + mag
-    out = out / N
-
-
-@guvectorize([(float32[:], float32), (float64[:], float64)], "(n) -> ()")
-def average_error(errors: List[float], out: float):
-    N = len(errors)
-    out = 0
-    for error in errors:
-        out = out + (error ** 2)
-    out = sqrt(out) / N
-
-
-def dataset(groups: DatasetGroupBy) -> xr.Dataset:
+def dataset(groups) -> pd.DataFrame:
     if len(groups) == 1:
         # non-varying only
         non_varying = groups[False]
@@ -162,4 +128,4 @@ def dataset(groups: DatasetGroupBy) -> xr.Dataset:
             }
         )
 
-    return xr.concat([non_varying, varying], dim="star", join="outer")
+    return pd.concat([non_varying, varying], join="outer")

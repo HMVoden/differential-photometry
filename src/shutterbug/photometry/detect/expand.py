@@ -5,7 +5,7 @@ from typing import Tuple
 
 import numpy as np
 import numpy.typing as npt
-import xarray as xr
+import pandas as pd
 from shutterbug.photometry.detect.distance import DistanceDetector
 from shutterbug.photometry.detect.magnitude import MagnitudeDetector
 
@@ -18,7 +18,9 @@ class ExpandingConditionalDetector:
     distance_detector: DistanceDetector
 
     def detect(
-        self, target_star: str, non_varying_stars: npt.NDArray[np.str_],
+        self,
+        target_star: str,
+        non_varying_stars: npt.NDArray[np.str_],
     ) -> npt.NDArray[np.str_]:
         """Starting at an initial distance, finds nearby stars. If not enough stars are
         found, determined by minimum stars, expands the search. If unable to find
@@ -48,8 +50,7 @@ class ExpandingConditionalDetector:
         if mag_stars.size <= minimum_stars:
             return non_varying_stars
 
-        matching_stars = np.array([])  # so linter doesn't complain
-        i = 0
+        # i = 0
         # while i < self.max_iterations:
         nearby_stars = distance_detector.detect(target_star)
         matching_stars = functools.reduce(

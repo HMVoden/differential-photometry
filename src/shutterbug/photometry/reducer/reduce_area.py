@@ -1,11 +1,13 @@
+import logging
 from typing import Tuple
 
-import xarray as xr
+import pandas as pd
 
 
 def dataset_reduce_area(
-    frame: xr.Dataset, reduce_by: Tuple[int, int], image_shape: Tuple[int, int]
-) -> xr.Dataset:
+    frame: pd.DataFrame, reduce_by: Tuple[int, int], image_shape: Tuple[int, int]
+) -> pd.DataFrame:
+    logging.info(f"Reducing area by x: {reduce_by[0]}, y: {reduce_by[1]}")
     reduce_x, reduce_y = reduce_by
     image_max_x, image_max_y = image_shape
     if reduce_x < 0 or reduce_y < 0:
@@ -17,10 +19,11 @@ def dataset_reduce_area(
     new_y_maximum = image_max_y - reduce_y
     new_y_minimum = 0 + reduce_y
     condition = (
-        (frame.x <= new_x_maximum)
-        & (frame.x >= new_x_minimum)
-        & (frame.y <= new_y_maximum)
-        & (frame.y >= new_y_minimum)
+        (frame["x"] <= new_x_maximum)
+        & (frame["x"] >= new_x_minimum)
+        & (frame["y"] <= new_y_maximum)
+        & (frame["y"] >= new_y_minimum)
     )
-    frame = frame.where(condition, drop=True)
+    frame = frame[condition]
+    logging.info("Dataset reduced")
     return frame

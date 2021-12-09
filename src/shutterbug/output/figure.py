@@ -6,8 +6,8 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
+import pandas as pd
 import seaborn as sns
-import xarray as xr
 from matplotlib.backends.backend_agg import FigureCanvasAgg, RendererAgg
 from matplotlib.figure import Figure
 from matplotlib.transforms import BboxBase
@@ -177,11 +177,11 @@ class WorkerFigure(Singleton):
 
 
 def max_variation(
-    ds: xr.Dataset,
+    ds: pd.DataFrame,
     uniform_y_axis: bool = False,
     mag_y_scale: float = None,
     diff_y_scale: float = None,
-) -> xr.Dataset:
+) -> pd.DataFrame:
     if mag_y_scale is not None or diff_y_scale is not None:
         ds.attrs["mag_var"] = mag_y_scale
         ds.attrs["diff_var"] = diff_y_scale
@@ -195,13 +195,13 @@ def max_variation(
         # Calculate the largest deviation along the y-axis
         # for the entire dataset
 
-        ds.attrs["mag_var"] = get_largest_range((ds["mag"] - ds["mag_offset"]).values)
-        ds.attrs["diff_var"] = get_largest_range(
+        ds["mag_var"] = get_largest_range((ds["mag"] - ds["mag_offset"]).values)
+        ds["diff_var"] = get_largest_range(
             (ds["average_diff_mags"] - ds["dmag_offset"]).values
         )
     if all(lim in ds.attrs.keys() for lim in ["mag_var", "diff_var"]):
-        logging.info("Magnitude y-axis range is: +/- %s", ds.attrs["mag_var"])
-        logging.info("Differential y-axis range is: +/- %s", ds.attrs["diff_var"])
+        logging.info("Magnitude y-axis range is: +/- %s", ds["mag_var"].values[0])
+        logging.info("Differential y-axis range is: +/- %s", ds["diff_var"].values[0])
     return ds
 
 

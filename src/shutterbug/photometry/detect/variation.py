@@ -5,11 +5,11 @@ from typing import Optional
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-import xarray as xr
 from arch.unitroot import ADF, DFGLS, KPSS, ZivotAndrews
 from numba import float64, guvectorize
 from scipy.stats import chisquare
-from xarray.core.dataarray import DataArray
+
+# from xarray.core.dataarray import DataArray
 
 
 @dataclass
@@ -19,38 +19,42 @@ class StationarityTestStrategy(ABC):
     null: str
     varying_flag: str
     p_value: float
-    test_dimension: str
+    test_dimension: Optional[str]
     correct_offset: bool
 
     @abstractmethod
     def test(self, data: npt.NDArray) -> float:
         pass
 
-    def test_dataset(self, ds: xr.Dataset) -> xr.Dataset:
+    def test_dataset(self, ds: pd.DataFrame) -> pd.DataFrame:
         null = self.null
         method = self.test_method
         test_dimension = self.test_dimension
         flag = self.varying_flag
         p_value = self.p_value
         offset = self.correct_offset
-        if offset == True:
-            ds.coords[method] = xr.apply_ufunc(
-                self.test,
-                ds["average_diff_mags"] - ds["dmag_offset"],
-                input_core_dims=[[test_dimension]],
-                vectorize=True,
+        # if offset == True:
+        #     ds[method] = xr.apply_ufunc(
+        #         self.test,
+        #         ds["average_diff_mags"] - ds["dmag_offset"],
+        #         input_core_dims=[[test_dimension]],
+        #         vectorize=True,
+        #     )
+        # else:
+        if test_dimension == "time":
+            ds[method] = (
+                ds[["jd", "average_diff_mags"]]
+                .groupby(ds["jd"].dt.date)
+                .transform(self.test)
             )
         else:
-            ds.coords[method] = xr.apply_ufunc(
-                self.test,
-                ds["average_diff_mags"],
-                input_core_dims=[[test_dimension]],
-                vectorize=True,
+            ds[method] = (
+                ds[["name", "average_diff_mags"]].groupby("name").transform(self.test)
             )
         if null == "accept":
-            ds.coords[flag] = ds[method] >= p_value
+            ds[flag] = ds[method] >= p_value
         else:
-            ds.coords[flag] = ds[method] < p_value
+            ds[flag] = ds[method] < p_value
         return ds
 
 

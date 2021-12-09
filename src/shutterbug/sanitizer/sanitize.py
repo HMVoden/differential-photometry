@@ -1,19 +1,18 @@
+import logging
 from typing import List, Optional, Union
 
 import pandas as pd
-import xarray as xr
 from shutterbug.sanitizer.pandas_sanitizer import PandasSanitizer
-from shutterbug.sanitizer.xarray_sanitizer import XarraySanitizer
 
 
 def sanitize(
-    frame: Union[pd.DataFrame, xr.Dataset],
+    frame: pd.DataFrame,
     primary_variables: List[str],
     numeric_variables: Optional[List[str]] = None,
     discard_variables: Optional[List[str]] = None,
     keep_variables: Optional[List[str]] = None,
     keep_duplicates: Optional[str] = "first",
-) -> Union[pd.DataFrame, xr.Dataset]:
+) -> pd.DataFrame:
     """Takes a pandas dataframe or xarray dataset, cleans all headers/variable names by stripping out non-alphabetic characters and making headers lowercase, if necessary. Ensures that numeric data is in the proper format and is clean by removing any duplicates according to settings and removing any entries with NaN.
 
 
@@ -52,9 +51,10 @@ def sanitize(
         )
     if len(primary_variables) < 1:
         raise ValueError("Must have primary variables for deduplication")
-    if isinstance(frame, xr.Dataset):
-        sanitizer = XarraySanitizer()
+    # if isinstance(frame, xr.Dataset):
+    #     sanitizer = XarraySanitizer()
     elif isinstance(frame, pd.DataFrame):
+        logging.debug("Was given Pandas dataframe, sanitizing")
         sanitizer = PandasSanitizer()
     else:
         raise ValueError(f"Unable to sanitize dataframe of type {type(frame)}")

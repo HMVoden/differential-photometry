@@ -2,10 +2,6 @@ from typing import Any
 
 import enlighten
 
-from xarray.core.dataset import Dataset
-from xarray.core.dataarray import DataArray
-from xarray.core.groupby import GroupBy, DataArrayGroupBy, DatasetGroupBy
-
 # Best candidate to make into a class.
 manager = None
 status = None
@@ -89,40 +85,3 @@ def update(pbar: enlighten.Counter, attr: str, update_to: Any):
     setattr(pbar, attr, update_to)
     pbar.refresh()
     return True
-
-
-def xarray(**pbar_args):
-    # stolen from tqdm
-    def inner_generator(xr_func="map"):
-        def inner(ds, func, *args, **kwargs):
-
-            total = pbar_args.pop("total", None)
-
-            if total is None:
-                if isinstance(ds, GroupBy):
-                    total = len(ds)
-                elif isinstance(ds, DataArray):
-                    total = ds.size
-                else:
-                    total = len(ds.data_vars)
-            bar = build(total=total, **pbar_args)
-
-            def wrapper(*args, **kwargs):
-                bar.update()
-                return func(*args, **kwargs)
-
-            try:
-                return getattr(ds, xr_func)(wrapper, **kwargs)
-            finally:
-                if "name" in pbar_args.keys():
-                    close(pbar_args["name"])
-
-        return inner
-
-    # monkey patching
-    DataArray.progress_map = inner_generator()
-    DataArrayGroupBy.progress_map = inner_generator()
-
-    Dataset.progress_map = inner_generator()
-    DatasetGroupBy.progress_map = inner_generator()
-

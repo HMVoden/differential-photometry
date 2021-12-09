@@ -1,13 +1,14 @@
 import logging
-import shutterbug.ux.progress_bars as bars
 from pathlib import Path
 
-import xarray as xr
+import pandas as pd
+# import shutterbug.ux.progress_bars as bars
+# import xarray as xr
 from natsort import natsort_keygen
 
 
 def save_to_csv(
-    ds: xr.Dataset,
+    ds: pd.DataFrame,
     filename: str,
     output_flag: bool,
     output_config: dict,

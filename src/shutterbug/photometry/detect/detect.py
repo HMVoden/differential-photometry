@@ -1,7 +1,8 @@
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-import logging
-import xarray as xr
+
+import pandas as pd
 
 
 @dataclass
@@ -13,7 +14,7 @@ class DetectBase(ABC):
     incremented: int = field(default=0, init=False)
 
     @abstractmethod
-    def detect(self, ds: xr.Dataset):
+    def detect(self, ds: pd.DataFrame):
         pass
 
     def expand(self):

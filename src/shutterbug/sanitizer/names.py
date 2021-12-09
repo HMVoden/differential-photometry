@@ -1,4 +1,3 @@
-import re
 import string
 from typing import List
 
@@ -28,7 +27,9 @@ def clean_names(names: List[str]) -> List[str]:
     return cleaned
 
 
-def clean_name(name):
+def clean_name(name: str) -> str:
     for symbol in string.punctuation:
+        name = name.strip()
         name = name.replace(symbol, "")
+        name = name.lower()
     return name
