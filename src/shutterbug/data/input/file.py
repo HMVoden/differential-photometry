@@ -1,4 +1,11 @@
-def _filter_unreadable_paths(paths: List[Path]) -> Iterator:
+from pathlib import Path
+from typing import Iterator, List
+from shutterbug.data.input.csv.loader import CSVLoader
+
+
+TYPES = [CSVLoader]
+
+def _filter_unreadable_paths(paths: List[Path]) -> Iterator[Path]:
     return filter(_is_accepted_format, paths)
 
 

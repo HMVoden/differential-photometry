@@ -23,6 +23,15 @@ class CSVLoader:
     star_mode: int = field(init=False)
     count: int = field(init=False)
 
+    @classmethod
+    def is_readable(cls, filepath: Path):
+        """Verifies if the given file is readable based on suffixes"""
+        if filepath.suffix not in cls.READABLE_TYPES:
+            return False
+        else:
+            return True
+
+
     def _count_stars(self) -> Dict[str, int]:
         """Iterates through entire CSV files and finds each star and every index that star's name corresponds to, for faster iterating (Not yet implemented)"""
         name_index = self.headers.get_name_index()
