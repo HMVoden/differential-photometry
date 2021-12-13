@@ -1,5 +1,7 @@
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from functools import partial
 from typing import Optional
 
 import numpy as np
@@ -42,15 +44,16 @@ class StationarityTestStrategy(ABC):
         #     )
         # else:
         if test_dimension == "time":
-            ds[method] = (
-                ds[["jd", "average_diff_mags"]]
-                .groupby(ds["jd"].dt.date)
-                .transform(self.test)
+            # ds[method] = (
+            #     ds[["jd", "average_diff_mags"]]
+            #     .groupby(ds["jd"].dt.date)
+            #     .transform(self.test)
+            # )
+            ds = ds.groupby(ds["jd"].dt.date).apply(
+                self.test, error="average_uncertainties"
             )
         else:
-            ds[method] = (
-                ds[["name", "average_diff_mags"]].groupby("name").transform(self.test)
-            )
+            ds = ds.groupby("name").apply(self.test, error="average_uncertainties")
         if null == "accept":
             ds[flag] = ds[method] >= p_value
         else:
@@ -82,20 +85,25 @@ class ReducedChiSquareTest(StationarityTestStrategy):
 class DDSquareTest(StationarityTestStrategy):
     expected: Optional[str]
 
-    def test(self, data, error=None):
+    def test(self, df: pd.DataFrame, error=None):
         expected = self.expected
-        expected_value = 0
-        if expected == "mean":
-            expected_value = np.average(data)
-        elif expected == "median":
-            expected_value = np.median(data)
-        elif expected == "weighted_mean":
-            expected = np.average(data, weights=error)
+        expected_value = None
+        data = df["average_diff_mags"]
+        if error is not None:
+            error_series = df[error]
         else:
-            expected_value = np.median(data)
+            error_series = None
+        if expected == "mean":
+            expected_value = data.avg()
+        elif expected == "median":
+            expected_value = data.median()
+        elif expected == "weighted_mean":
+            expected_value = (data * error_series).sum() / error_series.sum()
         residuals = data - expected_value
-        ddsquare = np.mean(residuals ** 2)
-        return ddsquare
+        df["ddsquare"] = (residuals ** 2).mean()
+        if df["ddsquare"].isnull().values.any():
+            raise ValueError("DDSquare result has null values")
+        return df
 
 
 @dataclass

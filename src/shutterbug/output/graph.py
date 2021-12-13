@@ -187,7 +187,7 @@ def build_and_save_figure(
 ) -> pd.DataFrame:
     mag_lim = limits_from_median(ds["mag"], 1.0)
     diff_lim = limits_from_median(ds["average_diff_mags"], 1.0)
-
+    logging.info(f"Graphing {ds.name}")
     # Needs to be set here so each worker
     # Has the same settings
     figure = plot_util.WorkerFigure(

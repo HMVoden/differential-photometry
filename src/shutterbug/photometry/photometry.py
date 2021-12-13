@@ -28,10 +28,8 @@ class IntradayDifferential:
         # )
         # with it_bar as pbar:
         for it in range(self.iterations):
-            logging.debug(f"Starting iteration {it+1}")
-            ds = ds.groupby(["name", ds["jd"].dt.date]).apply(
-                self._per_star, non_varying=non_varying
-            )
+            logging.info(f"Starting iteration {it+1}")
+            ds = ds.groupby(["name"]).apply(self._per_star, non_varying=non_varying)
             ds[flag] = ds[["name", flag]].groupby("name").transform(any)
             non_varying = ds[ds[flag] == False]
             # pbar.update()
@@ -44,8 +42,8 @@ class IntradayDifferential:
         stationarity_tester = self.stationarity_tester
         detector = self.expanding_detector
         non_varying_stars = non_varying["name"].values
-        target_star = day_star.name[0]
-        logging.debug(f"Starting photometry and testing on star {target_star}")
+        target_star = day_star.name
+        logging.info(f"Starting photometry and testing on star {target_star}")
         nearby_star_names = detector.detect(
             target_star=target_star, non_varying_stars=non_varying_stars
         )
@@ -53,9 +51,6 @@ class IntradayDifferential:
         nearby_reference_stars = non_varying[
             (non_varying["name"].isin(nearby_star_names))
             & (non_varying["name"] != target_star)
-        ]
-        nearby_reference_stars = nearby_reference_stars[
-            nearby_reference_stars["jd"].dt.date == day_star.name[1]
         ]
         day_star["reference_stars"] = len(nearby_reference_stars.groupby("name"))
         adm = np.mean(
@@ -72,6 +67,9 @@ class IntradayDifferential:
                 )
             )
         ) / (len(nearby_reference_stars.groupby("name")) + 1)
+
         day_star["average_uncertainties"] = adu
-        stationarity_tester.test_dataset(day_star)
+        day_star = day_star.groupby(day_star["jd"].dt.date).apply(
+            stationarity_tester.test_dataset
+        )
         return day_star

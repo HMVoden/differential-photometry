@@ -18,6 +18,7 @@ class PandasSanitizer(SanitizerInterface):
         keep_variables: Optional[List[str]] = None,
         keep_duplicates: Optional[str] = "first",
     ) -> pd.DataFrame:
+        initial_length = len(frame)
         frame = (
             frame.pipe(self._clean_names)
             .pipe(self._discard_variables, discard_variables)
@@ -27,7 +28,10 @@ class PandasSanitizer(SanitizerInterface):
             .pipe(self._drop_nan)
             .pipe(self._remove_abnormal_count_variables, primary_variables)
         )
-        frame = frame.rename_axis("index")
+        final_length = len(frame)
+        logging.info(f"Removed {initial_length - final_length} rows")
+        if frame.isnull().values.any():
+            raise ValueError("Sanitization failed, found null values in rows, exiting")
         return frame
 
     def _clean_names(self, frame: pd.DataFrame) -> pd.DataFrame:
@@ -41,14 +45,13 @@ class PandasSanitizer(SanitizerInterface):
         if numeric_variables is not None:
             for col in numeric_variables:
                 frame[col] = pd.to_numeric(frame[col], errors="coerce")
-            frame = frame.dropna(how="all")
         return frame
 
     def _discard_variables(
         self, frame: pd.DataFrame, discard_variables: Optional[List[str]] = None
     ) -> pd.DataFrame:
         if discard_variables is not None:
-            logging.info("Dropping variables: {', '.join(discard_variables)}")
+            logging.info(f"Dropping variables: {', '.join(discard_variables)}")
             frame = frame.drop(columns=discard_variables)
         return frame
 
@@ -56,9 +59,9 @@ class PandasSanitizer(SanitizerInterface):
         self, frame: pd.DataFrame, keep_variables: Optional[List[str]] = None
     ) -> pd.DataFrame:
         if keep_variables is not None:
-            logging.info(f"Keeping only variables: {', '.join(keep_variables)}")
             variables = list(frame.columns)
             discard = [x for x in variables if x not in keep_variables]
+            logging.info(f"Dropping variables: {', '.join(discard)}")
             # discard = [x if x not in keep_variables else pass for x in variables]
             frame = frame.drop(columns=discard)
         return frame
@@ -85,7 +88,7 @@ class PandasSanitizer(SanitizerInterface):
         series_mode = counts.mode().values[0]
         logging.info(f"Found mode of variable '{series.name}' to be {series_mode}")
         deviated = counts[counts != series_mode]
-        logging.info(f"Found {len(deviated)} bad rows")
+        logging.info(f"Found {len(deviated)} bad {series.name}")
         if return_mode is True:
             return (deviated, mode)
         else:
@@ -100,8 +103,9 @@ class PandasSanitizer(SanitizerInterface):
         logging.debug(
             f"Dropping duplicate entries using headers {', '.join(primary_variables)} as keys"
         )
-        frame = frame.drop_duplicates(subset=primary_variables, keep=keep_duplicates)
+        frame = frame.drop_duplicates(keep=keep_duplicates)
         return frame
 
     def _drop_nan(self, frame: pd.DataFrame) -> pd.DataFrame:
-        return frame.dropna(axis="index", how="all")
+        logging.debug("Dropping all NaN rows")
+        return frame.dropna(axis="index", how="any")
