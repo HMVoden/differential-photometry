@@ -7,7 +7,7 @@ from typing import List
 from hypothesis import given, assume
 from hypothesis_fspaths import fspaths
 
-bad_filename_characters = {
+BAD_FILENAME_CHARACTERS = {
     "<",
     ">",
     ":",
@@ -24,7 +24,7 @@ bad_filename_characters = {
     "\t",
 }
 
-test_filetypes = [
+TEST_FILETYPES = [
     ".csv",
     ".xlxs",
     ".xlsx",
@@ -45,7 +45,7 @@ test_filetypes = [
 
 
 def useable_path_name() -> string:
-    useable_characters = list(set(string.printable) - bad_filename_characters)
+    useable_characters = list(set(string.printable) - BAD_FILENAME_CHARACTERS)
     filename = "".join(
         random.choice(useable_characters) for _ in range(random.randint(1, 15))
     )
@@ -54,7 +54,7 @@ def useable_path_name() -> string:
 
 @pytest.fixture
 def existing_file_list(tmp_path: Path) -> List[Path]:
-    extensions = [random.choice(test_filetypes) for _ in range(random.randint(1, 15))]
+    extensions = [random.choice(TEST_FILETYPES) for _ in range(random.randint(1, 15))]
     files = []
     for ext in extensions:
         new_file = tmp_path.joinpath(useable_path_name() + ext)
@@ -65,7 +65,7 @@ def existing_file_list(tmp_path: Path) -> List[Path]:
         os.remove(f)
 
 
-@pytest.fixture(params=test_filetypes)
+@pytest.fixture(params=TEST_FILETYPES)
 def useable_filename(request) -> str:
     filename = useable_path_name() + request.param
     return filename

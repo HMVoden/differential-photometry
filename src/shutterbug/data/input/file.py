@@ -15,7 +15,7 @@ class FileInput(InputInterface):
 
     @classmethod
     def from_path(cls, path: Path):
-        """Creates a FileInput type from a singular path instead of a list of paths
+        """Creates a FileInput object from a singular path instead of a list of paths
 
         Parameters
         ----------
