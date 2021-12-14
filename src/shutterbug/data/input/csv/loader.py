@@ -1,24 +1,24 @@
 import csv
 import logging
-from functools import partial
 from operator import itemgetter
 from pathlib import Path
-from typing import Dict, Generator, List
+from typing import Dict, Generator, List, Union
 
 import numpy as np
 from attr import define, field
 from more_itertools import bucket, consume, filter_except, ilen, map_reduce
 from scipy.stats import mode
+from shutterbug.data.core.interface.loader import FileLoaderInterface
 from shutterbug.data.core.star import Star, StarTimeseries
-from shutterbug.data.input.csv.header import KnownHeader
+from shutterbug.data.input.header import KNOWN_HEADERS, Header, KnownHeader
 
 
 @define
-class CSVLoader:
+class CSVLoader(FileLoaderInterface):
     READABLE_TYPES = {".xlsx", ".xls", ".xlsm", ".odf", ".ods", ".csv"}
 
     input_file: Path
-    headers: KnownHeader
+    headers: KnownHeader = field(init=False)
     stars: Dict[str, List[int]] = field(init=False)
     star_mode: int = field(init=False)
     count: int = field(init=False)
@@ -30,7 +30,6 @@ class CSVLoader:
             return False
         else:
             return True
-
 
     def _count_stars(self) -> Dict[str, int]:
         """Iterates through entire CSV files and finds each star and every index that star's name corresponds to, for faster iterating (Not yet implemented)"""
@@ -63,16 +62,23 @@ class CSVLoader:
             for row in reader:
                 yield row
 
+    def _split_on_name(self):
+        "Splits the file into a number of iterables based on header name"
+        name_key = self.headers.get_name_index()
+        rows = self._file_rows()
+        splits = bucket(rows, key=lambda x: x[name_key])
+        return splits
+
     def __iter__(self) -> Generator[Star, None, None]:
+
         stars = self.stars.items()
         star_mode = self.star_mode
-        name_key = self.headers.get_name_index()
         timeseries_indices = self.headers.get_timeseries_indices()
         timeseries_getter = itemgetter(*timeseries_indices)
         data_indices = self.headers.get_star_indices()
         data_getter = itemgetter(*data_indices)
-        rows = self._file_rows()
-        star_iterators = bucket(rows, key=lambda x: x[name_key])
+        star_iterators = self._split_on_name()
+
         for star, entries in stars:
             if len(entries) != star_mode:
                 logging.warning(
@@ -90,3 +96,29 @@ class CSVLoader:
             star_data = StarTimeseries(np_data[:, 0], np_data[:, 1], np_data[:, 2])
             star_type.data = star_data
             yield star_type
+
+    def _check_headers(self) -> Union[KnownHeader, None]:
+        """Verifies loaded file header against known headers and returns known header"""
+        raw_headers = self._read_file_header()
+        headers = Header(headers=self._clean_headers(raw_headers))
+
+        for known in KNOWN_HEADERS:
+            if headers == known:
+                logging.debug(f"Input file matches header type {known.name}")
+                return known
+        logging.warning(f"Headers for file are unknown.")
+        return None
+
+    def _read_file_header(self) -> List[str]:
+        """Reads the first line in a csv file and returns the raw headers"""
+        with open(self.input_file, newline="") as f:
+            reader = csv.reader(f)
+            raw_headers = next(reader)
+        return raw_headers
+
+    def _clean_headers(self, headers: List[str]) -> List[str]:
+        """Removes all unnecessary whitespace, newlines and tabs from every string in a list"""
+        cleaned = []
+        for header in headers:
+            cleaned.append(header.strip())
+        return cleaned

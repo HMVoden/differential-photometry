@@ -1,16 +1,20 @@
+from functools import partial
 from typing import Iterable
 
 import numpy as np
 from attr import define, field
+
+asfloat32 = partial(np.asarray, dtype=np.float32)
+asfloat64 = partial(np.asarray, dtype=np.float64)
 
 
 @define(slots=True)
 class StarTimeseries:
     """Timeseries information for a star"""
 
-    time: Iterable[float] = field(converter=np.float64)
-    mag: Iterable[float] = field(converter=np.float32)
-    error: Iterable[float] = field(converter=np.float32)
+    time: Iterable[float] = field(converter=asfloat64)
+    mag: Iterable[float] = field(converter=asfloat32)
+    error: Iterable[float] = field(converter=asfloat32)
 
 
 @define(slots=True)

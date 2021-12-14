@@ -80,3 +80,28 @@ KNOWN_HEADERS = [
         star_name="Name",
     )
 ]
+
+
+def check_headers(headers: List[str]) -> Union[KnownHeader, None]:
+    raw_headers = _load_file_header(filepath)
+    headers = Header(headers=_clean_headers(raw_headers))
+
+    for known in KNOWN_HEADERS:
+        if headers == known:
+            logging.debug(f"Input file matches header type {known.name}")
+            return known
+    return None
+
+
+def _load_file_header(filepath: Path) -> List[str]:
+    with open(filepath, newline="") as f:
+        reader = csv.reader(f)
+        raw_headers = next(reader)
+    return raw_headers
+
+
+def _clean_headers(headers: List[str]) -> List[str]:
+    cleaned = []
+    for header in headers:
+        cleaned.append(header.strip())
+    return cleaned
