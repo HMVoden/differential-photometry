@@ -1,4 +1,5 @@
 import logging
+from functools import lru_cache
 from typing import List, Tuple
 
 import numpy as np
@@ -21,6 +22,7 @@ class DistanceDetector(DetectBase):
         self.detector_units = "px"
         self.log()
 
+    @lru_cache
     def detect(self, target_star: str) -> npt.NDArray[np.str_]:
         """Finds stars that are nearby target star, within radius tolerance, using a KDtree"""
         tree = self.tree
@@ -35,9 +37,7 @@ class DistanceDetector(DetectBase):
         logging.debug(f"Found closeby stars {', '.join(result_stars)}")
         return result_stars
 
-    def _build_kd_tree(
-        self, xs: npt.NDArray[np.float64], ys: npt.NDArray[np.float64]
-    ) -> KDTree:
+    def _build_kd_tree(self, xs: npt.NDArray, ys: npt.NDArray) -> KDTree:
         """Makes a KDtree from the x-y coordinates of each star
 
         Parameters

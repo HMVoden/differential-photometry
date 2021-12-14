@@ -89,14 +89,14 @@ def application(input_data, **cli_settings):
             varying_flag="intra_varying",
             **test_method_settings,
         )
-        logging.debug("Setting up inter variation test")
-        inter_variation_test = test_fac.create_test(
-            **stationarity_settings,
-            test_dimension=None,
-            correct_offset=cli_config.correct_offset,
-            varying_flag="inter_varying",
-            **test_method_settings,
-        )
+        # logging.debug("Setting up inter variation test")
+        # inter_variation_test = test_fac.create_test(
+        #     **stationarity_settings,
+        #     test_dimension=None,
+        #     correct_offset=cli_config.correct_offset,
+        #     varying_flag="inter_varying",
+        #     **test_method_settings,
+        # )
         logging.debug("Setting up distance detector")
         distance_detector = DistanceDetector(ds, **phot_config.distance)
         logging.debug("Setting up magnitude detector")
@@ -119,9 +119,9 @@ def application(input_data, **cli_settings):
         bars.status.update(stage="Variation detection")
         logging.info("Beginning variation detection")
         ds = (
-            ds.pipe(inter_variation_test.test_dataset)
+            # ds.pipe(inter_variation_test.test_dataset)
             # .pipe(log_variable)
-            .pipe(
+            ds.pipe(
                 plot_util.max_variation,
                 uniform_y_axis=cli_config.uniform,
                 mag_y_scale=cli_config.mag_y_scale,
@@ -129,7 +129,7 @@ def application(input_data, **cli_settings):
             )
         )
         logging.info("Finished detection")
-        ds["varying"] = ds["inter_varying"] | ds["intra_varying"]
+        ds["varying"] = ds["intra_varying"]
         bars.status.update(stage="Output")
         logging.info("Beginning output")
         ds = ds.pipe(

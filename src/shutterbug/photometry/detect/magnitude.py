@@ -1,5 +1,7 @@
 import logging
 from dataclasses import dataclass
+from functools import lru_cache
+from typing import Iterable
 
 import numpy as np
 import numpy.typing as npt
@@ -7,7 +9,6 @@ import pandas as pd
 from shutterbug.photometry.detect.detect import DetectBase
 
 
-@dataclass
 class MagnitudeDetector(DetectBase):
 
     star_medians: pd.Series
@@ -20,7 +21,8 @@ class MagnitudeDetector(DetectBase):
         self.detector_units = "mag"
         self.log()
 
-    def detect(self, target_star: str) -> npt.NDArray[np.str_]:
+    @lru_cache
+    def detect(self, target_star: str) -> Iterable[str]:
         """Locates all stars that within a tolerance around a target star's magnitude
 
         Parameters
@@ -43,7 +45,7 @@ class MagnitudeDetector(DetectBase):
         target_index = medians.index.get_loc(target_star)
         target_median = medians.iloc[target_index]
         distance_from_target = np.abs(medians - target_median)
-        result_stars = medians[distance_from_target <= tolerance].dropna().index
+        result_stars = medians[distance_from_target <= tolerance].index
         logging.debug(
             f"Found stars within magnitude tolerance: {', '.join(result_stars)}"
         )
