@@ -4,8 +4,8 @@ from typing import Generator, Iterator, List, Mapping, Union
 from attr import define, field
 from shutterbug.data.core.interface.input import InputInterface
 from shutterbug.data.core.interface.loader import FileLoaderInterface
-from shutterbug.data.input.csv.header import check_headers
 from shutterbug.data.input.csv.loader import CSVLoader
+from shutterbug.data.input.header import check_headers
 
 
 @define

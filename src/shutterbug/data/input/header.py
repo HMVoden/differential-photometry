@@ -1,7 +1,4 @@
-import csv
-import logging
-from pathlib import Path
-from typing import List, Union
+from typing import List
 
 from attr import define, field
 
@@ -23,10 +20,10 @@ class Header:
 
 @define
 class KnownHeader(Header):
-    name: str
-    timeseries_names: List[str]
-    star_names: List[str]
-    star_name: str
+    name: str = field()
+    timeseries_names: List[str] = field()
+    star_names: List[str] = field()
+    star_name: str = field()
 
     def _get_used_indices(self, names: List[str]) -> List[int]:
         used_indices = []
@@ -43,6 +40,15 @@ class KnownHeader(Header):
 
     def get_name_index(self):
         return self.headers.index(self.star_name)
+
+    @timeseries_names.validator
+    @star_names.validator
+    @star_name.validator
+    def _all_in_headers(self, attribute, value):
+        if not (all(header in self.headers for header in value)):
+            raise ValueError(
+                f"Headers in {attribute} are not in given header list {self.headers}"
+            )
 
 
 KNOWN_HEADERS = [
@@ -80,28 +86,3 @@ KNOWN_HEADERS = [
         star_name="Name",
     )
 ]
-
-
-def check_headers(headers: List[str]) -> Union[KnownHeader, None]:
-    raw_headers = _load_file_header(filepath)
-    headers = Header(headers=_clean_headers(raw_headers))
-
-    for known in KNOWN_HEADERS:
-        if headers == known:
-            logging.debug(f"Input file matches header type {known.name}")
-            return known
-    return None
-
-
-def _load_file_header(filepath: Path) -> List[str]:
-    with open(filepath, newline="") as f:
-        reader = csv.reader(f)
-        raw_headers = next(reader)
-    return raw_headers
-
-
-def _clean_headers(headers: List[str]) -> List[str]:
-    cleaned = []
-    for header in headers:
-        cleaned.append(header.strip())
-    return cleaned

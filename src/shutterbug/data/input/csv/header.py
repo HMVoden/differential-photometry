@@ -44,6 +44,14 @@ class KnownHeader(Header):
     def get_name_index(self):
         return self.headers.index(self.star_name)
 
+    def reorder_to(self, other: Header) -> None:
+        if other == self:
+            self.headers = other.headers
+        else:
+            raise ValueError(
+                "Cannot reorder to other header as other header is not equivalent to current"
+            )
+
 
 KNOWN_HEADERS = [
     KnownHeader(

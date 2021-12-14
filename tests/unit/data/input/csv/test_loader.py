@@ -1,12 +1,26 @@
+import string
 from pathlib import Path
+from typing import List
 
 import pytest
 from hypothesis import given
-from hypothesis.strategies import lists, text
+from hypothesis.strategies import DrawFn, composite, lists, text
 from pandas.errors import EmptyDataError
 from shutterbug.data.input.csv.loader import CSVLoader
 from tests.unit.loader.conftest import (existing_dir, existing_file,
                                         existing_file_list, useable_filename)
+
+
+@composite
+def headers(draw: DrawFn, min_size: int = 0, max_size: int = None) -> List[str]:
+    return draw(
+        lists(
+            text(alphabet=string.printable),
+            unique=True,
+            min_size=min_size,
+            max_size=max_size,
+        )
+    )
 
 
 @pytest.fixture
