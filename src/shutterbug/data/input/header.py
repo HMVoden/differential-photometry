@@ -1,11 +1,12 @@
 from typing import List
 
 from attr import define, field
+from attr.validators import instance_of
 
 
 @define
 class Header:
-    headers: List[str]
+    headers: List[str] = field()
 
     def __eq__(self, other) -> bool:
         # testing set equality as this will
@@ -17,13 +18,18 @@ class Header:
         # all of the other's items
         return header_set.issubset(other_set)
 
+    @headers.validator
+    def _all_strings(self, attribute, value):
+        if not (all(isinstance(item, str) for item in value)):
+            raise ValueError("All headers must be strings")
+
 
 @define
 class KnownHeader(Header):
-    name: str = field()
+    name: str = field(validator=instance_of(str))
     timeseries_names: List[str] = field()
     star_names: List[str] = field()
-    star_name: str = field()
+    star_name: str = field(validator=instance_of(str))
 
     def _get_used_indices(self, names: List[str]) -> List[int]:
         used_indices = []
@@ -45,10 +51,21 @@ class KnownHeader(Header):
     @star_names.validator
     @star_name.validator
     def _all_in_headers(self, attribute, value):
-        if not (all(header in self.headers for header in value)):
+        if type(value) == str:
+            if value not in self.headers:
+                raise ValueError(
+                    f"Header '{value}' is not in given header list {self.headers}"
+                )
+        elif not (all(header in self.headers for header in value)):
             raise ValueError(
-                f"Headers in {attribute} are not in given header list {self.headers}"
+                f"Headers '{', '.join(value)}' are not in given header list {self.headers}"
             )
+
+    @timeseries_names.validator
+    @star_names.validator
+    def _all_strings(self, attribute, value):
+        if not (all(isinstance(item, str) for item in value)):
+            raise ValueError("All headers must be strings")
 
 
 KNOWN_HEADERS = [

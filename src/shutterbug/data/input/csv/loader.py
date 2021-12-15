@@ -42,6 +42,8 @@ class CSVLoader(FileLoaderInterface):
 
     def __attrs_post_init__(self):
         """Post-initialization attribute creation. Gives count, mode and entire star list to class."""
+        self.headers = self._check_headers()
+
         self.stars = self._count_stars()
         entry_counts = list(map(len, self.stars.values()))  # type: ignore
         star_mode, count = mode(entry_counts, axis=None)
@@ -97,7 +99,7 @@ class CSVLoader(FileLoaderInterface):
             star_type.data = star_data
             yield star_type
 
-    def _check_headers(self) -> Union[KnownHeader, None]:
+    def _check_headers(self) -> KnownHeader:
         """Verifies loaded file header against known headers and returns known header"""
         raw_headers = self._read_file_header()
         headers = Header(headers=self._clean_headers(raw_headers))
@@ -106,14 +108,18 @@ class CSVLoader(FileLoaderInterface):
             if headers == known:
                 logging.debug(f"Input file matches header type {known.name}")
                 return known
-        logging.warning(f"Headers for file are unknown.")
-        return None
+        raise ValueError("Cannot load file, unknown headers")
 
     def _read_file_header(self) -> List[str]:
         """Reads the first line in a csv file and returns the raw headers"""
         with open(self.input_file, newline="") as f:
-            reader = csv.reader(f)
-            raw_headers = next(reader)
+            try:
+                reader = csv.reader(f)
+                raw_headers = next(reader)
+            except StopIteration:
+                raise ValueError(
+                    f"File {self.input_file.name} does not contain headers, cannot continue"
+                )
         return raw_headers
 
     def _clean_headers(self, headers: List[str]) -> List[str]:

@@ -1,17 +1,18 @@
+import logging
 from pathlib import Path
-from typing import Generator, Iterator, List, Mapping, Union
+from typing import Generator, List, Type, Union
 
 from attr import define, field
 from shutterbug.data.core.interface.input import InputInterface
 from shutterbug.data.core.interface.loader import FileLoaderInterface
 from shutterbug.data.input.csv.loader import CSVLoader
-from shutterbug.data.input.header import check_headers
+
+_TYPES: List[Type[FileLoaderInterface]] = [CSVLoader]
 
 
 @define
 class FileInput(InputInterface):
-    _TYPES: List[FileLoaderInterface] = list((CSVLoader))
-    _input_loaders: List[FileLoaderInterface] = field(init=False)
+    _input_files: List[Path] = field(init=False)
 
     @classmethod
     def from_path(cls, path: Path):
@@ -26,15 +27,10 @@ class FileInput(InputInterface):
 
         """
 
-        cls([path])
+        return cls([path])
 
     def __init__(self, paths: List[Path]):
-        files_from_path = self._get_files_from_paths(paths)
-        loaders = list(map(self._file_to_loader, files_from_path))
-        if loaders is not None:
-            self._input_loaders.extend(loaders)
-        else:
-            raise ValueError("Cannot read any input files")
+        self._input_files = self._get_files_from_paths(paths)
 
     def _get_files_from_path(self, path: Path) -> List[Path]:
         """Retreives all files from a given path, including from subdirectories
@@ -93,18 +89,24 @@ class FileInput(InputInterface):
             nothing can load the file.
 
         """
-
-        for loader_type in self._TYPES:
+        for loader_type in _TYPES:
             if loader_type.is_readable(path):
-                known_header = check_headers(path)
-                if known_header is not None:
-                    return loader_type(input_file=path, header=known_header)
+                try:
+                    return loader_type(input_file=path)  # type: ignore
+                except ValueError as e:
+                    logging.debug(
+                        f"Loader type {type(loader_type)} unable to load file {path.name} due to error {e}"
+                    )
         return None
 
     def __len__(self) -> int:
         """Number of files able to be loaded"""
-        return len(self._input_loaders)
+        return len(self._input_files)
 
     def __iter__(self) -> Generator[FileLoaderInterface, None, None]:
-        for loader in self._input_loaders:
-            yield loader
+        for i_file in self._input_files:
+            loader = self._file_to_loader(i_file)
+            if loader is not None:
+                yield loader
+            else:
+                logging.warning(f"Unable to load file {i_file.name}")

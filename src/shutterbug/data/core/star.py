@@ -2,19 +2,26 @@ from functools import partial
 from typing import Iterable
 
 import numpy as np
+import numpy.typing as npt
 from attr import define, field
 
 asfloat32 = partial(np.asarray, dtype=np.float32)
 asfloat64 = partial(np.asarray, dtype=np.float64)
+asdt64 = partial(np.asarray, dtype=np.datetime64)
 
 
 @define(slots=True)
 class StarTimeseries:
     """Timeseries information for a star"""
 
-    time: Iterable[float] = field(converter=asfloat64)
-    mag: Iterable[float] = field(converter=asfloat32)
-    error: Iterable[float] = field(converter=asfloat32)
+    time: npt.NDArray[np.datetime64] = field(converter=asdt64)
+    mag: npt.NDArray[np.float32] = field(converter=asfloat32)
+    error: npt.NDArray[np.float32] = field(converter=asfloat32)
+
+    @error.validator
+    def _same_length(self, attribute, value):
+        assert len(self.time) == len(value)
+        assert len(self.mag) == len(value)
 
 
 @define(slots=True)

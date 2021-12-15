@@ -1,14 +1,18 @@
+import csv
 import string
+import tempfile
+from functools import partial
 from pathlib import Path
-from typing import List
+from typing import Dict, Iterable, List, Union
 
 import pytest
 from hypothesis import given
-from hypothesis.strategies import DrawFn, composite, lists, text
+from hypothesis.strategies import (DrawFn, composite, floats, integers, lists,
+                                   one_of, sampled_from, text)
 from pandas.errors import EmptyDataError
 from shutterbug.data.input.csv.loader import CSVLoader
-from tests.unit.loader.conftest import (existing_dir, existing_file,
-                                        existing_file_list, useable_filename)
+
+CSV_COLUMN_TYPES = [floats, integers, partial(text, alphabet=string.printable)]
 
 
 @composite
@@ -23,22 +27,71 @@ def headers(draw: DrawFn, min_size: int = 0, max_size: int = None) -> List[str]:
     )
 
 
-@pytest.fixture
-def files_with_good_count(existing_file_list):
-    count = len(list(filter(lambda x: x.suffix in READABLE_TYPES, existing_file_list)))
-    yield count, existing_file_list
+@composite
+def pure_columns(
+    draw: DrawFn, min_size: int = 0, max_size: int = None
+) -> Union[Iterable[str], Iterable[float], Iterable[int]]:
+    column_type = draw(sampled_from(CSV_COLUMN_TYPES))
+    return draw(lists(column_type(), min_size=min_size, max_size=max_size))
 
 
-def test_accepted_formats(existing_file: Path):
+@composite
+def mixed_columns(
+    draw: DrawFn, min_size: int = 0, max_size: int = None
+) -> Union[Iterable[str], Iterable[float], Iterable[int]]:
+    column_type = draw(lists(sampled_from(CSV_COLUMN_TYPES), min_size=1))
+    size_used = 0
+    result = []
+    for sample in column_type:
+        if size_used == max_size:
+            break
+        if max_size is not None:
+            result.extend(
+                draw(
+                    lists(sample(), min_size=min_size, max_size=(max_size - size_used))
+                )
+            )
+        else:
+            result.extend(draw(lists(sample(), min_size=min_size, max_size=(max_size))))
+            size_used += len(result)
+    return result
+
+
+@composite
+def csvs(
+    draw: DrawFn,
+    csv_headers: List[str] = None,
+    min_rows: int = 0,
+    max_rows: int = 100,
+    min_headers: int = 0,
+    max_headers: int = None,
+):
+    if csv_headers is None:
+        csv_headers = draw(headers(min_size=min_headers, max_size=max_headers))
+    num_rows = draw(integers(min_value=min_rows, max_value=max_rows))
+    columns = []
+    for _ in csv_headers:
+        col_type = draw(sampled_from([mixed_columns, pure_columns]))
+        col = draw(col_type(min_size=num_rows, max_size=num_rows))
+        columns.append(col)
+    csv_data = dict(zip(csv_headers, columns))
+    return csv_data
+
+
+def test_is_readable(existing_file: Path):
     if existing_file.suffix in CSVLoader.READABLE_TYPES:
         assert CSVLoader.is_readable(existing_file) is True
     else:
         assert CSVLoader.is_readable(existing_file) is False
 
 
-@given(lists(text()))
-def test_clean_headers(headers):
-    cleaned = _clean_headers(headers)
-    for item in cleaned:
-        assert not item.endswith(("\t", " "))
-        assert not item.startswith(("\t", " "))
+@given(csvs())
+def test_unknown_headers(csv_data: Dict):
+    with tempfile.NamedTemporaryFile(suffix=".csv", mode="w", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=list(csv_data.keys()))
+        writer.writeheader()
+        writer.writerows([csv_data])
+        file_path = Path(csv_file.name)
+
+        with pytest.raises(ValueError):
+            CSVLoader(file_path)
