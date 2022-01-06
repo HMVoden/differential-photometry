@@ -548,8 +548,6 @@ python-versions = "*"
 
 [package.dependencies]
 hypothesis = "*"
-
-[[package]]
 name = "hypothesis-pytest"
 version = "0.19.0"
 description = "Pytest plugin for better integration with hypothesis"
@@ -1623,6 +1621,7 @@ lock-version = "1.1"
 python-versions = ">=3.9 <3.10"
 content-hash = "e976e134f3344341f22b9e78a30e54c99424ba93690442bf8551517a3480712e"
 
+
 [metadata.files]
 alabaster = [
     {file = "alabaster-0.7.12-py2.py3-none-any.whl", hash = "sha256:446438bdcca0e05bd45ea2de1668c1d9b032e1a9154c2c259092d77031ddd359"},
@@ -1999,6 +1998,7 @@ hypothesis = [
     {file = "hypothesis-6.24.5-py3-none-any.whl", hash = "sha256:8f7318839b64bae1410704933fe01f3db5f80f20f2ba8d4ea3520443ae3a001d"},
     {file = "hypothesis-6.24.5.tar.gz", hash = "sha256:f1627022f75306c653115fbd169ba6a4322804f60533a7b46625fd0eecba43d5"},
 ]
+
 hypothesis-fspaths = [
     {file = "hypothesis-fspaths-0.1.tar.gz", hash = "sha256:d1124ddc2a37cb54cdaa573bb16a40841a37598c8fc7b83dd07babffc6b01368"},
 ]
