@@ -10,7 +10,7 @@
 
 [expanding]
 "max_iterations" = 3
-"minimum_stars" = 25
+"minimum_stars" = 0
 
 [stationarity]
 "test_method" = "ddsquare"

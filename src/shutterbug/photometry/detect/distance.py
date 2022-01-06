@@ -22,7 +22,6 @@ class DistanceDetector(DetectBase):
         self.detector_units = "px"
         self.log()
 
-    @lru_cache
     def detect(self, target_star: str) -> npt.NDArray[np.str_]:
         """Finds stars that are nearby target star, within radius tolerance, using a KDtree"""
         tree = self.tree

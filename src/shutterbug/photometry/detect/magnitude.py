@@ -21,7 +21,6 @@ class MagnitudeDetector(DetectBase):
         self.detector_units = "mag"
         self.log()
 
-    @lru_cache
     def detect(self, target_star: str) -> Iterable[str]:
         """Locates all stars that within a tolerance around a target star's magnitude
 
