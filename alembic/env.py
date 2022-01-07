@@ -1,7 +1,7 @@
 from logging.config import fileConfig
 from pathlib import Path
 
-from shutterbug.data.storage.db.model import Base, StarDB, StarTimeseries
+from shutterbug.data.storage.db.model import Base, StarDB, StarDBTimeseries
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context

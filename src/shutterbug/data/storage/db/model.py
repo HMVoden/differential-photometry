@@ -33,7 +33,7 @@ class StarDB(Base):
     )
 
 
-class StarTimeseries(Base):
+class StarDBTimeseries(Base):
     __tablename__ = "timeseries"
     star_name = Column(Text, ForeignKey("star.name"), primary_key=True)
     star_dataset = Column(Text, ForeignKey("star.dataset"), primary_key=True)

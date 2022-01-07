@@ -7,7 +7,6 @@ from typing import Dict, Generator, List, Union
 import numpy as np
 from attr import define, field
 from more_itertools import bucket, consume, filter_except, ilen, map_reduce
-from scipy.stats import mode
 from shutterbug.data.core.interface.loader import FileLoaderInterface
 from shutterbug.data.core.star import Star, StarTimeseries
 from shutterbug.data.input.header import KNOWN_HEADERS, Header, KnownHeader
@@ -32,10 +31,12 @@ class CSVLoader(FileLoaderInterface):
             return True
 
     def _count_stars(self) -> Dict[str, int]:
-        """Iterates through entire CSV files and finds each star and every index that star's name corresponds to, for faster iterating (Not yet implemented)"""
+        """Iterates through entire CSV files and finds each star and every index that star's name corresponds to, for faster iterating"""
         name_index = self.headers.get_name_index()
         rows = self._file_rows()
+        # Take enumerated iterable, return header name
         keyfunc = lambda x: x[1][name_index]
+        # Take enumerated iterable, return row that this entry belongs on
         valuefunc = lambda x: x[0]
         result = map_reduce(enumerate(rows), keyfunc, valuefunc)
         return result  # type: ignore
@@ -45,15 +46,15 @@ class CSVLoader(FileLoaderInterface):
         self.headers = self._check_headers()
 
         self.stars = self._count_stars()
-        entry_counts = list(map(len, self.stars.values()))  # type: ignore
-        star_mode, count = mode(entry_counts, axis=None)
-        # Need first entry as these are arrays
-        self.count = count[0]
-        self.star_mode = star_mode[0]
+        # entry_counts = list(map(len, self.stars.values()))  # type: ignore
+        # star_mode, count = mode(entry_counts, axis=None)
+        # # Need first entry as these are arrays
+        # self.count = count[0]
+        # self.star_mode = star_mode[0]
 
     def __len__(self):
         """Number of stars in given CSV"""
-        return self.count
+        return len(self.stars)
 
     def _file_rows(self) -> Generator[List[str], None, None]:
         """Skips header and returns an iterable for every row in the input file"""
@@ -74,19 +75,13 @@ class CSVLoader(FileLoaderInterface):
     def __iter__(self) -> Generator[Star, None, None]:
 
         stars = self.stars.items()
-        star_mode = self.star_mode
         timeseries_indices = self.headers.get_timeseries_indices()
         timeseries_getter = itemgetter(*timeseries_indices)
         data_indices = self.headers.get_star_indices()
         data_getter = itemgetter(*data_indices)
         star_iterators = self._split_on_name()
 
-        for star, entries in stars:
-            if len(entries) != star_mode:
-                logging.warning(
-                    f"Star {star} has {len(entries)} data entries, expected {star_mode}. Skipping star."
-                )
-                continue
+        for star, _ in stars:
             iterable = star_iterators[star]
             first_entry = next(iterable)  # get very first entry
             # Only need first entry to create Star type.
