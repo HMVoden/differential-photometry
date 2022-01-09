@@ -8,8 +8,7 @@ from typing import Dict, Iterable, List, Union
 import pytest
 from hypothesis import given
 from hypothesis.strategies import (DrawFn, composite, floats, integers, lists,
-                                   one_of, sampled_from, text)
-from pandas.errors import EmptyDataError
+                                   sampled_from, text)
 from shutterbug.data.input.csv.loader import CSVLoader
 
 CSV_COLUMN_TYPES = [floats, integers, partial(text, alphabet=string.printable)]
@@ -62,9 +61,9 @@ def csvs(
     draw: DrawFn,
     csv_headers: List[str] = None,
     min_rows: int = 0,
-    max_rows: int = 100,
+    max_rows: int = 25,
     min_headers: int = 0,
-    max_headers: int = None,
+    max_headers: int = 8,
 ):
     if csv_headers is None:
         csv_headers = draw(headers(min_size=min_headers, max_size=max_headers))
@@ -78,11 +77,14 @@ def csvs(
     return csv_data
 
 
-def test_is_readable(existing_file: Path):
-    if existing_file.suffix in CSVLoader.READABLE_TYPES:
-        assert CSVLoader.is_readable(existing_file) is True
-    else:
-        assert CSVLoader.is_readable(existing_file) is False
+@given(text(alphabet=(string.ascii_letters + string.digits), min_size=1, max_size=4))
+def test_is_readable(suffix):
+    with tempfile.NamedTemporaryFile(suffix=f".{suffix}") as existing_file:
+        path = Path(existing_file.name)
+        if path.suffix in CSVLoader.READABLE_TYPES:
+            assert CSVLoader.is_readable(path) is True
+        else:
+            assert CSVLoader.is_readable(path) is False
 
 
 @given(csvs())

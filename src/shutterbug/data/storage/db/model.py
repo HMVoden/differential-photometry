@@ -1,5 +1,4 @@
-from sqlalchemy import (Column, DateTime, Float, ForeignKey, Index, Integer,
-                        Text)
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import MetaData
@@ -20,25 +19,24 @@ Base = declarative_base(metadata=metadata)
 
 
 class StarDB(Base):
-    __tablename__ = "star"
-    name = Column("name", Text, primary_key=True)
+    __tablename__ = "stars"
+    id = Column("id", Integer, primary_key=True)
+    name = Column("name", Text, primary_key=True, unique=True)
     dataset = Column("dataset", Text, primary_key=True)
     x = Column("x", Integer)
     y = Column("y", Integer)
 
     timeseries = relationship(
-        "timeseries",
-        order_by="desc(timeseries.star_name)",
+        "StarDBTimeseries",
         back_populates="star",
     )
 
 
 class StarDBTimeseries(Base):
     __tablename__ = "timeseries"
-    star_name = Column(Text, ForeignKey("star.name"), primary_key=True)
-    star_dataset = Column(Text, ForeignKey("star.dataset"), primary_key=True)
+    star_id = Column(Integer, ForeignKey("stars.id"), primary_key=True)
     time = Column("time", DateTime, primary_key=True)
     mag = Column("magnitude", Float)
     error = Column("error", Float)
 
-    star = relationship("star", back_populates="timeseries")
+    star = relationship("StarDB", back_populates="timeseries")

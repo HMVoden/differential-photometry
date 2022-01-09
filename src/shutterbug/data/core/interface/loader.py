@@ -6,7 +6,7 @@ from shutterbug.data.core.star import Star
 
 
 class LoaderInterface(ABC):
-    """Generic interface for an object that loads star data from a source"""
+    """Generic interface for an object that loads external star data from a source into memory"""
 
     @abstractmethod
     def __iter__(self) -> Generator[Star, None, None]:
@@ -18,7 +18,7 @@ class LoaderInterface(ABC):
 
 
 class FileLoaderInterface(LoaderInterface):
-    """Interface for a loader that loads star data from a file source"""
+    """Interface for a loader that loads external star data from a file source into memory"""
 
     @classmethod
     @abstractmethod
