@@ -17,6 +17,9 @@ class DBReader(DataReaderInterface):
     _stars: List[str] = field(init=False)
 
     def __attrs_post_init__(self):
+        """Sets up the DBReader to hold all the stars that are currently in the
+        database so we're not constantly requesting this information from the
+        database"""
         with Session(self.engine) as session:
             db_stars = (
                 session.query(StarDBLabel.name)  # type: ignore
@@ -28,6 +31,16 @@ class DBReader(DataReaderInterface):
 
     @property
     def all(self) -> Generator[pd.DataFrame, None, None]:
+        """Connecting to target database, returns a generator of each individual star in sequence
+
+        Returns
+        -------
+        Generator[pd.DataFrame, None, None]
+            Dataframe with the star's name and timeseries (time, magnitude,
+            error)
+
+        """
+
         with Session(self.engine) as session:
             for name in self._stars:
                 statement = (
@@ -43,6 +56,9 @@ class DBReader(DataReaderInterface):
                 yield pd.read_sql(
                     sql=statement,
                     con=session.bind,
+                    parse_dates=["time"],
+                    columns=["name", "time", "mag", "error"],
+                    index_col=["name", "time"],
                 )
 
     def similar_to(self, star: str) -> pd.DataFrame:

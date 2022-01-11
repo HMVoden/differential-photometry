@@ -53,7 +53,7 @@ def test_reads_all(stars: List[Star], other: List[Star]):
     read_names = []
     datasets = []
     for star in reader.all:
-        read_names.append(star["name"][0])
+        read_names.append(star.index.levels[0][0])
         datasets.append(star["dataset"][0])
     star_set = set(star_names)
     read_set = set(read_names)
