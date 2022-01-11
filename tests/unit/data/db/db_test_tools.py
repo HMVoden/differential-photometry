@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 
 
-def sqlalchemy_db() -> Engine:
-    engine = create_engine("sqlite:///:memory:", future=True)
+def sqlalchemy_db(future: bool = True) -> Engine:
+    engine = create_engine("sqlite:///:memory:", future=future)
     Base.metadata.create_all(engine)
     return engine

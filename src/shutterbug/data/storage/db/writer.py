@@ -73,6 +73,6 @@ class DBWriter(WriterInterface):
                 error=error,
             )
             db_timeseries.append(ts)
-        db_star.label = [db_label]
+        db_star.label = db_label
         db_star.timeseries = db_timeseries
         return db_star

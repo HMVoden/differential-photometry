@@ -30,7 +30,7 @@ class StarDB(Base):
         back_populates="star",
     )
 
-    label = relationship("StarDBLabel", back_populates="star")
+    label = relationship("StarDBLabel", back_populates="star", uselist=False)
 
     def __repr__(self):
         return f"StarDB(id:'{self.id}',x:'{self.x}',y:'{self.y}')"
