@@ -1,4 +1,5 @@
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, Text
+from sqlalchemy import (Column, DateTime, Float, ForeignKey, Integer, Text,
+                        UniqueConstraint)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import MetaData
@@ -20,9 +21,7 @@ Base = declarative_base(metadata=metadata)
 
 class StarDB(Base):
     __tablename__ = "stars"
-    id = Column("id", Integer, primary_key=True)
-    name = Column("name", Text, primary_key=True, unique=True)
-    dataset = Column("dataset", Text, primary_key=True)
+    id = Column("id", Integer, primary_key=True, autoincrement=True)
     x = Column("x", Integer)
     y = Column("y", Integer)
 
@@ -31,12 +30,35 @@ class StarDB(Base):
         back_populates="star",
     )
 
+    label = relationship("StarDBLabel", back_populates="star")
+
+    def __repr__(self):
+        return f"StarDB(id:'{self.id}',x:'{self.x}',y:'{self.y}')"
+
+
+class StarDBLabel(Base):
+    __tablename__ = "label"
+    name = Column("name", Text, primary_key=True)
+    dataset = Column("dataset", Text, primary_key=True)
+    idref = Column(Integer, ForeignKey("stars.id"))
+
+    star = relationship("StarDB", back_populates="label")
+
+    __table_args__ = (UniqueConstraint("name", "dataset", name="_name_dataset_unique"),)
+
+    def __repr__(self):
+        return f"StarDBLabel(id:'{self.idref}',dataset:'{self.dataset}',name:'{self.name}')"
+
 
 class StarDBTimeseries(Base):
     __tablename__ = "timeseries"
-    star_id = Column(Integer, ForeignKey("stars.id"), primary_key=True)
-    time = Column("time", DateTime, primary_key=True)
+    tsid = Column("tsid", Integer, primary_key=True, autoincrement=True)
+    time = Column("time", DateTime)
     mag = Column("magnitude", Float)
     error = Column("error", Float)
+    idref = Column(Integer, ForeignKey("stars.id"))
 
     star = relationship("StarDB", back_populates="timeseries")
+
+    def __repr__(self):
+        return f"StarDBTimeseries('id:{self.idref}',time:'{self.time}',mag:'{self.mag}', error:'{self.error}')"

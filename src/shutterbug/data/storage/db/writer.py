@@ -1,10 +1,15 @@
 import logging
+from datetime import datetime
 from typing import List, Tuple
 
+import attr
+import numpy as np
+import pandas as pd
 from attr import define, field
 from shutterbug.data.core.interface.writer import WriterInterface
 from shutterbug.data.core.star import Star
-from shutterbug.data.storage.db.model import StarDB, StarDBTimeseries
+from shutterbug.data.storage.db.model import (StarDB, StarDBLabel,
+                                              StarDBTimeseries)
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -16,25 +21,27 @@ class DBWriter(WriterInterface):
 
     """
 
-    db_engine: Engine = field()
+    db_engine: Engine = field(validator=attr.validators.instance_of(Engine))
 
     def write(self, data: Star):
         """Stores star in database defined by provided engine
 
-        Parameters
+        Parameter
         ----------
         data : Star
             Star from dataset
 
         """
-        with Session(self.db_engine, future=True) as session:
+        with Session(self.db_engine) as session:
             logging.debug(f"Writing star {data.name} into database")
-            model_star, model_timeseries = self._convert_to_model(data)
+            model_star = self._convert_to_model(data)
             session.add(model_star)
-            session.add_all(model_timeseries)
+            session.commit()
 
     @staticmethod
-    def _convert_to_model(star: Star) -> Tuple[StarDB, List[StarDBTimeseries]]:
+    def _convert_to_model(
+        star: Star,
+    ) -> StarDB:
         """Converts a Star datatype into a type writable to the provided database
 
         Parameters
@@ -49,9 +56,16 @@ class DBWriter(WriterInterface):
 
         """
 
-        db_star = StarDB(name=star.name, dataset=star.dataset, x=star.x, y=star.y)
+        db_star = StarDB(x=star.x, y=star.y)
+        db_label = StarDBLabel(name=star.name, dataset=star.dataset)
         db_timeseries = []
-        timeseries_data = zip(star.data.time, star.data.mag, star.data.error)
+        time = star.data.time.to_pydatetime()
+        time = np.where(pd.isnull(time), None, time)
+        timeseries_data = zip(
+            time,
+            star.data.mag,
+            star.data.error,
+        )
         for time, mag, error in timeseries_data:
             ts = StarDBTimeseries(
                 time=time,
@@ -59,4 +73,6 @@ class DBWriter(WriterInterface):
                 error=error,
             )
             db_timeseries.append(ts)
-        return db_star, db_timeseries
+        db_star.label = [db_label]
+        db_star.timeseries = db_timeseries
+        return db_star
