@@ -32,7 +32,7 @@ def reconstruct_star_from_db(
 def test_convert(star: Star):
     star_db = DBWriter._convert_to_model(star)
     reconstructed_star = reconstruct_star_from_db(
-        star_db, star_db.timeseries, star_db.label[0]
+        star_db, star_db.timeseries, star_db.label
     )
     assert star == reconstructed_star
 
@@ -49,7 +49,7 @@ def test_write(stars: List[Star]):
 
     with Session(engine, future=True) as session:
         for star in session.query(StarDB).all():
-            rec_star = reconstruct_star_from_db(star, star.timeseries, star.label[0])
+            rec_star = reconstruct_star_from_db(star, star.timeseries, star.label)
             read_stars.append(rec_star)
     present = [True if x in stars else False for x in read_stars]
     assert len(present) == len(stars)

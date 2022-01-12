@@ -37,7 +37,7 @@ class StarTimeseries:
     def __attrs_post_init__(self):
         _, unique_indices = np.unique(self.time, return_index=True)
         if not len(unique_indices) == len(self.time):
-            logging.warning("Have duplicate time entries on star")
+            logging.debug("Have duplicate time entries on star")
             self.time = self.time[unique_indices]
             self.mag = self.mag[unique_indices]
             self.error = self.error[unique_indices]

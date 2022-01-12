@@ -24,6 +24,7 @@ class StarDB(Base):
     id = Column("id", Integer, primary_key=True, autoincrement=True)
     x = Column("x", Integer)
     y = Column("y", Integer)
+    magnitude_median = Column("magnitude_median", Float)
 
     timeseries = relationship(
         "StarDBTimeseries",

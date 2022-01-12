@@ -63,7 +63,9 @@ def test_reads_all(stars: List[Star], other: List[Star]):
 
 
 @given(
-    lists(stars(dataset="test"), min_size=2, unique_by=(lambda x: x.name)),
+    lists(
+        stars(dataset="test", allow_nan=False), min_size=2, unique_by=(lambda x: x.name)
+    ),
     integers(min_value=0, max_value=5),
     integers(min_value=0, max_value=400),
 )
@@ -82,7 +84,13 @@ def test_similar_to(stars: List[Star], mag_limit, distance_limit):
         if abs_diff_median <= mag_limit and distance_between <= distance_limit:
             similar_stars.append(star.name)
 
-    reader = DBReader(dataset="test", engine=engine)
+    reader = DBReader(
+        dataset="test",
+        engine=engine,
+        mag_limit=mag_limit,
+        distance_limit=distance_limit,
+    )
     similar_stars_frame = reader.similar_to(target.name)
-    db_similar = similar_stars_frame["name"].unique()
+    db_similar = np.unique(similar_stars_frame.index.levels[0])
+    print(similar_stars_frame)
     assert set(db_similar) == set(similar_stars)

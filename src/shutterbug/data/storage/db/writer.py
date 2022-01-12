@@ -1,6 +1,4 @@
 import logging
-from datetime import datetime
-from typing import List, Tuple
 
 import attr
 import numpy as np
@@ -56,7 +54,9 @@ class DBWriter(WriterInterface):
 
         """
 
-        db_star = StarDB(x=star.x, y=star.y)
+        db_star = StarDB(
+            x=star.x, y=star.y, magnitude_median=np.nanmedian(star.data.mag)
+        )
         db_label = StarDBLabel(name=star.name, dataset=star.dataset)
         db_timeseries = []
         time = star.data.time.to_pydatetime()
