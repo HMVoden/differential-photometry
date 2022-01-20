@@ -1,4 +1,5 @@
 import logging
+from typing import Iterable, overload
 
 import attr
 import numpy as np
@@ -9,6 +10,7 @@ from shutterbug.data.star import Star
 from shutterbug.data.db.model import StarDB, StarDBLabel, StarDBTimeseries
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
+from functools import singledispatchmethod
 
 
 @define
@@ -20,6 +22,7 @@ class DBWriter(DataWriterInterface):
 
     db_engine: Engine = field(validator=attr.validators.instance_of(Engine))
 
+    @singledispatchmethod
     def write(self, data: Star):
         """Stores star in database defined by provided engine
 
@@ -30,10 +33,22 @@ class DBWriter(DataWriterInterface):
 
         """
         with Session(self.db_engine) as session:
-            logging.debug(f"Writing star {data.name} into database")
-            model_star = self._convert_to_model(data)
-            session.add(model_star)
+            self._write_star(session=session, star=data)
             session.commit()
+
+    @write.register
+    def _(self, data: list):
+        # have to use list as type due to bug with singledispatch
+        with Session(self.db_engine) as session:
+            for star in data:
+                self._write_star(session=session, star=star)
+            session.commit()
+
+    def _write_star(self, session: Session, star: Star):
+
+        logging.debug(f"Writing star {star.name} into database")
+        model_star = self._convert_to_model(star)
+        session.add(model_star)
 
     @staticmethod
     def _convert_to_model(

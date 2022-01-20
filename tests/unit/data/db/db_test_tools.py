@@ -13,6 +13,7 @@ def sqlalchemy_db(future: bool = True) -> Engine:
     return engine
 
 
+# to prevent creating hundreds of DBs for testing
 _future_db = sqlalchemy_db(future=True)
 _db = sqlalchemy_db(future=False)
 

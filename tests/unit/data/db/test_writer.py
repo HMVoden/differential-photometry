@@ -1,4 +1,4 @@
-from typing import Iterable, List
+from typing import List
 
 import pytest
 from hypothesis import given
@@ -42,8 +42,10 @@ def test_write(stars: List[Star]):
     engine = sqlalchemy_db()
     writer = DBWriter(engine)
     # write in
-    for star in stars:
-        writer.write(star)
+    if len(stars) == 1:
+        writer.write(stars[0])
+    else:
+        writer.write(stars)
     # read out and assert
     read_stars = []
 
