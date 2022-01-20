@@ -25,7 +25,7 @@ def test_init(stars, other):
         star_names.append(star.name)
     for star in other:
         writer.write(star)
-    reader = DBReader(dataset="test", engine=engine)
+    reader = DBReader(dataset="test", engine=engine, mag_limit=0, distance_limit=0)
 
     assert all([True if x in reader._stars else False for x in star_names])
     assert len(reader._stars) == len(stars)
@@ -33,7 +33,7 @@ def test_init(stars, other):
 
 @given(
     lists(stars(dataset="test"), min_size=1, unique_by=(lambda x: x.name)),
-    lists(stars(dataset="other"), min_size=1, unique_by=(lambda x: x.name)),
+    lists(stars(dataset="other"), min_size=1, max_size=1, unique_by=(lambda x: x.name)),
 )
 def test_reads_all(stars: List[Star], other: List[Star]):
     engine = sqlalchemy_db(future=False)
@@ -49,7 +49,7 @@ def test_reads_all(stars: List[Star], other: List[Star]):
         # so we can make sure we're only getting from our dataset
         writer.write(star)
 
-    reader = DBReader(dataset="test", engine=engine)
+    reader = DBReader(dataset="test", engine=engine, mag_limit=0, distance_limit=0)
     read_names = []
     datasets = []
     for star in reader.all:
@@ -70,6 +70,10 @@ def test_reads_all(stars: List[Star], other: List[Star]):
     integers(min_value=0, max_value=400),
 )
 def test_similar_to(stars: List[Star], mag_limit, distance_limit):
+    if mag_limit == 0:
+        mag_limit = np.inf
+    if distance_limit == 0:
+        distance_limit = np.inf
     engine = sqlalchemy_db(future=False)
     writer = DBWriter(engine)
     target = stars[0]

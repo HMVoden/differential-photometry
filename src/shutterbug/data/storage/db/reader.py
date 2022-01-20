@@ -1,11 +1,10 @@
-from typing import Generator, List, Optional
+from typing import Callable, Generator, List, Optional
 
 import attr
 import pandas as pd
 from attr import define, field
 from shutterbug.data.interfaces.internal import DataReaderInterface
-from shutterbug.data.storage.db.model import (StarDB, StarDBLabel,
-                                              StarDBTimeseries)
+from shutterbug.data.storage.db.model import StarDB, StarDBLabel, StarDBTimeseries
 from sqlalchemy import func, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
@@ -16,8 +15,12 @@ class DBReader(DataReaderInterface):
     dataset: str = field()
     engine: Engine = field()
     _stars: List[str] = field(init=False)
-    mag_limit: Optional[float] = field(converter=attr.converters.optional(float))
-    distance_limit: Optional[float] = field(converter=attr.converters.optional(float))
+    mag_limit: Optional[float] = field(
+        converter=attr.converters.optional(float), default=0
+    )
+    distance_limit: Optional[float] = field(
+        converter=attr.converters.optional(float), default=0
+    )
 
     def __attrs_post_init__(self):
         """Sets up the DBReader to hold all the stars that are currently in the
@@ -47,14 +50,9 @@ class DBReader(DataReaderInterface):
 
         with Session(self.engine) as session:
             for name in self._stars:
-                statement = (
-                    session.query(StarDB, StarDBTimeseries, StarDBLabel)  # type: ignore
-                    .join(StarDB.timeseries)
-                    .join(StarDB.label)
-                    .filter(
-                        StarDBLabel.dataset == self.dataset, StarDBLabel.name == name
-                    )
-                    .statement
+                statement = self._select_star()
+                statement = statement.filter(
+                    StarDBLabel.dataset == self.dataset, StarDBLabel.name == name
                 )
 
                 yield pd.read_sql(
@@ -90,29 +88,8 @@ class DBReader(DataReaderInterface):
                 )
                 .cte()
             )
-            statement = (
-                select(StarDB, StarDBTimeseries, StarDBLabel)
-                .join(StarDB.timeseries)
-                .join(StarDB.label)
-                .where(
-                    StarDBLabel.name != target_cte.c.name,
-                    StarDBLabel.dataset == self.dataset,
-                    (
-                        func.SQRT(
-                            (
-                                func.POW((StarDB.x - target_cte.c.x), 2)
-                                + func.POW((StarDB.y - target_cte.c.y), 2)
-                            )
-                        )
-                        <= self.distance_limit
-                    ),
-                    (
-                        func.ABS(
-                            StarDB.magnitude_median - target_cte.c.magnitude_median
-                        )
-                        <= self.mag_limit
-                    ),
-                )
+            statement = self._filter_on_constraints(
+                statement=self._select_star(), target=target_cte.c
             )
             return pd.read_sql(
                 sql=statement,
@@ -121,3 +98,39 @@ class DBReader(DataReaderInterface):
                 columns=["name", "time", "mag", "error"],
                 index_col=["name", "time"],
             )
+
+    def _select_star(self):
+        """Creates selection statement to find all data for a star in the reader's dataset"""
+        return (
+            select(StarDB, StarDBTimeseries, StarDBLabel)
+            .join(StarDB.timeseries)
+            .join(StarDB.label)
+            .where(StarDBLabel.dataset == self.dataset)
+        )
+
+    def _within_distance(self, target_x, target_y):
+        """Returns statement which finds if target is within distance limit, for use with filtering"""
+        return (
+            func.SQRT(
+                (
+                    func.POW((StarDB.x - target_x), 2)
+                    + func.POW((StarDB.y - target_y), 2)
+                )
+            )
+            <= self.distance_limit
+        )
+
+    def _within_mag(self, target_mag):
+        """Returns statement which finds if target is within magnitude limit, for use with filtering"""
+        return func.ABS(StarDB.magnitude_median - target_mag) <= self.mag_limit
+
+    def _filter_on_constraints(self, statement, target):
+        """Appends filters for target"""
+        statement = statement.where(StarDBLabel.name != target.name)
+        if self.mag_limit != 0:
+            statement = statement.where(self._within_mag(target.magnitude_median))
+        if self.distance_limit != 0:
+            statement = statement.where(
+                self._within_distance(target_x=target.x, target_y=target.y)
+            )
+        return statement
