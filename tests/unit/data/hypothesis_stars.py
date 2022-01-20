@@ -6,9 +6,9 @@ from shutterbug.data.star import Star, StarTimeseries
 
 
 @composite
-def stars(draw, name: str = None, dataset: str = "test", allow_nan=None) -> Star:
+def stars(draw, name: str = "", dataset: str = "test", allow_nan=None) -> Star:
 
-    if name is None:
+    if not name:
         allowed_names = string.printable
         name = draw(text(alphabet=allowed_names, min_size=1))
     mag = draw(lists(floats(allow_nan=allow_nan), min_size=1))
@@ -37,6 +37,6 @@ def stars(draw, name: str = None, dataset: str = "test", allow_nan=None) -> Star
         name=name,
         x=draw(integers(min_value=0, max_value=4096)),
         y=draw(integers(min_value=0, max_value=4096)),
+        data=timeseries,
     )
-    star.data = timeseries
     return star

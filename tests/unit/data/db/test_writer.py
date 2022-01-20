@@ -14,7 +14,6 @@ from tests.unit.data.hypothesis_stars import stars
 def reconstruct_star_from_db(
     star: StarDB, timeseries: List[StarDBTimeseries], label: StarDBLabel
 ) -> Star:
-    rec_star = Star(name=label.name, dataset=label.dataset, x=star.x, y=star.y)
     db_time = []
     db_mag = []
     db_error = []
@@ -23,7 +22,9 @@ def reconstruct_star_from_db(
         db_mag.append(row.mag)
         db_error.append(row.error)
     rec_timeseries = StarTimeseries(time=db_time, mag=db_mag, error=db_error)
-    rec_star.data = rec_timeseries
+    rec_star = Star(
+        name=label.name, dataset=label.dataset, x=star.x, y=star.y, data=rec_timeseries
+    )
     return rec_star
 
 
