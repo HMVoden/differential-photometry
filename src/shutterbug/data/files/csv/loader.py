@@ -7,9 +7,9 @@ from typing import Dict, Generator, List, Union
 import numpy as np
 from attr import define, field
 from more_itertools import bucket, consume, filter_except, ilen, map_reduce
-from shutterbug.data.core.interface.loader import FileLoaderInterface
-from shutterbug.data.core.star import Star, StarTimeseries
-from shutterbug.data.input.header import KNOWN_HEADERS, Header, KnownHeader
+from shutterbug.data.star import Star, StarTimeseries
+from shutterbug.data.files.header import KNOWN_HEADERS, Header, KnownHeader
+from shutterbug.data.interfaces.external import FileLoaderInterface
 
 
 @define

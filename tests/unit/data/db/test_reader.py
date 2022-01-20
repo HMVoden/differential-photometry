@@ -5,16 +5,16 @@ import pytest
 from hypothesis import given
 from hypothesis.strategies import lists
 from hypothesis.strategies._internal.numbers import integers
-from shutterbug.data.core.star import Star
-from shutterbug.data.storage.db.reader import DBReader
-from shutterbug.data.storage.db.writer import DBWriter
+from shutterbug.data.star import Star
+from shutterbug.data.db.reader import DBReader
+from shutterbug.data.db.writer import DBWriter
 from tests.unit.data.db.db_test_tools import sqlalchemy_db
 from tests.unit.data.hypothesis_stars import stars
 
 
 @given(
     lists(stars(dataset="test"), min_size=1, unique_by=(lambda x: x.name)),
-    lists(stars(dataset="other"), min_size=1, unique_by=(lambda x: x.name)),
+    lists(stars(dataset="other"), min_size=1, max_size=1, unique_by=(lambda x: x.name)),
 )
 def test_init(stars, other):
     engine = sqlalchemy_db(future=False)

@@ -1,7 +1,7 @@
 import pytest
 from hypothesis import assume, given
 from hypothesis.strategies import lists, text
-from shutterbug.data.input.header import Header
+from shutterbug.data.files.header import Header
 
 
 @given(lists(text(min_size=1)), lists(text(min_size=1)))

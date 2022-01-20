@@ -4,16 +4,15 @@ import attr
 import numpy as np
 import pandas as pd
 from attr import define, field
-from shutterbug.data.core.interface.writer import WriterInterface
-from shutterbug.data.core.star import Star
-from shutterbug.data.storage.db.model import (StarDB, StarDBLabel,
-                                              StarDBTimeseries)
+from shutterbug.data.interfaces.internal import DataWriterInterface
+from shutterbug.data.star import Star
+from shutterbug.data.db.model import StarDB, StarDBLabel, StarDBTimeseries
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 
 @define
-class DBWriter(WriterInterface):
+class DBWriter(DataWriterInterface):
     """Maintains a SQLAlchemy database engine to write star data into a database
     that's defined by the provided engine
 

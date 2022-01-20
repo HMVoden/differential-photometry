@@ -1,10 +1,8 @@
 import string
-from datetime import datetime, timezone
 
 from hypothesis.extra.dateutil import timezones
-from hypothesis.strategies import (composite, datetimes, floats, integers,
-                                   lists, text)
-from shutterbug.data.core.star import Star, StarTimeseries
+from hypothesis.strategies import composite, datetimes, floats, integers, lists, text
+from shutterbug.data.star import Star, StarTimeseries
 
 
 @composite

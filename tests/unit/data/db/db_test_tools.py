@@ -1,4 +1,4 @@
-from shutterbug.data.storage.db.model import Base
+from shutterbug.data.db.model import Base
 from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 

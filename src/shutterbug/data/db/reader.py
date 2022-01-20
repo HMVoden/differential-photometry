@@ -1,10 +1,10 @@
-from typing import Callable, Generator, List, Optional
+from typing import Generator, List, Optional
 
 import attr
 import pandas as pd
 from attr import define, field
 from shutterbug.data.interfaces.internal import DataReaderInterface
-from shutterbug.data.storage.db.model import StarDB, StarDBLabel, StarDBTimeseries
+from shutterbug.data.db.model import StarDB, StarDBLabel, StarDBTimeseries
 from sqlalchemy import func, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session

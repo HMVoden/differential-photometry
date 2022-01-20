@@ -3,9 +3,8 @@ from pathlib import Path
 from typing import Generator, List, Type, Union
 
 from attr import define, field
-from shutterbug.data.core.interface.input import InputInterface
-from shutterbug.data.core.interface.loader import FileLoaderInterface
-from shutterbug.data.input.csv.loader import CSVLoader
+from shutterbug.data.interfaces.external import InputInterface, FileLoaderInterface
+from shutterbug.data.files.csv.loader import CSVLoader
 
 _TYPES: List[Type[FileLoaderInterface]] = [CSVLoader]
 

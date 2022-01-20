@@ -2,7 +2,10 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Generator
 
-from shutterbug.data.core.star import Star
+from shutterbug.data.star import Star
+
+from abc import ABC, abstractmethod
+from typing import Generator
 
 
 class LoaderInterface(ABC):
@@ -23,4 +26,14 @@ class FileLoaderInterface(LoaderInterface):
     @classmethod
     @abstractmethod
     def is_readable(cls, input_file: Path) -> bool:
+        raise NotImplementedError
+
+
+class InputInterface(ABC):
+    @abstractmethod
+    def __len__(self) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
+    def __iter__(self) -> Generator[LoaderInterface, None, None]:
         raise NotImplementedError

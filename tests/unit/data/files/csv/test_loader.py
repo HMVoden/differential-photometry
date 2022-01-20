@@ -7,9 +7,16 @@ from typing import Dict, Iterable, List, Union
 
 import pytest
 from hypothesis import given
-from hypothesis.strategies import (DrawFn, composite, floats, integers, lists,
-                                   sampled_from, text)
-from shutterbug.data.input.csv.loader import CSVLoader
+from hypothesis.strategies import (
+    DrawFn,
+    composite,
+    floats,
+    integers,
+    lists,
+    sampled_from,
+    text,
+)
+from shutterbug.data.files.csv.loader import CSVLoader
 
 CSV_COLUMN_TYPES = [floats, integers, partial(text, alphabet=string.printable)]
 

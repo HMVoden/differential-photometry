@@ -3,10 +3,9 @@ from typing import Iterable, List
 import pytest
 from hypothesis import given
 from hypothesis.strategies import lists
-from shutterbug.data.core.star import Star, StarTimeseries
-from shutterbug.data.storage.db.model import (StarDB, StarDBLabel,
-                                              StarDBTimeseries)
-from shutterbug.data.storage.db.writer import DBWriter
+from shutterbug.data.star import Star, StarTimeseries
+from shutterbug.data.db.model import StarDB, StarDBLabel, StarDBTimeseries
+from shutterbug.data.db.writer import DBWriter
 from sqlalchemy.orm import Session
 from tests.unit.data.db.db_test_tools import sqlalchemy_db
 from tests.unit.data.hypothesis_stars import stars
