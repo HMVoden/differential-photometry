@@ -114,7 +114,6 @@ class DBReader(DataReaderInterface):
                     ),
                 )
             )
-            print(statement)
             return pd.read_sql(
                 sql=statement,
                 con=session.bind,

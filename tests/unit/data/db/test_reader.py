@@ -92,5 +92,4 @@ def test_similar_to(stars: List[Star], mag_limit, distance_limit):
     )
     similar_stars_frame = reader.similar_to(target.name)
     db_similar = np.unique(similar_stars_frame.index.levels[0])
-    print(similar_stars_frame)
     assert set(db_similar) == set(similar_stars)
