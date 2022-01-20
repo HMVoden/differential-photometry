@@ -16,10 +16,10 @@ class Header:
         header_set = set(self.headers)
         # self is only a subset if it contains
         # all of the other's items
-        return header_set.issubset(other_set)
+        return header_set.issubset(other_set) and other_set.issubset(header_set)
 
     @headers.validator
-    def _all_strings(self, attribute, value):
+    def _all_strings(self, _, value):
         if not (all(isinstance(item, str) for item in value)):
             raise ValueError("All headers must be strings")
 
