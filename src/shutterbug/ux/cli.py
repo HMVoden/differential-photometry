@@ -1,15 +1,6 @@
-import warnings
 from pathlib import Path
 
 import click
-import shutterbug.shutterbug as shutterbug
-from pandas.errors import DtypeWarning
-
-# Need this to prevent it from spamming
-warnings.filterwarnings("ignore", category=FutureWarning)
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", category=DtypeWarning)
-warnings.filterwarnings("ignore", category=UserWarning)
 
 
 @click.command()
@@ -79,20 +70,4 @@ warnings.filterwarnings("ignore", category=UserWarning)
               of any dataset when plotted. OVERRIDES UNIFORM""",
 )
 def cli(input_data, **cli_settings):
-    shutterbug.application(input_data, **cli_settings)
-
-
-# @bars.progress(
-#     name="Dataset",
-#     desc="Processing dataset",
-#     unit="dataset",
-#     leave=True,
-#     status_str="Processing data",
-#     countable_var="files",
-# )
-# def run(files: List[Path]):
-#     for data_file in files:
-#         logging.info("Processing file %s", data_file.stem)
-#         bug.process(data_file)
-#         bug.teardown()
-#         logging.info("Program finished, exiting.")
+    pass

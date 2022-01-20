@@ -3,9 +3,7 @@ from typing import List, Tuple
 
 import numpy as np
 import numpy.typing as npt
-import xarray as xr
 from numba import float32, float64, guvectorize
-from xarray.core.groupby import DatasetGroupBy
 
 
 # def sigma_clip_data(data: List[float], stat_func, error: List[float] = None) -> float:
@@ -109,57 +107,3 @@ def average_error(errors: List[float], out: float):
     for error in errors:
         out = out + (error ** 2)
     out = sqrt(out) / N
-
-
-def dataset(groups: DatasetGroupBy) -> xr.Dataset:
-    if len(groups) == 1:
-        # non-varying only
-        non_varying = groups[False]
-        dm, _ = magnitude(non_varying["mag"].values)
-        de, _ = error(non_varying["error"].values)
-        non_varying = non_varying.assign(
-            {
-                "average_diff_mags": (
-                    ["time", "star"],
-                    dm,
-                ),
-                "average_uncertainties": (
-                    ["time", "star"],
-                    de,
-                ),
-            }
-        )
-        return non_varying
-    else:
-        non_varying = groups[False]
-
-        varying = groups[True]
-
-        dm, vdm = magnitude(non_varying["mag"].values, varying["mag"].values)
-        de, vde = error(non_varying["error"].values, varying["error"].values)
-        non_varying = non_varying.assign(
-            {
-                "average_diff_mags": (
-                    ["time", "star"],
-                    dm,
-                ),
-                "average_uncertainties": (
-                    ["time", "star"],
-                    de,
-                ),
-            }
-        )
-        varying = varying.assign(
-            {
-                "average_diff_mags": (
-                    ["time", "star"],
-                    vdm,
-                ),
-                "average_uncertainties": (
-                    ["time", "star"],
-                    vde,
-                ),
-            }
-        )
-
-    return xr.concat([non_varying, varying], dim="star", join="outer")
