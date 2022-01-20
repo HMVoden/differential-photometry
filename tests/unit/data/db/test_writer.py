@@ -1,14 +1,14 @@
 from typing import List
+import string
 
 import pytest
 from hypothesis import given
-from hypothesis.strategies import lists
 from shutterbug.data.star import Star, StarTimeseries
 from shutterbug.data.db.model import StarDB, StarDBLabel, StarDBTimeseries
 from shutterbug.data.db.writer import DBWriter
 from sqlalchemy.orm import Session
 from tests.unit.data.db.db_test_tools import sqlalchemy_db
-from tests.unit.data.hypothesis_stars import stars
+from tests.unit.data.hypothesis_stars import star, stars
 
 
 def reconstruct_star_from_db(
@@ -28,7 +28,7 @@ def reconstruct_star_from_db(
     return rec_star
 
 
-@given(stars())
+@given(star())
 def test_convert(star: Star):
     star_db = DBWriter._convert_to_model(star)
     reconstructed_star = reconstruct_star_from_db(
@@ -37,7 +37,7 @@ def test_convert(star: Star):
     assert star == reconstructed_star
 
 
-@given(lists(stars(), unique_by=(lambda x: x.name), min_size=1))
+@given(stars(alphabet=string.printable, dataset="test", min_size=1))
 def test_write(stars: List[Star]):
     engine = sqlalchemy_db()
     writer = DBWriter(engine)

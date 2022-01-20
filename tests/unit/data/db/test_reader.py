@@ -9,12 +9,13 @@ from shutterbug.data.star import Star
 from shutterbug.data.db.reader import DBReader
 from shutterbug.data.db.writer import DBWriter
 from tests.unit.data.db.db_test_tools import sqlalchemy_db, sqlite_memory
-from tests.unit.data.hypothesis_stars import stars
+from tests.unit.data.hypothesis_stars import star, stars
+import string
 
 
 @given(
-    lists(stars(dataset="test"), min_size=1, unique_by=(lambda x: x.name)),
-    lists(stars(dataset="other"), min_size=1, max_size=1, unique_by=(lambda x: x.name)),
+    stars(alphabet=string.printable, dataset="test", min_size=1),
+    stars(alphabet=string.printable, dataset="other", min_size=1, max_size=1),
 )
 def test_init(stars, other):
     with sqlite_memory() as engine:
@@ -32,8 +33,8 @@ def test_init(stars, other):
 
 
 @given(
-    lists(stars(dataset="test"), min_size=1, unique_by=(lambda x: x.name)),
-    lists(stars(dataset="other"), min_size=1, max_size=1, unique_by=(lambda x: x.name)),
+    stars(alphabet=string.printable, dataset="test", min_size=1),
+    stars(alphabet=string.printable, dataset="other", min_size=1, max_size=1),
 )
 def test_reads_all(stars: List[Star], other: List[Star]):
     with sqlite_memory(future=False) as engine:
@@ -62,9 +63,7 @@ def test_reads_all(stars: List[Star], other: List[Star]):
 
 
 @given(
-    lists(
-        stars(dataset="test", allow_nan=False), min_size=2, unique_by=(lambda x: x.name)
-    ),
+    stars(alphabet=string.printable, min_size=2, dataset="test"),
     integers(min_value=0, max_value=5),
     integers(min_value=0, max_value=400),
 )

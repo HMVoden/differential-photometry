@@ -21,7 +21,7 @@ def asdatetime(value):
         return pd.to_datetime(value, errors="coerce", utc=True).round("1s")
 
 
-@define(slots=True, frozen=True)
+@define(slots=True)
 class StarTimeseries:
     """Timeseries information for a star"""
 
@@ -57,7 +57,7 @@ class StarTimeseries:
         return all([time, mag, error])
 
 
-@define(slots=True, frozen=True)
+@define(slots=True)
 class Star:
     """Dataclass describing a star's information from an image or series of image"""
 

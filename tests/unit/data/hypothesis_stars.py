@@ -1,12 +1,14 @@
 import string
+from typing import Sequence, Union
 
 from hypothesis.extra.dateutil import timezones
 from hypothesis.strategies import composite, datetimes, floats, integers, lists, text
+from hypothesis.strategies._internal.strategies import SearchStrategy
 from shutterbug.data.star import Star, StarTimeseries
 
 
 @composite
-def stars(draw, name: str = "", dataset: str = "test", allow_nan=None) -> Star:
+def star(draw, name: str = "", dataset: str = "test", allow_nan=None) -> Star:
 
     if not name:
         allowed_names = string.printable
@@ -40,3 +42,26 @@ def stars(draw, name: str = "", dataset: str = "test", allow_nan=None) -> Star:
         data=timeseries,
     )
     return star
+
+
+@composite
+def stars(
+    draw,
+    alphabet: Union[Sequence[str], SearchStrategy[str]],
+    min_size=0,
+    max_size=None,
+    dataset: str = "test",
+    allow_nan=None,
+):
+    names = draw(
+        lists(
+            text(alphabet=alphabet, min_size=min_size, max_size=max_size),
+            unique=True,
+            min_size=min_size,
+            max_size=max_size,
+        )
+    )
+    stars = []
+    for name in names:
+        stars.append(draw(star(name=name, dataset=dataset, allow_nan=allow_nan)))
+    return stars

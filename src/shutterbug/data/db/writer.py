@@ -45,6 +45,16 @@ class DBWriter(DataWriterInterface):
             session.commit()
 
     def _write_star(self, session: Session, star: Star):
+        """Writes star with given session
+
+        Parameters
+        ----------
+        session : Session
+            Open database session
+        star : Star
+            Star to write
+
+        """
 
         logging.debug(f"Writing star {star.name} into database")
         model_star = self._convert_to_model(star)
