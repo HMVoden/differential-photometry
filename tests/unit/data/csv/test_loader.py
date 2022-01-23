@@ -16,7 +16,7 @@ from hypothesis.strategies import (
     sampled_from,
     text,
 )
-from shutterbug.data.files.csv.loader import CSVLoader
+from shutterbug.data.csv.loader import CSVLoader
 
 CSV_COLUMN_TYPES = [floats, integers, partial(text, alphabet=string.printable)]
 

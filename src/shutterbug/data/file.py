@@ -4,7 +4,7 @@ from typing import Generator, List, Type, Union
 
 from attr import define, field
 from shutterbug.data.interfaces.external import InputInterface, FileLoaderInterface
-from shutterbug.data.files.csv.loader import CSVLoader
+from shutterbug.data.csv.loader import CSVLoader
 
 _TYPES: List[Type[FileLoaderInterface]] = [CSVLoader]
 

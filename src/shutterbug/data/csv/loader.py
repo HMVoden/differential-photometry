@@ -8,7 +8,7 @@ import numpy as np
 from attr import define, field
 from more_itertools import bucket, consume, filter_except, ilen, map_reduce
 from shutterbug.data.star import Star, StarTimeseries
-from shutterbug.data.files.header import KNOWN_HEADERS, Header, KnownHeader
+from shutterbug.data.header import KNOWN_HEADERS, Header, KnownHeader
 from shutterbug.data.interfaces.external import FileLoaderInterface
 
 
