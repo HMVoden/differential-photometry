@@ -23,8 +23,8 @@ class LoaderInterface(ABC):
 class FileLoaderInterface(LoaderInterface):
     """Interface for a loader that loads external star data from a file source into memory"""
 
-    @classmethod
     @abstractmethod
+    @classmethod
     def is_readable(cls, input_file: Path) -> bool:
         raise NotImplementedError
 

@@ -32,7 +32,7 @@ class CSVLoader(FileLoaderInterface):
 
     def _count_stars(self) -> Dict[str, int]:
         """Iterates through entire CSV files and finds each star and every index that star's name corresponds to, for faster iterating"""
-        name_index = self.headers.get_name_index()
+        name_index = self.headers.name_index
         rows = self._file_rows()
         # Take enumerated iterable, return header name
         keyfunc = lambda x: x[1][name_index]
@@ -67,7 +67,7 @@ class CSVLoader(FileLoaderInterface):
 
     def _split_on_name(self):
         "Splits the file into a number of iterables based on header name"
-        name_key = self.headers.get_name_index()
+        name_key = self.headers.name_index
         rows = self._file_rows()
         splits = bucket(rows, key=lambda x: x[name_key])
         return splits
@@ -75,10 +75,8 @@ class CSVLoader(FileLoaderInterface):
     def __iter__(self) -> Generator[Star, None, None]:
 
         stars = self.stars.items()
-        timeseries_indices = self.headers.get_timeseries_indices()
-        timeseries_getter = itemgetter(*timeseries_indices)
-        data_indices = self.headers.get_star_indices()
-        data_getter = itemgetter(*data_indices)
+        timeseries_getter = self.headers.timeseries_getters
+        data_getter = self.headers.star_getters
         star_iterators = self._split_on_name()
 
         for star, _ in stars:
@@ -94,6 +92,7 @@ class CSVLoader(FileLoaderInterface):
             star_type.data = star_data
             yield star_type
 
+    # everything here and below should be moved out into another function/class
     def _check_headers(self) -> KnownHeader:
         """Verifies loaded file header against known headers and returns known header"""
         raw_headers = self._read_file_header()

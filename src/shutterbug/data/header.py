@@ -1,11 +1,13 @@
 from typing import List
-
+from operator import itemgetter
 from attr import define, field
 from attr.validators import instance_of
 
 
-@define
+@define(slots=True, frozen=True)
 class Header:
+    """Headers of a given file, such as a csv or excel file"""
+
     headers: List[str] = field()
 
     def __eq__(self, other) -> bool:
@@ -20,31 +22,62 @@ class Header:
 
     @headers.validator
     def _all_strings(self, _, value):
+        """Ensures all headers are strings"""
+
         if not (all(isinstance(item, str) for item in value)):
             raise ValueError("All headers must be strings")
 
 
-@define
+@define(slots=True, frozen=True)
 class KnownHeader(Header):
+    """Manual definition of a known header, to be used for comparison and for
+    convenience functions to get necessary indices"""
+
     name: str = field(validator=instance_of(str))
     timeseries_names: List[str] = field()
     star_names: List[str] = field()
     star_name: str = field(validator=instance_of(str))
 
     def _get_used_indices(self, names: List[str]) -> List[int]:
+        """Given a list of names returns all the header indices that match the names
+
+        Parameters
+        ----------
+        names : List[str]
+            List of names, from a header list
+
+        Returns
+        -------
+        List[int]
+            Indices of the names provided
+
+        """
+
         used_indices = []
         for header in names:
             header_idx = self.headers.index(header)
             used_indices.append(header_idx)
         return used_indices
 
-    def get_timeseries_indices(self):
-        return self._get_used_indices(self.timeseries_names)
+    def _indices_getters(self, names: List[str]) -> itemgetter[str]:
+        indices = self._get_used_indices(names)
+        return itemgetter(*indices)
 
-    def get_star_indices(self):
-        return self._get_used_indices(self.star_names)
+    @property
+    def timeseries_getters(self) -> itemgetter[str]:
+        """Itemgetter for all timeseries information columns in the header"""
 
-    def get_name_index(self):
+        return self._indices_getters(self.timeseries_names)
+
+    @property
+    def star_getters(self) -> itemgetter[str]:
+        """Itemgetter for all star data information columns in the header"""
+
+        return self._indices_getters(self.star_names)
+
+    @property
+    def name_index(self) -> int:
+        """Index of the star names column"""
         return self.headers.index(self.star_name)
 
     @timeseries_names.validator
