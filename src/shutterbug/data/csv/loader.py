@@ -1,8 +1,7 @@
 import csv
 import logging
-from operator import itemgetter
 from pathlib import Path
-from typing import Dict, Generator, List, Union
+from typing import Dict, Generator, List
 
 import numpy as np
 from attr import define, field
@@ -73,23 +72,22 @@ class CSVLoader(FileLoaderInterface):
 
     def __iter__(self) -> Generator[Star, None, None]:
 
-        stars = self.stars.items()
+        stars = self.stars.keys()
         timeseries_getter = self.headers.timeseries_getters
         data_getter = self.headers.star_getters
         star_iterators = self._split_on_name()
 
-        for star, _ in stars:
+        for star in stars:
             iterable = star_iterators[star]
             first_entry = next(iterable)  # get very first entry
             # Only need first entry to create Star type.
-            star_type = Star(self.input_file.stem, *data_getter(first_entry))
             data = [timeseries_getter(first_entry)]
             for entry in iterable:
                 data.append(timeseries_getter(entry))
             np_data = np.asarray(data)
             star_data = StarTimeseries(np_data[:, 0], np_data[:, 1], np_data[:, 2])
-            star_type.data = star_data
-            yield star_type
+            star = Star(self.input_file.stem, *data_getter(first_entry), data=star_data)
+            yield star
 
     # everything here and below should be moved out into another function/class
     def _check_headers(self) -> KnownHeader:
@@ -99,7 +97,8 @@ class CSVLoader(FileLoaderInterface):
 
         for known in KNOWN_HEADERS:
             if headers == known:
-                logging.debug(f"Input file matches header type {known.name}")
+                known.headers = headers.headers
+                logging.debug(f"Input file matches header type {known.header_origin}")
                 return known
         raise ValueError("Cannot load file, unknown headers")
 

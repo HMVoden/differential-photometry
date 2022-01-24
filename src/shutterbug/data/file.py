@@ -61,8 +61,9 @@ class FileInput(InputInterface):
                     return loader_type(input_file=path)  # type: ignore
                 except ValueError as e:
                     logging.debug(
-                        f"Loader type {type(loader_type)} unable to load file {path.name} due to error {e}"
+                        f"Loader unable to load file {path.name}, received error:"
                     )
+                    logging.exception(e)
         return None
 
     def __len__(self) -> int:

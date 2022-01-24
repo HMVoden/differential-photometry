@@ -20,11 +20,11 @@ class LoaderInterface(ABC):
         raise NotImplementedError
 
 
-class FileLoaderInterface(LoaderInterface):
+class FileLoaderInterface(LoaderInterface, ABC):
     """Interface for a loader that loads external star data from a file source into memory"""
 
-    @abstractmethod
     @classmethod
+    @abstractmethod
     def is_readable(cls, input_file: Path) -> bool:
         raise NotImplementedError
 

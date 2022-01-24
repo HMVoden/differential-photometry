@@ -6,19 +6,20 @@ import pandas as pd
 from attr import define, field
 
 
-def asfloat(value):
-    return pd.to_numeric(value, errors="coerce")
+def asfloat(value) -> npt.NDArray[np.float64]:
+    return pd.to_numeric(value, errors="coerce")  # type: ignore
 
 
 def asdatetime(value):
     try:
         # try julian date first
+        floats = asfloat(value)
         return pd.to_datetime(
-            value, errors="coerce", origin="julian", unit="D", utc=True
+            floats, errors="coerce", origin="julian", unit="D", utc=True
         ).round("1s")
     except ValueError:
         # let pandas guess
-        return pd.to_datetime(value, errors="coerce", utc=True).round("1s")
+        return pd.to_datetime(floats, errors="coerce", utc=True).round("1s")
 
 
 @define(slots=True)
@@ -63,8 +64,8 @@ class Star:
 
     dataset: str = field()
     name: str = field()
-    x: int = field(converter=int)
-    y: int = field(converter=int)
+    x = field(converter=[float, int])
+    y = field(converter=[float, int])
     data: StarTimeseries = field()
 
     # @error.validator
