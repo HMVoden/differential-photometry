@@ -6,26 +6,26 @@ from shutterbug.data.interfaces.internal import DataReaderInterface
 import pandas as pd
 
 
-@click.group(chain=True, invoke_without_commands=True)
+@click.group(chain=True, invoke_without_command=True)
 @click.option("-d", "--debug", is_flag=True, default=False, type=click.BOOL)
 def cli(debug):
     pass
 
 
-@click.command("load")
+@cli.command("load")
+@click.option("-f", "--file", multiple=True, type=click.Path(), help="Dataset to open")
 def cli_load(datasets: List[Path]):
     pass
 
 
-@click.command("process")
+@cli.command("process")
 def cli_process(reader: DataReaderInterface):
     pass
 
 
-# Make into a chain as well?
 @click.command("save")
-@click.option("-o", "--out-folder", type=click.Path)
+@click.option("-o", "--out-folder", type=click.Path())
 @click.option("-g" "--graph", type=click.BOOL, is_flag=True, default=True)
-@click.option("-c" "--csv", type=click.BOOL, is_flat=True, default=True)
+@click.option("-c" "--csv", type=click.BOOL, is_flag=True, default=True)
 def cli_save(frame: pd.DataFrame, out_folder: Path, graph: bool, csv: bool):
     pass
