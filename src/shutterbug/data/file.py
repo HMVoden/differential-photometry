@@ -11,25 +11,12 @@ _TYPES: List[Type[FileLoaderInterface]] = [CSVLoader]
 
 @define
 class FileInput(InputInterface):
+    path: Path = field()
     _input_files: List[Path] = field(init=False)
 
-    @classmethod
-    def from_path(cls, path: Path):
-        """Creates a FileInput object from a singular path instead of a list of paths
-
-        Parameters
-        ----------
-        cls : FileInput
-            FileInput type
-        path : Path
-            Singular file or directory to find files from and attempt to load
-
-        """
-
-        return cls([path])
-
-    def __init__(self, paths: List[Path]):
-        self._input_files = self._get_files_from_paths(paths)
+    def __attrs_post_init__(self):
+        all_files = self._get_files_from_path(self.path)
+        self._input_files = all_files
 
     def _get_files_from_path(self, path: Path) -> List[Path]:
         """Retreives all files from a given path, including from subdirectories
@@ -51,26 +38,6 @@ class FileInput(InputInterface):
             result.extend(files)
         elif path.is_file():
             result.append(path)
-        return result
-
-    def _get_files_from_paths(self, paths: List[Path]) -> List[Path]:
-        """Iterates over all given paths and returns all files within those paths
-
-        Parameters
-        ----------
-        paths : List[Path]
-            Input paths, possibly directories
-
-        Returns
-        -------
-        List[Path]
-            All files in input paths
-
-        """
-
-        result = []
-        for path in paths:
-            result.extend(self._get_files_from_path(path))
         return result
 
     def _file_to_loader(self, path: Path) -> Union[None, FileLoaderInterface]:

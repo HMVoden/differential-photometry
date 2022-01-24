@@ -16,10 +16,9 @@ from shutterbug.data.interfaces.external import FileLoaderInterface
 class CSVLoader(FileLoaderInterface):
     READABLE_TYPES = {".xlsx", ".xls", ".xlsm", ".odf", ".ods", ".csv"}
 
-    input_file: Path
+    input_file: Path = field()
     headers: KnownHeader = field(init=False)
     stars: Dict[str, List[int]] = field(init=False)
-    star_mode: int = field(init=False)
     count: int = field(init=False)
 
     @classmethod

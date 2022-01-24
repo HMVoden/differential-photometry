@@ -1,5 +1,5 @@
 from typing import Any
-
+from attr import define, field
 import enlighten
 
 # Best candidate to make into a class.
