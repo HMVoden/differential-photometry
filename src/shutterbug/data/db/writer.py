@@ -55,10 +55,14 @@ class DBWriter(DataWriterInterface):
             Star to write
 
         """
-
         logging.debug(f"Writing star {star.name} into database")
         model_star = self._convert_to_model(star)
-        session.add(model_star)
+        if not session.query(model_star).exists():
+            session.add(model_star)
+        else:
+            logging.debug(
+                f"tried to write star {star.name}, already present in database"
+            )
 
     @staticmethod
     def _convert_to_model(

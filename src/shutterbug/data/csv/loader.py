@@ -60,8 +60,7 @@ class CSVLoader(FileLoaderInterface):
         with open(filepath, newline="", errors="replace", mode="r") as csv_file:
             reader = csv.reader(csv_file)
             next(reader)  # skip header
-            for row in reader:
-                yield row
+            yield from reader
 
     def _split_on_name(self):
         "Splits the file into a number of iterables based on header name"

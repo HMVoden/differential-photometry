@@ -3,16 +3,22 @@ from functools import wraps
 import click
 import logging
 from typing import List
+
+from click.core import Context
 from shutterbug.data.interfaces.internal import DataReaderInterface
 from shutterbug.data.file import FileInput
 from shutterbug.data.db.writer import DBWriter
 from shutterbug.data.db.reader import DBReader
 import pandas as pd
+from shutterbug.ux.progress_bars import ProgressBarManager
 
 
 @click.group(chain=True, invoke_without_command=True)
 @click.option("-d", "--debug", is_flag=True, default=False, type=click.BOOL)
-def cli(debug):
+@click.pass_context
+def cli(context: Context, debug: bool):
+    context.obj = {}
+    context.obj["pbar_manager"] = ProgressBarManager()
     if debug:
         logging.basicConfig(level=logging.DEBUG)
 
@@ -28,12 +34,25 @@ def cli(debug):
     ),
     help="Dataset to open",
 )
-def cli_load(files: List[Path]):
+@click.pass_context
+def cli_load(context: Context, files: List[Path]):
+    pbar_manager = context.obj["pbar_manager"]
     for file_path in files:
         dataset = FileInput(file_path)
-        for loader in dataset:
-            for star in loader:
-                pass
+        with pbar_manager.new(
+            desc="Iterating Datasets", unit="dataset", total=len(dataset)
+        ) as pbar1:
+            for loader in dataset:
+                with pbar_manager.new(
+                    desc="Loading stars",
+                    unit="star",
+                    total=len(loader),
+                    stage="Processing",
+                ) as pbar2:
+                    for star in loader:
+                        pbar2.update(force=True)
+
+                pbar1.update(force=True)
 
 
 @cli.command("process")

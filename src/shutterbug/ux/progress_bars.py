@@ -1,87 +1,90 @@
-from typing import Any
+from typing import Generator, Optional
 from attr import define, field
 import enlighten
-
-# Best candidate to make into a class.
-manager = None
-status = None
-
-progress_bars = {}
-
-_indentation_to_colour = {0: "white", 1: "blue", 2: "purple"}
+from contextlib import contextmanager
 
 
-def init():
-    global manager
-    global status
-    manager = enlighten.get_manager()  # set up universal progress bar manager
+@define
+class ProgressBarManager:
+    _manager: enlighten.Manager = field(init=False)
+    _status: enlighten.StatusBar = field(init=False)
+    _indentation: int = field(init=False, default=0)
+    # constants
+    _STATUS_FORMAT = "{fill}Stage: {stage}{fill}{elapsed}"
+    _COLOR = "bold_underline_bright_white_on_lightslategray"
+    _INDENTATION_TO_COLOR = {0: "white", 1: "blue", 2: "purple"}
 
-    status = manager.status_bar(
-        status_format="{fill}Stage: {stage}{fill}{elapsed}",
-        color="bold_underline_bright_white_on_lightslategray",
-        justify=enlighten.Justify.CENTER,
-        stage="Processing data",
-        autorefresh=True,
-        min_delta=0.1,
-    )
+    def __attrs_post_init__(self):
+        self._manager = enlighten.get_manager()  # type: ignore
+        self._status = self._manager.status_bar(
+            status_format=self._STATUS_FORMAT,
+            color=self._COLOR,
+            justify=enlighten.Justify.CENTER,
+            stage="Initializing",
+            autorefresh=True,
+            min_delta=0.1,
+        )
 
+    @contextmanager
+    def new(
+        self, desc: str, unit: str, total: int, stage: Optional[str] = None
+    ) -> Generator[enlighten.Counter, None, None]:
+        """Creates a context manager to handle a new progress bar
 
-def start(
-    name: str,
-    total: int,
-    desc: str,
-    unit: str,
-    leave: bool = True,
-    color: str = "white",
-):
-    global progress_bars
-    pbar = get(name)
-    if pbar is not None:
-        close(name)
+        Parameters
+        ----------
+        desc : str
+            Description of progress bar, appears on the lefthand side of the
+            bar
+        unit : str
+            Units the progress bar is in, appears on the righthand side of the
+            bar
+        total : int
+            Total number of objects that are being iterated over
+        stage : Optional[str]
+            What stage the program is in. If not specified, stage does not
+            update
 
-    pbar = manager.counter(total=total, desc=desc, unit=unit, leave=leave, color=color)
-    progress_bars[name] = pbar
-    return pbar
+        Returns
+        -------
+        Generator[enlighten.Counter, None, None]
+            Progress bar ready to be used with a 'with' statement
 
+        """
 
-def build(
-    name: str, desc: str, unit: str, total: int, leave: bool, indentation: int = 0
-):
-    desc = "  " * indentation + desc
-    color = _indentation_to_colour[indentation]
-    pbar = start(name=name, total=total, desc=desc, leave=leave, unit=unit, color=color)
-    pbar.refresh()
-    return pbar
-
-
-def get(name: str):
-    global progress_bars
-    if name in progress_bars.keys():
-        return progress_bars[name]
-    else:
-        return None
-
-
-def close_all():
-    global progress_bars
-    for pbar in progress_bars.values():
-        pbar.close()
-    progress_bars.clear()
-    return True
-
-
-def close(name: str):
-    global progress_bars
-    if name in progress_bars.keys():
+        bar = self._make_counter(desc=desc, unit=unit, total=total)
+        self._indentation += 1
+        if stage is not None:
+            self._status.update(stage=stage)
         try:
-            progress_bars[name].close()
-        except KeyError:  # already closed
-            progress_bars.pop(name, None)
-        progress_bars.pop(name, None)
-    return True
+            yield bar
+        finally:
+            bar.close()
 
+    def _make_counter(self, desc: str, unit: str, total: int) -> enlighten.Counter:
+        """Makes a progress bar at a specific indentation and colour
 
-def update(pbar: enlighten.Counter, attr: str, update_to: Any):
-    setattr(pbar, attr, update_to)
-    pbar.refresh()
-    return True
+        Parameters
+        ----------
+        desc : str
+            Description of progress bar
+        unit : str
+            Unit the progress bar is in
+        total : int
+            Total number of objects being iterated over
+
+        Returns
+        -------
+        enlighten.Counter
+            Progress bar ready for use
+
+        """
+
+        indentation = self._indentation
+        color = self._INDENTATION_TO_COLOR[indentation]
+        indented_desc = f"{' '*indentation}{desc}"
+        bar = self._manager.counter(
+            total=total, desc=indented_desc, unit=unit, color=color
+        )
+        bar.refresh()
+        return bar  # type: ignore
