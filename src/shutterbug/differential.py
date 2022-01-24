@@ -3,10 +3,8 @@ from typing import Literal, Optional, Sequence
 import numpy as np
 import numpy.typing as npt
 
-from shutterbug.interface.differential import DifferentialCalculatorInterface
 
-
-class DifferentialPhotometryCalculator(DifferentialCalculatorInterface):
+class DifferentialPhotometryCalculator:
     def calculate(
         self,
         method: Literal["difference", "error"],
