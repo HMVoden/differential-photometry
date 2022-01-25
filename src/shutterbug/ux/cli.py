@@ -11,16 +11,17 @@ from shutterbug.data.db.writer import DBWriter
 from shutterbug.data.db.reader import DBReader
 import pandas as pd
 from shutterbug.ux.progress_bars import ProgressBarManager
+from shutterbug.config import initialize_logging
 
 
 @click.group(chain=True, invoke_without_command=True)
 @click.option("-d", "--debug", is_flag=True, default=False, type=click.BOOL)
 @click.pass_context
 def cli(context: Context, debug: bool):
+    initialize_logging(debug=debug)
+    logging.info("Initializing application")
     context.obj = {}
     context.obj["pbar_manager"] = ProgressBarManager()
-    if debug:
-        logging.basicConfig(level=logging.DEBUG)
 
 
 @cli.command("load")
@@ -50,9 +51,9 @@ def cli_load(context: Context, files: List[Path]):
                     stage="Processing",
                 ) as pbar2:
                     for star in loader:
-                        pbar2.update(force=True)
+                        pbar2.update()
 
-                pbar1.update(force=True)
+                pbar1.update()
 
 
 @cli.command("process")
