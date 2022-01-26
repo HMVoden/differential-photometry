@@ -1,5 +1,4 @@
 from shutterbug.config.interfaces.internal import (
-    AppConfigInterface,
     PackageConfigInterface,
 )
 from attr import field, define
@@ -8,7 +7,7 @@ from typing import Dict, Any
 
 
 @define
-class ApplicationConfig(AppConfigInterface):
+class ApplicationConfig:
     _main: PackageConfigInterface = field()
     _photometry: PackageConfigInterface = field()
     _variability: PackageConfigInterface = field()

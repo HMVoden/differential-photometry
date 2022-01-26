@@ -32,7 +32,7 @@ class DataConfig(PackageConfigInterface):
         return cls(database=database, output_folder=output_folder)  # type: ignore
 
     @property
-    def dict(self) -> Dict:
+    def asdict(self) -> Dict:
         return asdict(self)
 
 
@@ -52,7 +52,7 @@ class PhotometryConfig(PackageConfigInterface):
         return cls(magnitude_limit=mag_lim, distance_limit=dis_lim)  # type: ignore
 
     @property
-    def dict(self) -> Dict:
+    def asdict(self) -> Dict:
         return asdict(self)
 
 
