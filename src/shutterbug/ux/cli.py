@@ -11,7 +11,7 @@ from shutterbug.data.db.writer import DBWriter
 from shutterbug.data.db.reader import DBReader
 import pandas as pd
 from shutterbug.ux.progress_bars import ProgressBarManager
-from shutterbug.config import initialize_logging
+from shutterbug.logging import initialize_logging
 
 
 @click.group(chain=True, invoke_without_command=True)

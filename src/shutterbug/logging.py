@@ -1,10 +1,6 @@
-import configparser
 from pathlib import Path
-from attr import define, field
 import logging.config as lc
 import logging
-
-from shutterbug.interfaces.internal import ConfigurationInterface
 
 
 def initialize_logging(
@@ -17,8 +13,3 @@ def initialize_logging(
     if debug:
         logger.setLevel(logging.DEBUG)
         logging.debug("Overriding logging level to debug")
-
-
-@define
-class ApplicationConfig(ConfigurationInterface):
-    ...
