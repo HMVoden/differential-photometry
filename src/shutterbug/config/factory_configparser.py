@@ -3,8 +3,12 @@ returns the application data folder via the ConfigParser library"""
 
 import configparser
 from pathlib import Path
-from shutterbug.config.application import ApplicationConfig, default_config, data_folder
-from shutterbug.config.packages import DataConfig, PhotometryConfig, VariabilityConfig
+from shutterbug.config.application import (
+    ApplicationConfig,
+    default_config,
+    make_data_folder,
+)
+from shutterbug.config.packages import DataConfig, PhotometryConfig
 import logging
 
 
@@ -23,14 +27,16 @@ def from_file(file: Path) -> ApplicationConfig:
     try:
         parser.read_file(str(file))
         return ApplicationConfig(
-            _photometry=PhotometryConfig.fromconfigparser(parser),
-            _variability=VariabilityConfig.fromconfigparser(parser),
-            _data=DataConfig.fromconfigparser(parser),
+            photometry=PhotometryConfig.fromconfigparser(parser),
+            variability=TestConfig.fromconfigparser(parser),
+            data=DataConfig.fromconfigparser(parser),
         )
     except ValueError as e:
         logging.error(f"Failed to create application config with error {e}")
     except IOError as e:
-        logging.error(f"Unable to open file for reading, received error {e}")
+        logging.error(
+            f"Unable to open file {file.name} for reading, received error {e}"
+        )
     finally:
         return default_config
 
@@ -46,8 +52,8 @@ def to_file(file: Path, config: ApplicationConfig) -> bool:
 
     """
     try:
-        if file.suffix != "ini":
-            file.suffix = "ini"
+        if file.suffix != ".ini":
+            file.suffix = ".ini"
         with open(file, "w") as f:
             parser = configparser.ConfigParser()
             parser.read_dict(config.all)
@@ -59,4 +65,4 @@ def to_file(file: Path, config: ApplicationConfig) -> bool:
 
 
 def data_folder() -> Path:
-    return data_folder()
+    return make_data_folder()

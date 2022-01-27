@@ -5,18 +5,13 @@ from attr import field, define
 from pathlib import Path
 from typing import Dict, Any
 import logging
-from shutterbug.config.packages import DataConfig, PhotometryConfig, VariabilityConfig
+from shutterbug.config.packages import DataConfig, PhotometryConfig
 
 
 @define
 class ApplicationConfig:
     _photometry: PackageConfigInterface = field()
-    _variability: PackageConfigInterface = field()
     _data: PackageConfigInterface = field()
-
-    @property
-    def variability(self) -> Dict[str, Any]:
-        return self._variability.asdict
 
     @property
     def data(self) -> Dict[str, Any]:
@@ -31,11 +26,10 @@ class ApplicationConfig:
         return {
             "photometry": self.photometry,
             "data": self.data,
-            "variability": self.variability,
         }
 
 
-def data_folder(folder: Path = Path.home() / ".shutterbug") -> Path:
+def make_data_folder(folder: Path = Path.home() / ".shutterbug") -> Path:
 
     """Creates and returns the data folder that the database and configuration
     resides in
@@ -46,13 +40,14 @@ def data_folder(folder: Path = Path.home() / ".shutterbug") -> Path:
     """
     if not folder.exists():
         try:
-            logging.debug(f"Folder {data_folder} does not exist, creating")
-            data_folder.mkdir(parents=True)
+            logging.debug(f"Folder {make_data_folder} does not exist, creating")
+            folder.mkdir(parents=True)
         except IOError as e:
             logging.error(f"Unable to create data folder, received error {e}")
     return folder
 
 
 default_config = ApplicationConfig(
-    _photometry=PhotometryConfig(), _variability=VariabilityConfig(), _data=DataConfig()
+    photometry=PhotometryConfig(),
+    data=DataConfig(),  # type:ignore
 )
