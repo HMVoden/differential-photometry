@@ -56,8 +56,9 @@ class DBWriter(DataWriterInterface):
 
         """
         logging.debug(f"Writing star {star.name} into database")
-        model_star = self._convert_to_model(star)
-        if not session.query(model_star).exists():
+        db_star = session.query(StarDBLabel.name).filter(StarDBLabel.name == star.name)
+        if not session.query(db_star.exists()).scalar():
+            model_star = self._convert_to_model(star)
             session.add(model_star)
         else:
             logging.debug(

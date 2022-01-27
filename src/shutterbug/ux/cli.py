@@ -11,18 +11,18 @@ from shutterbug.data.db.writer import DBWriter
 from shutterbug.data.db.reader import DBReader
 import pandas as pd
 from shutterbug.ux.progress_bars import ProgressBarManager
-from shutterbug.init import initialize_logging, initialize_application
+from shutterbug.init import initialize_application
 
 
 @click.group(chain=True, invoke_without_command=True)
 @click.option("-d", "--debug", is_flag=True, default=False, type=click.BOOL)
 @click.pass_context
 def cli(context: Context, debug: bool):
-    initialize_logging(debug=debug)
-    config, engine = initialize_application()
-    logging.info("Initializing application")
+    config, engine = initialize_application(debug=debug)
     context.obj = {}
     context.obj["pbar_manager"] = ProgressBarManager()
+    context.obj["config"] = config
+    context.obj["database"] = engine
 
 
 @cli.command("load")
@@ -39,6 +39,9 @@ def cli(context: Context, debug: bool):
 @click.pass_context
 def cli_load(context: Context, files: List[Path]):
     pbar_manager = context.obj["pbar_manager"]
+    config = context.obj["config"]
+    database = context.obj["database"]
+    writer = DBWriter(database)
     for file_path in files:
         dataset = FileInput(file_path)
         with pbar_manager.new(
@@ -46,14 +49,23 @@ def cli_load(context: Context, files: List[Path]):
         ) as pbar1:
             for loader in dataset:
                 with pbar_manager.new(
-                    desc="Loading stars",
+                    desc="Loading",
                     unit="star",
                     total=len(loader),
-                    stage="Processing",
+                    stage="Loading into database",
                 ) as pbar2:
                     for star in loader:
+                        writer.write(star)
                         pbar2.update()
-
+                with pbar_manager.new(
+                    desc="Photometry",
+                    unit="star",
+                    total=len(loader),
+                    stage="Photometry",
+                ) as pbar3:
+                    reader = DBReader(dataset=file_path.stem, engine=database)
+                    for star in reader.all:
+                        pbar3.update()
                 pbar1.update()
 
 

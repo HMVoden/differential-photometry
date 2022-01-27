@@ -1,7 +1,6 @@
-from logging.config import fileConfig
 from pathlib import Path
 
-from shutterbug.data.db.model import Base, StarDB, StarDBTimeseries
+from shutterbug.data.db.model import Base, StarDB, StarDBTimeseries, StarDBLabel
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
@@ -9,14 +8,14 @@ from alembic import context
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-fileConfig(config.config_file_name)
 # Dynamically set up config/db directory
 user_home = Path.home()
-shutterbug_config_dir = user_home / ".shutterbug"
-shutterbug_config_dir.mkdir(exist_ok=True)
-config.set_main_option("sqlalchemy.url", f"sqlite:///{user_home}/.shutterbug/db.sqlite")
+if not config.get_main_option("sqlalchemy.url", None):
+    shutterbug_config_dir = user_home / ".shutterbug"
+    shutterbug_config_dir.mkdir(exist_ok=True)
+    config.set_main_option(
+        "sqlalchemy.url", f"sqlite:///{user_home}/.shutterbug/db.sqlite"
+    )
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel

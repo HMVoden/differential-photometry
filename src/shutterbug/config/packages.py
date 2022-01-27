@@ -62,6 +62,7 @@ class DataConfig(PackageBase):
         converter=to_folder, default=Path().home() / ".shutterbug" / "db.sqlite"
     )
     output_folder: Path = field(converter=to_folder, default=Path().cwd())
+    database_url: str = field(default=f"sqlite:///{Path.home()}/.shutterbug/db.sqlite")
 
 
 @define(kw_only=True, slots=True, auto_attribs=True)
