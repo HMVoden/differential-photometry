@@ -2,12 +2,13 @@ from __future__ import annotations
 from configparser import ConfigParser
 
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Union
 from shutterbug.config.interfaces.internal import PackageConfigInterface
 from attr import field, define, asdict
+from attr.filters import exclude
 
 
-def path_from_string(value: str) -> Path:
+def to_folder(value: Union[str, Path]) -> Path:
     """Takes a string and returns it as a path"""
     # sanity check
     value = str(value)
@@ -29,7 +30,7 @@ class PackageBase(PackageConfigInterface):
     @property
     def asdict(self) -> Dict[str, Any]:
         """Returns the package configuration as a dictionary for writing or other use"""
-        return asdict(self)
+        return asdict(self, filter=exclude(self._name))
 
     @classmethod
     def fromconfigparser(cls, parser: ConfigParser) -> PackageConfigInterface:
@@ -46,9 +47,9 @@ class DataConfig(PackageBase):
     _name = "data"
 
     database: Path = field(
-        converter=path_from_string, default=Path().home() / ".shutterbug" / "db.sqlite"
+        converter=to_folder, default=Path().home() / ".shutterbug" / "db.sqlite"
     )
-    output_folder: Path = field(converter=path_from_string, default=Path().cwd())
+    output_folder: Path = field(converter=to_folder, default=Path().cwd())
 
     @classmethod
     def fromdict(cls, *_, **kwargs: Dict[str, Any]) -> DataConfig:
@@ -58,10 +59,6 @@ class DataConfig(PackageBase):
         database = kwargs.pop("database", None)
         output_folder = kwargs.pop("output_folder", None)
         return cls(database=database, output_folder=output_folder)  # type: ignore
-
-    @property
-    def asdict(self) -> Dict[str, Any]:
-        return asdict(self)
 
 
 @define(kw_only=True, slots=True)
@@ -80,10 +77,6 @@ class PhotometryConfig(PackageBase):
         dis_lim = kwargs.pop("distance_limit", None)
         return cls(magnitude_limit=mag_lim, distance_limit=dis_lim)  # type: ignore
 
-    @property
-    def asdict(self) -> Dict[str, Any]:
-        return asdict(self)
-
 
 @define(kw_only=True, slots=True)
 class VariabilityConfig(PackageBase):
@@ -97,7 +90,3 @@ class VariabilityConfig(PackageBase):
         allows for any keywords or arguments to be passed in without issue"""
 
         return cls()
-
-    @property
-    def asdict(self) -> Dict[str, Any]:
-        return asdict(self)

@@ -8,5 +8,8 @@ class ConfigurationFactory(Protocol):
     def from_file(self, file: Path) -> ApplicationConfig:
         ...
 
-    def to_file(self, file: Path, config: ApplicationConfig):
+    def to_file(self, file: Path, config: ApplicationConfig) -> bool:
+        ...
+
+    def data_folder(self) -> Path:
         ...
