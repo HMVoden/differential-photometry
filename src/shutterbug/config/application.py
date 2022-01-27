@@ -5,21 +5,18 @@ from attr import field, define
 
 from typing import Dict, Any
 
+from shutterbug.config.packages import DataConfig, PhotometryConfig, VariabilityConfig
+
 
 @define
 class ApplicationConfig:
-    _main: PackageConfigInterface = field()
     _photometry: PackageConfigInterface = field()
     _variability: PackageConfigInterface = field()
     _data: PackageConfigInterface = field()
 
-    def statistical_test(self, test: str) -> Dict[str, Any]:
-        if test in self._variability.asdict.keys():
-            return self._variability.asdict[test]
-        else:
-            raise ValueError(
-                f"Attempted to find configuration for test {test}, configuration not found"
-            )
+    @property
+    def variability(self) -> Dict[str, Any]:
+        return self._variability.asdict
 
     @property
     def data(self) -> Dict[str, Any]:
@@ -28,3 +25,8 @@ class ApplicationConfig:
     @property
     def photometry(self) -> Dict[str, float]:
         return self._photometry.asdict
+
+
+default_config = ApplicationConfig(
+    _photometry=PhotometryConfig(), _variability=VariabilityConfig(), _data=DataConfig()
+)

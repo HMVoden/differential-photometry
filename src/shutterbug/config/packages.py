@@ -1,4 +1,5 @@
 from __future__ import annotations
+from configparser import ConfigParser
 
 from pathlib import Path
 from typing import Dict, Any
@@ -17,18 +18,32 @@ def path_from_string(value: str) -> Path:
 
 
 class PackageBase(PackageConfigInterface):
+    # as all the Package dataclasses have asdict as the same implementation,
+    # a base class makes sense
+    _name = "NOTIMPLEMENTED"
+
     @classmethod
     def fromdict(cls, *_, **_kwargs):
         raise NotImplementedError
 
     @property
     def asdict(self) -> Dict[str, Any]:
+        """Returns the package configuration as a dictionary for writing or other use"""
         return asdict(self)
+
+    @classmethod
+    def fromconfigparser(cls, parser: ConfigParser) -> PackageConfigInterface:
+        """Creates package configuration from a config parser"""
+        if parser.has_section(cls._name):
+            return cls.fromdict(parser.get(section=cls._name))
+        return cls()
 
 
 @define(kw_only=True, slots=True)
 class DataConfig(PackageBase):
     """Holds the configuration for the Data package"""
+
+    _name = "data"
 
     database: Path = field(
         converter=path_from_string, default=Path().home() / ".shutterbug" / "db.sqlite"
@@ -53,6 +68,7 @@ class DataConfig(PackageBase):
 class PhotometryConfig(PackageBase):
     """Holds the configuration for the Photometry package"""
 
+    _name = "photometry"
     magnitude_limit: float = field(converter=float, default=0)
     distance_limit: float = field(converter=float, default=0)
 
@@ -73,9 +89,13 @@ class PhotometryConfig(PackageBase):
 class VariabilityConfig(PackageBase):
     """Holds the configuration for the Variability package"""
 
+    _name = "variability"
+
     @classmethod
     def fromdict(cls, *_, **kwargs: Dict[str, Any]) -> VariabilityConfig:
-        """STUB"""
+        """Creates a configuration object from a dictionary and any arbitrary args,
+        allows for any keywords or arguments to be passed in without issue"""
+
         return cls()
 
     @property
