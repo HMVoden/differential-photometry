@@ -11,7 +11,7 @@ from shutterbug.data.db.writer import DBWriter
 from shutterbug.data.db.reader import DBReader
 import pandas as pd
 from shutterbug.ux.progress_bars import ProgressBarManager
-from shutterbug.logging import initialize_logging
+from shutterbug.init import initialize_logging, initialize_application
 
 
 @click.group(chain=True, invoke_without_command=True)
@@ -19,6 +19,7 @@ from shutterbug.logging import initialize_logging
 @click.pass_context
 def cli(context: Context, debug: bool):
     initialize_logging(debug=debug)
+    config, engine = initialize_application()
     logging.info("Initializing application")
     context.obj = {}
     context.obj["pbar_manager"] = ProgressBarManager()

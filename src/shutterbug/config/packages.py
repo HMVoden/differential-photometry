@@ -58,7 +58,7 @@ class DataConfig(PackageBase):
 
     _name = "data"
 
-    database: Path = field(
+    database_path: Path = field(
         converter=to_folder, default=Path().home() / ".shutterbug" / "db.sqlite"
     )
     output_folder: Path = field(converter=to_folder, default=Path().cwd())
