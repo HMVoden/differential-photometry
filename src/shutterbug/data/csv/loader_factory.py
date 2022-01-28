@@ -9,12 +9,19 @@ READABLE_TYPES = {".xlsx", ".xls", ".xlsm", ".odf", ".ods", ".csv"}
 
 
 def make_loader(file_path: Path) -> CSVLoader:
+
+    """Takes a file path and creates a CSVLoader to consume stars from a CSV filetype
+
+    :param file_path: Path to CSV file
+    :returns: FileLoader that loads each star from a CSV
+
+    """
     headers = _headers_from_file(file_path)
     return CSVLoader(input_file=file_path, headers=headers)
 
 
 def _headers_from_file(file_path: Path) -> KnownHeader:
-    """Verifies loaded file header against known headers and returns known header"""
+    """Verifies loaded csv file header against known headers and returns known header"""
     raw_headers = _read_file_header(file_path)
     headers = Header(raw_headers)
 

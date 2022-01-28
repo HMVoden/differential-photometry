@@ -1,5 +1,4 @@
 import logging
-from typing import Iterable, overload
 
 import attr
 import numpy as np
@@ -21,6 +20,7 @@ class DBWriter(DataWriterInterface):
     """
 
     db_engine: Engine = field(validator=attr.validators.instance_of(Engine))
+    dataset: str = field()
 
     @singledispatchmethod
     def write(self, data: Star):
@@ -65,8 +65,8 @@ class DBWriter(DataWriterInterface):
                 f"tried to write star {star.name}, already present in database"
             )
 
-    @staticmethod
     def _convert_to_model(
+        self,
         star: Star,
     ) -> StarDB:
         """Converts a Star datatype into a type writable to the provided database
@@ -86,7 +86,7 @@ class DBWriter(DataWriterInterface):
         db_star = StarDB(
             x=star.x, y=star.y, magnitude_median=np.nanmedian(star.timeseries.mag)
         )
-        db_label = StarDBLabel(name=star.name, dataset=star.dataset)
+        db_label = StarDBLabel(name=star.name, dataset=self.dataset)
         db_timeseries = []
         time = star.timeseries.time.to_pydatetime()
         time = np.where(pd.isnull(time), None, time)

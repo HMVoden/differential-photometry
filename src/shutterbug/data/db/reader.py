@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Generator, List, Optional
 
 import attr
@@ -10,11 +11,10 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 
-@define
+@define(slots=True, frozen=True)
 class DBReader(DataReaderInterface):
     dataset: str = field()
     engine: Engine = field()
-    _stars: List[str] = field(init=False)
     mag_limit: Optional[float] = field(
         converter=attr.converters.optional(float), default=0
     )
@@ -22,18 +22,15 @@ class DBReader(DataReaderInterface):
         converter=attr.converters.optional(float), default=0
     )
 
-    def __attrs_post_init__(self):
-        """Sets up the DBReader to hold all the stars that are currently in the
-        database so we're not constantly requesting this information from the
-        database"""
+    @property
+    @lru_cache
+    def names(self) -> List[str]:
         with Session(self.engine) as session:
-            db_stars = (
-                session.query(StarDBLabel.name)  # type: ignore
+            return (
+                session.query(StarDBLabel.name)
                 .filter(StarDBLabel.dataset == self.dataset)
                 .all()
             )
-
-            self._stars = list(map(lambda x: x[0], db_stars))
 
     @property
     def all(self) -> Generator[pd.DataFrame, None, None]:
@@ -49,7 +46,7 @@ class DBReader(DataReaderInterface):
         """
 
         with Session(self.engine) as session:
-            for name in self._stars:
+            for name in self.names:
                 statement = self._select_star()
                 statement = statement.filter(
                     StarDBLabel.dataset == self.dataset, StarDBLabel.name == name

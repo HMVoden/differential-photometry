@@ -11,7 +11,7 @@ from shutterbug.data.star import Star
 _TYPES: List[Type[FileLoaderFactory]] = [CSVFactory]
 
 
-@define
+@define(slots=True)
 class FileInput(InputInterface):
     path: Path = field()
     _input_files: List[Path] = field(init=False)

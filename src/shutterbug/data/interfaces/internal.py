@@ -28,7 +28,6 @@ class DataWriterInterface(ABC):
     @write.register
     @abstractmethod
     def _(self, data: list):
-
         # have to use list as type due to bug with singledispatch
         raise NotImplementedError
 
