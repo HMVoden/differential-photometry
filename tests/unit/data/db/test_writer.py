@@ -23,7 +23,11 @@ def reconstruct_star_from_db(
         db_error.append(row.error)
     rec_timeseries = StarTimeseries(time=db_time, mag=db_mag, error=db_error)
     rec_star = Star(
-        name=label.name, dataset=label.dataset, x=star.x, y=star.y, data=rec_timeseries
+        name=label.name,
+        dataset=label.dataset,
+        x=star.x,
+        y=star.y,
+        timeseries=rec_timeseries,
     )
     return rec_star
 

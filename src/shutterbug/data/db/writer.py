@@ -84,16 +84,16 @@ class DBWriter(DataWriterInterface):
         """
 
         db_star = StarDB(
-            x=star.x, y=star.y, magnitude_median=np.nanmedian(star.data.mag)
+            x=star.x, y=star.y, magnitude_median=np.nanmedian(star.timeseries.mag)
         )
         db_label = StarDBLabel(name=star.name, dataset=star.dataset)
         db_timeseries = []
-        time = star.data.time.to_pydatetime()
+        time = star.timeseries.time.to_pydatetime()
         time = np.where(pd.isnull(time), None, time)
         timeseries_data = zip(
             time,
-            star.data.mag,
-            star.data.error,
+            star.timeseries.mag,
+            star.timeseries.error,
         )
         for time, mag, error in timeseries_data:
             ts = StarDBTimeseries(

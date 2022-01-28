@@ -75,13 +75,13 @@ def test_similar_to(stars: List[Star], mag_limit, distance_limit):
     with sqlite_memory(future=False) as engine:
         writer = DBWriter(engine)
         target = stars[0]
-        target_median = np.nanmedian(target.data.mag)
+        target_median = np.nanmedian(target.timeseries.mag)
         for star in stars:
             writer.write(star)
 
         similar_stars = []
         for star in stars[1:]:
-            abs_diff_median = abs(np.nanmedian(star.data.mag) - target_median)
+            abs_diff_median = abs(np.nanmedian(star.timeseries.mag) - target_median)
             distance_between = np.sqrt(
                 (star.x - target.x) ** 2 + (star.y - target.y) ** 2
             )

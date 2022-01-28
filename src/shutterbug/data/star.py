@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 
 import numpy as np
@@ -5,6 +6,10 @@ import numpy.typing as npt
 import pandas as pd
 from attr import define, field
 import sys
+
+from typing import List
+
+from shutterbug.data.header import KnownHeader
 
 
 def asfloat(value) -> npt.NDArray[np.float64]:
@@ -17,10 +22,10 @@ def asdatetime(value):
         floats = asfloat(value)
         return pd.to_datetime(
             floats, errors="coerce", origin="julian", unit="D", utc=True
-        ).round("1s")
+        )
     except ValueError:
         # let pandas guess
-        return pd.to_datetime(floats, errors="coerce", utc=True).round("1s")
+        return pd.to_datetime(floats, errors="coerce", utc=True)
 
 
 @define(slots=True)
@@ -30,6 +35,12 @@ class StarTimeseries:
     time: pd.DatetimeIndex = field(converter=asdatetime)
     mag: npt.NDArray[np.float64] = field(converter=asfloat)
     error: npt.NDArray[np.float64] = field(converter=asfloat)
+
+    @mag.validator
+    @error.validator
+    def _has_data(self, _, values):
+        if np.isnan(values).all():
+            raise ValueError("Timeseries must have data, does not have any")
 
     def _same_length(self):
         """Ensure that all lists are same length"""
@@ -63,16 +74,26 @@ class StarTimeseries:
         """Number of bytes the timeseries consumes in memory"""
         return self.time.nbytes + self.mag.nbytes + self.error.nbytes
 
+    @classmethod
+    def from_rows(
+        cls, rows: List[List[str]], row_headers: KnownHeader
+    ) -> StarTimeseries:
+        logging.debug(f"Building timeseries, number of rows: {len(rows)}")
+        getter = row_headers.timeseries_getters
+        timeseries = map(getter, rows)
+        # so we can get each specific column without fuss
+        np_data = np.asarray(timeseries)
+        return cls(time=np_data[:, 0], mag=np_data[:, 1], error=np_data[:, 2])
+
 
 @define(slots=True)
 class Star:
     """Dataclass describing a star's information from an image or series of image"""
 
-    dataset: str = field()
     name: str = field()
-    x = field(converter=[float, int])
-    y = field(converter=[float, int])
-    data: StarTimeseries = field()
+    x: int = field(converter=[float, int])
+    y: int = field(converter=[float, int])
+    timeseries: StarTimeseries = field()
 
     # @error.validator
     # def positive_error(self, attribute, value):
@@ -87,5 +108,12 @@ class Star:
             + sys.getsizeof(self.name)
             + sys.getsizeof(self.x)
             + sys.getsizeof(self.y)
-            + self.data.nbytes
+            + self.timeseries.nbytes
         )
+
+    @classmethod
+    def from_rows(cls, rows: List[List[str]], row_headers: KnownHeader) -> Star:
+        name, x, y = row_headers.star_getters(rows[0])
+        logging.debug(f"Building star object {name}, number of rows {len(rows)}")
+        timeseries = StarTimeseries.from_rows(rows, row_headers)
+        return cls(name=name, x=x, y=y, timeseries=timeseries)

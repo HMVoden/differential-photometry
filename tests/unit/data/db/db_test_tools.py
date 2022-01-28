@@ -1,6 +1,6 @@
 from shutterbug.data.db.model import Base, StarDB, StarDBLabel, StarDBTimeseries
-from sqlalchemy import create_engine, engine
-from sqlalchemy.engine.base import Engine
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 from contextlib import contextmanager
 
 from sqlalchemy.orm import Session

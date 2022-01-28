@@ -39,7 +39,7 @@ def star(draw, name: str = "", dataset: str = "test", allow_nan=None) -> Star:
         name=name,
         x=draw(integers(min_value=0, max_value=4096)),
         y=draw(integers(min_value=0, max_value=4096)),
-        data=timeseries,
+        timeseries=timeseries,
     )
     return star
 
