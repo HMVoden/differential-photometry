@@ -4,6 +4,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 from attr import define, field
+import sys
 
 
 def asfloat(value) -> npt.NDArray[np.float64]:
@@ -57,6 +58,11 @@ class StarTimeseries:
         error = np.array_equal(self.error, other.error, equal_nan=True)
         return all([time, mag, error])
 
+    @property
+    def nbytes(self) -> int:
+        """Number of bytes the timeseries consumes in memory"""
+        return self.time.nbytes + self.mag.nbytes + self.error.nbytes
+
 
 @define(slots=True)
 class Star:
@@ -72,3 +78,14 @@ class Star:
     # def positive_error(self, attribute, value):
     #     if not value >= 0:
     #         raise ValueError("Cannot have negative error")
+
+    @property
+    def nbytes(self) -> int:
+        """Number of bytes the star consumes in memory"""
+        return (
+            sys.getsizeof(self.dataset)
+            + sys.getsizeof(self.name)
+            + sys.getsizeof(self.x)
+            + sys.getsizeof(self.y)
+            + self.data.nbytes
+        )
