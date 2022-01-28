@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 from functools import singledispatchmethod
-from typing import Generator
+from typing import Generator, Set, Protocol
 from shutterbug.data.star import Star
-
+from pathlib import Path
 import pandas as pd
-from typing import Iterable, overload
 
 
 class DataReaderInterface(ABC):
@@ -32,3 +31,22 @@ class DataWriterInterface(ABC):
 
         # have to use list as type due to bug with singledispatch
         raise NotImplementedError
+
+
+class LoaderInterface(ABC):
+    """Generic interface for an object that loads external star data from a source into memory"""
+
+    @abstractmethod
+    def __iter__(self) -> Generator[Star, None, None]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def __len__(self) -> int:
+        raise NotImplementedError
+
+
+class FileLoaderFactory(Protocol):
+    READABLE_TYPES: Set[str]
+
+    def make_loader(self, file_path: Path) -> LoaderInterface:
+        ...

@@ -4,35 +4,25 @@ from pathlib import Path
 from typing import Dict, Generator, List, Tuple, Iterable
 from more_itertools.recipes import pairwise
 
-import numpy as np
 from attr import define, field
 from more_itertools import consume, map_reduce
 from shutterbug.data.star import Star
-from shutterbug.data.header import KNOWN_HEADERS, Header, KnownHeader
-from shutterbug.data.interfaces.external import FileLoaderInterface
+from shutterbug.data.header import KnownHeader
+from shutterbug.data.interfaces.internal import LoaderInterface
 
 
 @define(slots=True)
-class CSVLoader(FileLoaderInterface):
-    READABLE_TYPES = {".xlsx", ".xls", ".xlsm", ".odf", ".ods", ".csv"}
+class CSVLoader(LoaderInterface):
 
     input_file: Path = field()
     headers: KnownHeader = field()
-    stars: Dict[str, List[int]] = field(init=False)
+    _stars: Dict[str, List[int]] = field(init=False)
 
-    @classmethod
-    def is_readable(cls, filepath: Path):
-        """Verifies if the given file is readable based on suffixes"""
-        if filepath.suffix not in cls.READABLE_TYPES:
-            return False
-        else:
-            return True
-
-    def _count_stars(self) -> Dict[str, List[int]]:
+    def _star_count(self) -> Dict[str, List[int]]:
         """Iterates through entire CSV files and finds each star and every index that
         star's name corresponds to, for faster iterating"""
         try:
-            return self.stars
+            return self._stars
         except AttributeError:
             name_index = self.headers.name_index
             rows = self._file_rows()
@@ -40,12 +30,12 @@ class CSVLoader(FileLoaderInterface):
             keyfunc = lambda x: x[1][name_index]
             # Take enumerated iterable, return row that this entry belongs on
             valuefunc = lambda x: x[0]
-            self.stars = map_reduce(enumerate(rows), keyfunc, valuefunc)
-            return self.stars
+            self._stars = map_reduce(enumerate(rows), keyfunc, valuefunc)
+            return self._stars
 
     def __len__(self):
         """Number of stars in given CSV"""
-        return len(self._count_stars())
+        return len(self._star_count())
 
     def _file_rows(self) -> Generator[List[str], None, None]:
         """Skips header and returns an iterable for every row in the input file"""
@@ -79,7 +69,7 @@ class CSVLoader(FileLoaderInterface):
 
     def _file_stars(self) -> Iterable[Tuple[str, List[List[str]]]]:
         """Yields all data rows in csv from each star in order"""
-        stars = self._count_stars()
+        stars = self._star_count()
         for name, indices in stars.items():
             rows = list(self._all_rows_in_index(indices))
             yield name, rows
@@ -91,35 +81,3 @@ class CSVLoader(FileLoaderInterface):
                 yield star
             except ValueError as e:
                 logging.warning(f"Unable to load star {star_name} due to error {e}")
-
-    # everything here and below should be moved out into another function/class
-    def _check_headers(self) -> KnownHeader:
-        """Verifies loaded file header against known headers and returns known header"""
-        raw_headers = self._read_file_header()
-        headers = Header(headers=self._clean_headers(raw_headers))
-
-        for known in KNOWN_HEADERS:
-            if headers == known:
-                known.headers = headers.headers
-                logging.debug(f"Input file matches header type {known.header_origin}")
-                return known
-        raise ValueError("Cannot load file, unknown headers")
-
-    def _read_file_header(self) -> List[str]:
-        """Reads the first line in a csv file and returns the raw headers"""
-        with open(self.input_file, newline="") as f:
-            try:
-                reader = csv.reader(f)
-                raw_headers = next(reader)
-            except StopIteration:
-                raise ValueError(
-                    f"File {self.input_file.name} does not contain headers, cannot continue"
-                )
-        return raw_headers
-
-    def _clean_headers(self, headers: List[str]) -> List[str]:
-        """Removes all unnecessary whitespace, newlines and tabs from every string in a list"""
-        cleaned = []
-        for header in headers:
-            cleaned.append(header.strip())
-        return cleaned

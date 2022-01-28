@@ -1,22 +1,30 @@
-from functools import cache
 from typing import List
 from operator import itemgetter
 from attr import define, field
 from attr.validators import instance_of
 
 
-@define(slots=True)
+def strip_and_lower(strings: List[str]) -> List[str]:
+    cleaned = []
+    for st in strings:
+        st = st.strip().lower()
+        cleaned.append(st)
+        strings = cleaned
+    return cleaned
+
+
+@define()
 class Header:
     """Headers of a given file, such as a csv or excel file"""
 
-    headers: List[str] = field()
+    headers: List[str] = field(converter=strip_and_lower)
 
     def __eq__(self, other) -> bool:
         # testing set equality as this will
         # allow us to have any arbitrary
         # order of headers
-        other_set = set(map(lambda x: x.lower(), other.headers))
-        header_set = set(map(lambda x: x.lower(), self.headers))
+        other_set = set(other.headers)
+        header_set = set(self.headers)
         # self is only a subset if it contains
         # all of the other's items
         return header_set.issuperset(other_set)
@@ -29,19 +37,15 @@ class Header:
             raise ValueError("All headers must be strings")
 
 
-@define(slots=True)
+@define()
 class KnownHeader(Header):
     """Manual definition of a known header, to be used for comparison and for
     convenience functions to get necessary indices"""
 
     header_origin: str = field(validator=instance_of(str))
-    timeseries_names: List[str] = field()
-    star_data: List[str] = field()
-    star_name: str = field(validator=instance_of(str))
-
-    @property
-    def _lowered_headers(self):
-        return list(map(lambda x: x.lower(), self.headers))
+    timeseries_names: List[str] = field(converter=strip_and_lower)
+    star_data: List[str] = field(converter=strip_and_lower)
+    star_name: str = field(validator=instance_of(str), converter=(lambda x: x.lower()))
 
     def _get_used_indices(self, names: List[str]) -> List[int]:
         """Given a list of names returns all the header indices that match the names
@@ -57,11 +61,10 @@ class KnownHeader(Header):
             Indices of the names provided
 
         """
-        lowered_headers = list(map(lambda x: x.lower(), self.headers))
+        headers = self.headers
         used_indices = []
         for header in names:
-            header = header.lower()
-            header_idx = lowered_headers.index(header)
+            header_idx = headers.index(header)
             used_indices.append(header_idx)
         return used_indices
 
@@ -84,14 +87,14 @@ class KnownHeader(Header):
     @property
     def name_index(self) -> int:
         """Index of the star names column"""
-        headers = self._lowered_headers
+        headers = self.headers
         star_name = self.star_name.lower()
         return headers.index(star_name)
 
     @timeseries_names.validator
     @star_data.validator
     @star_name.validator
-    def _all_in_headers(self, attribute, value):
+    def _all_in_headers(self, _, value):
         if type(value) == str:
             if value not in self.headers:
                 raise ValueError(
@@ -104,7 +107,7 @@ class KnownHeader(Header):
 
     @timeseries_names.validator
     @star_data.validator
-    def _all_strings(self, attribute, value):
+    def _all_strings(self, _, value):
         if not (all(isinstance(item, str) for item in value)):
             raise ValueError("All headers must be strings")
 

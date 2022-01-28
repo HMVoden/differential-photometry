@@ -1,12 +1,14 @@
 import logging
 from pathlib import Path
-from typing import Generator, List, Type, Union
+from typing import Generator, Iterable, List, Type, Union
 
 from attr import define, field
-from shutterbug.data.interfaces.external import InputInterface, FileLoaderInterface
-from shutterbug.data.csv.loader import CSVLoader
+from shutterbug.data.interfaces.external import InputInterface
+from shutterbug.data.interfaces.internal import FileLoaderFactory, LoaderInterface
+import shutterbug.data.csv.loader_factory as CSVFactory
+from shutterbug.data.star import Star
 
-_TYPES: List[Type[FileLoaderInterface]] = [CSVLoader]
+_TYPES: List[Type[FileLoaderFactory]] = [CSVFactory]
 
 
 @define
@@ -40,8 +42,9 @@ class FileInput(InputInterface):
             result.append(path)
         return result
 
-    def _file_to_loader(self, path: Path) -> Union[None, FileLoaderInterface]:
-        """Takes a given file and if it's readable by one of the loaders, return a readied loader of that type
+    def _file_to_loader(self, path: Path) -> Union[None, LoaderInterface]:
+        """Takes a given file and if it's readable by one of the loaders, return a
+        readied loader of that type
 
         Parameters
         ----------
@@ -55,22 +58,21 @@ class FileInput(InputInterface):
             nothing can load the file.
 
         """
-        for loader_type in _TYPES:
-            if loader_type.is_readable(path):
+        for factory_type in _TYPES:
+            if path.suffix in factory_type.READABLE_TYPES:
                 try:
-                    return loader_type(input_file=path)  # type: ignore
+                    return factory_type.make_loader(path)  # type: ignore
                 except ValueError as e:
                     logging.debug(
-                        f"Loader {loader_type.__name__} unable to load file {path.name}, received error:"
+                        f"Loader {factory_type.__class__} unable to load file {path.name}, received error: {e}"
                     )
-                    logging.exception(e)
         return None
 
     def __len__(self) -> int:
         """Number of files able to be loaded"""
         return len(self._input_files)
 
-    def __iter__(self) -> Generator[FileLoaderInterface, None, None]:
+    def __iter__(self) -> Generator[Iterable[Star], None, None]:
         for i_file in self._input_files:
             loader = self._file_to_loader(i_file)
             if loader is not None:

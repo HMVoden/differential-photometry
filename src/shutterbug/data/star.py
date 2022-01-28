@@ -80,7 +80,7 @@ class StarTimeseries:
     ) -> StarTimeseries:
         logging.debug(f"Building timeseries, number of rows: {len(rows)}")
         getter = row_headers.timeseries_getters
-        timeseries = map(getter, rows)
+        timeseries = list(map(getter, rows))
         # so we can get each specific column without fuss
         np_data = np.asarray(timeseries)
         return cls(time=np_data[:, 0], mag=np_data[:, 1], error=np_data[:, 2])
