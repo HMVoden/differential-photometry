@@ -80,4 +80,4 @@ class CSVLoader(LoaderInterface):
                 star = Star.from_rows(rows=rows, row_headers=self.headers)
                 yield star
             except ValueError as e:
-                logging.warning(f"Unable to load star {star_name} due to error {e}")
+                logging.warning(f"Unable to load star {star_name} due to error: {e}")

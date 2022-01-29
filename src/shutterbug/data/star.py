@@ -19,6 +19,7 @@ def asfloat(value) -> npt.NDArray[np.float64]:
 def asdatetime(value):
     try:
         # try julian date first
+        value = asfloat(value)
         return pd.to_datetime(
             value, errors="coerce", origin="julian", unit="D", utc=True
         )
@@ -108,7 +109,9 @@ class StarTimeseries:
         timeseries = list(map(getter, rows))
         # so we can get each specific column without fuss
         np_data = np.asarray(timeseries)
-        return cls(time=np_data[:, 0], mag=np_data[:, 1], error=np_data[:, 2])
+        ts = cls(time=np_data[:, 0], mag=np_data[:, 1], error=np_data[:, 2])
+        logging.debug("Finished building timeseries")
+        return ts
 
 
 @define(slots=True)
@@ -129,8 +132,7 @@ class Star:
     def nbytes(self) -> int:
         """Number of bytes the star consumes in memory"""
         return (
-            sys.getsizeof(self.dataset)
-            + sys.getsizeof(self.name)
+            sys.getsizeof(self.name)
             + sys.getsizeof(self.x)
             + sys.getsizeof(self.y)
             + self.timeseries.nbytes
@@ -139,6 +141,6 @@ class Star:
     @classmethod
     def from_rows(cls, rows: List[List[str]], row_headers: KnownHeader) -> Star:
         name, x, y = row_headers.star_getters(rows[0])
-        logging.debug(f"Building star object {name}, number of rows {len(rows)}")
+        logging.debug(f"Building star object {name}, x: {x}, y: {y}")
         timeseries = StarTimeseries.from_rows(rows, row_headers)
         return cls(name=name, x=x, y=y, timeseries=timeseries)

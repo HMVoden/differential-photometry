@@ -45,10 +45,11 @@ def same_size_lists(
     return return_list
 
 
-@given(lists(timeseries_row(allow_nan=False), min_size=1))
+@given(lists(timeseries_row(allow_nan=False), min_size=1, unique_by=(lambda x: x[0])))
 def test_timeseries_validation(rows):
     columns = np.asarray(rows)
     ts = StarTimeseries(time=columns[:, 0], mag=columns[:, 1], error=columns[:, 2])
+    assert len(ts.time) == len(columns)
     assert len(np.argwhere(pd.isna(ts.time))) == 0
     assert len(ts.time) == len(ts.error) and len(ts.time) == len(ts.mag)
     assert len(np.unique(ts.time)) == len(ts.time)
