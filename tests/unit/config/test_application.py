@@ -11,7 +11,6 @@ import tempfile
 
 def test_defaults():
     defaults = default_config
-    d_var = TestConfig()
     d_pho = PhotometryConfig()
     d_dat = DataConfig()
     assert defaults._data == d_dat

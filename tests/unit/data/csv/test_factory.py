@@ -17,6 +17,8 @@ from hypothesis.strategies import (
     text,
 )
 from shutterbug.data.csv.loader import CSVLoader
+import shutterbug.data.csv.loader_factory as csv_factory
+from shutterbug.data.header import KNOWN_HEADERS
 
 CSV_COLUMN_TYPES = [floats, integers, partial(text, alphabet=string.printable)]
 
@@ -84,16 +86,6 @@ def csvs(
     return csv_data
 
 
-@given(text(alphabet=(string.ascii_letters + string.digits), min_size=1, max_size=4))
-def test_is_readable(suffix):
-    with tempfile.NamedTemporaryFile(suffix=f".{suffix}") as existing_file:
-        path = Path(existing_file.name)
-        if path.suffix in CSVLoader.READABLE_TYPES:
-            assert CSVLoader.is_readable(path) is True
-        else:
-            assert CSVLoader.is_readable(path) is False
-
-
 @given(csvs())
 def test_unknown_headers(csv_data: Dict):
     with tempfile.NamedTemporaryFile(suffix=".csv", mode="w", newline="") as csv_file:
@@ -103,4 +95,19 @@ def test_unknown_headers(csv_data: Dict):
         file_path = Path(csv_file.name)
 
         with pytest.raises(ValueError):
-            CSVLoader(file_path)
+            csv_factory.make_loader(file_path)
+
+
+@given(csvs(csv_headers=KNOWN_HEADERS[0].headers, min_rows=1))
+def test_known_headers(csv_data: Dict):
+    with tempfile.NamedTemporaryFile(suffix=".csv", mode="rt+", newline="") as csv_file:
+        known_header = KNOWN_HEADERS[0]
+        fieldnames = list(csv_data.keys())
+        file_path = Path(csv_file.name)
+        with file_path.open(mode="rt+") as f:
+            writer = csv.DictWriter(f, dialect="excel", fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows([csv_data])
+        assert csv_factory._read_file_header(file_path) == known_header.headers
+        assert csv_factory._headers_from_file(file_path) == known_header
+        assert isinstance(csv_factory.make_loader(file_path), CSVLoader)
