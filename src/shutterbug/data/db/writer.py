@@ -19,7 +19,7 @@ class DBWriter(DataWriterInterface):
 
     """
 
-    db_engine: Engine = field(validator=attr.validators.instance_of(Engine))
+    engine: Engine = field(validator=attr.validators.instance_of(Engine))
     dataset: str = field()
 
     @singledispatchmethod
@@ -32,14 +32,14 @@ class DBWriter(DataWriterInterface):
             Star from dataset
 
         """
-        with Session(self.db_engine) as session:
+        with Session(self.engine) as session:
             self._write_star(session=session, star=data)
             session.commit()
 
     @write.register
     def _(self, data: list):
         # have to use list as type due to bug with singledispatch
-        with Session(self.db_engine) as session:
+        with Session(self.engine) as session:
             for star in data:
                 self._write_star(session=session, star=star)
             session.commit()

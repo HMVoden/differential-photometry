@@ -37,7 +37,6 @@ class StarTimeseries:
     error: npt.NDArray[np.float64] = field(converter=asfloat)
 
     @mag.validator
-    @error.validator
     def _has_data(self, _, values):
         if np.isnan(values).all():
             raise ValueError("Timeseries must have data, does not have any")
@@ -47,7 +46,7 @@ class StarTimeseries:
         assert len(self.time) == len(self.error)
         assert len(self.mag) == len(self.error)
 
-    def __attrs_post_init__(self):
+    def _unique_times(self):
         _, unique_indices = np.unique(self.time, return_index=True)
         if not len(unique_indices) == len(self.time):
             logging.debug("Have duplicate time entries on star")
@@ -60,6 +59,33 @@ class StarTimeseries:
             raise ValueError(
                 f"Timeseries entries are incomplete, have length for time:{len(self.time)}, magnitude:{len(self.mag)}, error:{len(self.error)}. Expected equal."
             )
+
+    def _no_empty_rows(self):
+        time = self.time
+        mag = self.mag
+        error = self.error
+        bad_indices = []
+        for idx, time in enumerate(time):
+            if np.isnan(mag[idx]) and np.isnan(error[idx]):
+                bad_indices.append(idx)
+        bad_indices = np.asarray(bad_indices).tolist()
+        self.time = self.time.delete(bad_indices)
+        self.mag = np.delete(self.mag, bad_indices)
+        self.error = np.delete(self.error, bad_indices)
+
+    def _no_empty_time(self):
+        not_a_time = np.argwhere(pd.isna(self.time)).flatten().tolist()
+        self.time = self.time.delete(not_a_time)
+        self.mag = np.delete(self.mag, not_a_time)
+        self.error = np.delete(self.error, not_a_time)
+
+    def __attrs_post_init__(self):
+        # Ensure that the data is good
+        self._no_empty_time()
+        self._no_empty_rows()
+        self._unique_times()
+        if len(self.time) == 0:
+            raise ValueError("Given insufficient information for timeseries")
 
     def __eq__(self, other):
         if other.__class__ is not self.__class__:

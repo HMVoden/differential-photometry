@@ -41,8 +41,8 @@ def cli_load(context: Context, files: List[Path]):
     pbar_manager = context.obj["pbar_manager"]
     config = context.obj["config"]
     database = context.obj["database"]
-    writer = DBWriter(database)
     for file_path in files:
+        writer = DBWriter(dataset=file_path.stem, engine=database)
         dataset = FileInput(file_path)
         with pbar_manager.new(
             desc="Iterating Datasets", unit="dataset", total=len(dataset)
