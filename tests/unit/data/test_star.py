@@ -7,7 +7,7 @@ from shutterbug.data.star import Star, StarTimeseries
 from typing import List, Optional, Tuple, Union
 
 DAYS_IN_JULIAN_YEAR = 365.25
-UNIX_0_POINT_JD = 2440587.5
+UNIX_0_POINT_JD = 2440588.5
 END_POINT_JD = UNIX_0_POINT_JD + (DAYS_IN_JULIAN_YEAR * 200)
 
 

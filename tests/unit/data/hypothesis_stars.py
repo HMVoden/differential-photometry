@@ -1,19 +1,22 @@
 import string
 from typing import Sequence, Union
-
+from hypothesis import assume
 from hypothesis.extra.dateutil import timezones
 from hypothesis.strategies import composite, datetimes, floats, integers, lists, text
 from hypothesis.strategies._internal.strategies import SearchStrategy
 from shutterbug.data.star import Star, StarTimeseries
+from tests.unit.data.test_star import julian_dates
+import numpy as np
 
 
 @composite
-def star(draw, name: str = "", dataset: str = "test", allow_nan=None) -> Star:
+def star(draw, name: str = "", allow_nan=None) -> Star:
 
     if not name:
         allowed_names = string.printable
         name = draw(text(alphabet=allowed_names, min_size=1))
     mag = draw(lists(floats(allow_nan=allow_nan), min_size=1))
+    assume(not np.isnan(mag).all())
     error = draw(
         lists(
             floats(allow_nan=allow_nan, min_value=0),
@@ -23,19 +26,10 @@ def star(draw, name: str = "", dataset: str = "test", allow_nan=None) -> Star:
     )
 
     time = draw(
-        lists(
-            datetimes(
-                allow_imaginary=False,
-                timezones=timezones(),
-            ),
-            min_size=len(mag),
-            max_size=len(mag),
-            unique=True,
-        )
+        lists(julian_dates(), min_size=len(mag), max_size=len(mag), unique=True)
     )
     timeseries = StarTimeseries(time=time, mag=mag, error=error)
     star = Star(
-        dataset=dataset,
         name=name,
         x=draw(integers(min_value=0, max_value=4096)),
         y=draw(integers(min_value=0, max_value=4096)),
@@ -50,7 +44,6 @@ def stars(
     alphabet: Union[Sequence[str], SearchStrategy[str]],
     min_size=0,
     max_size=None,
-    dataset: str = "test",
     allow_nan=None,
 ):
     names = draw(
@@ -63,5 +56,5 @@ def stars(
     )
     stars = []
     for name in names:
-        stars.append(draw(star(name=name, dataset=dataset, allow_nan=allow_nan)))
+        stars.append(draw(star(name=name, allow_nan=allow_nan)))
     return stars

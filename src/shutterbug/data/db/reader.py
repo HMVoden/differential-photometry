@@ -1,4 +1,3 @@
-from functools import lru_cache
 from typing import Generator, List, Optional
 
 import attr
@@ -23,14 +22,14 @@ class DBReader(DataReaderInterface):
     )
 
     @property
-    @lru_cache
     def names(self) -> List[str]:
         with Session(self.engine) as session:
-            return (
-                session.query(StarDBLabel.name)
+            star_names = (
+                session.query(StarDBLabel.name)  # type: ignore
                 .filter(StarDBLabel.dataset == self.dataset)
                 .all()
             )
+            return list(map(lambda x: x[0], star_names))
 
     @property
     def all(self) -> Generator[pd.DataFrame, None, None]:

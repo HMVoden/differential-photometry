@@ -9,6 +9,7 @@ from shutterbug.data.db.writer import DBWriter
 from sqlalchemy.orm import Session
 from tests.unit.data.db.db_test_tools import sqlalchemy_db
 from tests.unit.data.hypothesis_stars import star, stars
+import pandas as pd
 
 
 def reconstruct_star_from_db(
@@ -24,7 +25,6 @@ def reconstruct_star_from_db(
     rec_timeseries = StarTimeseries(time=db_time, mag=db_mag, error=db_error)
     rec_star = Star(
         name=label.name,
-        dataset=label.dataset,
         x=star.x,
         y=star.y,
         timeseries=rec_timeseries,
@@ -32,19 +32,20 @@ def reconstruct_star_from_db(
     return rec_star
 
 
-@given(star())
+@given(star(allow_nan=False))
 def test_convert(star: Star):
-    star_db = DBWriter._convert_to_model(star)
+    engine = sqlalchemy_db()
+    star_db = DBWriter(dataset="test", engine=engine)._convert_to_model(star)
     reconstructed_star = reconstruct_star_from_db(
         star_db, star_db.timeseries, star_db.label
     )
     assert star == reconstructed_star
 
 
-@given(stars(alphabet=string.printable, dataset="test", min_size=1))
+@given(stars(alphabet=string.printable, min_size=1))
 def test_write(stars: List[Star]):
     engine = sqlalchemy_db()
-    writer = DBWriter(engine)
+    writer = DBWriter(dataset="test", engine=engine)
     # write in
     if len(stars) == 1:
         writer.write(stars[0])

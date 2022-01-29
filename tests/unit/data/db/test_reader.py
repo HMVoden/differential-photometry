@@ -14,40 +14,41 @@ import string
 
 
 @given(
-    stars(alphabet=string.printable, dataset="test", min_size=1),
-    stars(alphabet=string.printable, dataset="other", min_size=1, max_size=1),
+    stars(alphabet=string.printable, min_size=1),
+    stars(alphabet=string.printable, min_size=1, max_size=1),
 )
 def test_init(stars, other):
     with sqlite_memory() as engine:
-        writer = DBWriter(engine)
+        test_writer = DBWriter(dataset="test", engine=engine)
+        other_writer = DBWriter(dataset="other", engine=engine)
         star_names = []
         for star in stars:
-            writer.write(star)
+            test_writer.write(star)
             star_names.append(star.name)
         for star in other:
-            writer.write(star)
+            other_writer.write(star)
         reader = DBReader(dataset="test", engine=engine, mag_limit=0, distance_limit=0)
-
-        assert all([True if x in reader._stars else False for x in star_names])
-        assert len(reader._stars) == len(stars)
+        assert all([True if x in reader.names else False for x in star_names])
+        assert len(reader.names) == len(stars)
 
 
 @given(
-    stars(alphabet=string.printable, dataset="test", min_size=1),
-    stars(alphabet=string.printable, dataset="other", min_size=1, max_size=1),
+    stars(alphabet=string.printable, min_size=1),
+    stars(alphabet=string.printable, min_size=1, max_size=1),
 )
 def test_reads_all(stars: List[Star], other: List[Star]):
     with sqlite_memory(future=False) as engine:
-        writer = DBWriter(engine)
+        test_writer = DBWriter(dataset="test", engine=engine)
+        other_writer = DBWriter(dataset="other", engine=engine)
         # load DB for reading
         star_names = []
         for star in stars:
-            writer.write(star)
+            test_writer.write(star)
             # we're just going to make sure that the names are there
             star_names.append(star.name)
         for star in other:
             # so we can make sure we're only getting from our dataset
-            writer.write(star)
+            other_writer.write(star)
 
         reader = DBReader(dataset="test", engine=engine, mag_limit=0, distance_limit=0)
         read_names = []
@@ -63,7 +64,7 @@ def test_reads_all(stars: List[Star], other: List[Star]):
 
 
 @given(
-    stars(alphabet=string.printable, min_size=2, dataset="test"),
+    stars(alphabet=string.printable, min_size=2),
     integers(min_value=0, max_value=5),
     integers(min_value=0, max_value=400),
 )
@@ -73,7 +74,7 @@ def test_similar_to(stars: List[Star], mag_limit, distance_limit):
     if distance_limit == 0:
         distance_limit = np.inf
     with sqlite_memory(future=False) as engine:
-        writer = DBWriter(engine)
+        writer = DBWriter(dataset="test", engine=engine)
         target = stars[0]
         target_median = np.nanmedian(target.timeseries.mag)
         for star in stars:

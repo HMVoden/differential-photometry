@@ -19,13 +19,12 @@ def asfloat(value) -> npt.NDArray[np.float64]:
 def asdatetime(value):
     try:
         # try julian date first
-        floats = asfloat(value)
         return pd.to_datetime(
-            floats, errors="coerce", origin="julian", unit="D", utc=True
+            value, errors="coerce", origin="julian", unit="D", utc=True
         )
-    except ValueError:
+    except (ValueError, NameError):
         # let pandas guess
-        return pd.to_datetime(floats, errors="coerce", utc=True)
+        return pd.to_datetime(value, errors="coerce", utc=True)
 
 
 @define(slots=True)
@@ -90,7 +89,7 @@ class StarTimeseries:
     def __eq__(self, other):
         if other.__class__ is not self.__class__:
             return NotImplemented
-        time = self.time.equals(other.time)
+        time = self.time.round("1ms").equals(other.time.round("1ms"))
         mag = np.array_equal(self.mag, other.mag, equal_nan=True)
         error = np.array_equal(self.error, other.error, equal_nan=True)
         return all([time, mag, error])
