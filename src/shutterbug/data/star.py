@@ -12,20 +12,24 @@ from typing import List
 from shutterbug.data.header import KnownHeader
 
 
-def asfloat(value) -> npt.NDArray[np.float64]:
+def asfloat(value: List[str]) -> npt.NDArray[np.float64]:
     return pd.to_numeric(value, errors="coerce")  # type: ignore
 
 
-def asdatetime(value):
+def asdatetime(value) -> pd.DatetimeIndex:
     try:
-        # try julian date first
-        value = asfloat(value)
-        return pd.to_datetime(
-            value, errors="coerce", origin="julian", unit="D", utc=True
+        # Try julian date
+        float = asfloat(value)
+        datetimes = pd.to_datetime(
+            float, errors="coerce", origin="julian", unit="D", utc=True
         )
+        if all(pd.isna(datetimes)):
+            raise ValueError
     except (ValueError, NameError):
-        # let pandas guess
-        return pd.to_datetime(value, errors="coerce", utc=True)
+        # Try guessing
+        datetimes = pd.to_datetime(value, errors="coerce", utc=True)
+    datetimes = datetimes.round("1us")
+    return pd.DatetimeIndex(datetimes)
 
 
 @define(slots=True)
@@ -36,8 +40,7 @@ class StarTimeseries:
     mag: npt.NDArray[np.float64] = field(converter=asfloat)
     error: npt.NDArray[np.float64] = field(converter=asfloat)
 
-    @mag.validator
-    def _has_data(self, _, values):
+    def _has_data(self, values):
         if np.isnan(values).all():
             raise ValueError("Timeseries must have data, does not have any")
 
@@ -75,12 +78,17 @@ class StarTimeseries:
 
     def _no_empty_time(self):
         not_a_time = np.argwhere(pd.isna(self.time)).flatten().tolist()
+        if len(not_a_time) > 0:
+            logging.debug(f"Found {len(not_a_time)} invalid time entries")
+            if (len(self.time) - len(not_a_time)) == 0:
+                raise ValueError("All time values are invalid")
         self.time = self.time.delete(not_a_time)
         self.mag = np.delete(self.mag, not_a_time)
         self.error = np.delete(self.error, not_a_time)
 
     def __attrs_post_init__(self):
         # Ensure that the data is good
+        self._has_data(self.mag)
         self._no_empty_time()
         self._no_empty_rows()
         self._unique_times()
@@ -90,7 +98,7 @@ class StarTimeseries:
     def __eq__(self, other):
         if other.__class__ is not self.__class__:
             return NotImplemented
-        time = self.time.round("1ms").equals(other.time.round("1ms"))
+        time = self.time.equals(other.time)
         mag = np.array_equal(self.mag, other.mag, equal_nan=True)
         error = np.array_equal(self.error, other.error, equal_nan=True)
         return all([time, mag, error])

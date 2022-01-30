@@ -89,7 +89,6 @@ class DBWriter(DataWriterInterface):
         db_label = StarDBLabel(name=star.name, dataset=self.dataset)
         db_timeseries = []
         time = star.timeseries.time.to_pydatetime()
-        time = np.where(pd.isnull(time), None, time)
         timeseries_data = zip(
             time,
             star.timeseries.mag,

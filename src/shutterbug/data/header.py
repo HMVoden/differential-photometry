@@ -29,13 +29,6 @@ class Header:
         # all of the other's items
         return header_set.issuperset(other_set)
 
-    @headers.validator
-    def _all_strings(self, _, value):
-        """Ensures all headers are strings"""
-
-        if not (all(isinstance(item, str) for item in value)):
-            raise ValueError("All headers must be strings")
-
 
 @define()
 class KnownHeader(Header):
@@ -95,6 +88,7 @@ class KnownHeader(Header):
     @star_data.validator
     @star_name.validator
     def _all_in_headers(self, _, value):
+        """Ensure that all names are in the headers"""
         if type(value) == str:
             if value not in self.headers:
                 raise ValueError(
@@ -104,12 +98,6 @@ class KnownHeader(Header):
             raise ValueError(
                 f"Headers '{', '.join(value)}' are not in given header list {self.headers}"
             )
-
-    @timeseries_names.validator
-    @star_data.validator
-    def _all_strings(self, _, value):
-        if not (all(isinstance(item, str) for item in value)):
-            raise ValueError("All headers must be strings")
 
 
 KNOWN_HEADERS = [

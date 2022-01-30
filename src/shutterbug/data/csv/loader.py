@@ -77,7 +77,6 @@ class CSVLoader(LoaderInterface):
     def __iter__(self) -> Generator[Star, None, None]:
         for star_name, rows in self._file_stars():
             try:
-                star = Star.from_rows(rows=rows, row_headers=self.headers)
-                yield star
+                yield Star.from_rows(rows=rows, row_headers=self.headers)
             except ValueError as e:
                 logging.warning(f"Unable to load star {star_name} due to error: {e}")

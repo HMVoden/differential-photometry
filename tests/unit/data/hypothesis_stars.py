@@ -1,25 +1,55 @@
+from decimal import Decimal
 import string
 from typing import Sequence, Union
 from hypothesis import assume
 from hypothesis.extra.dateutil import timezones
-from hypothesis.strategies import composite, datetimes, floats, integers, lists, text
+from hypothesis.strategies import (
+    composite,
+    decimals,
+    floats,
+    integers,
+    lists,
+    text,
+    DrawFn,
+)
 from hypothesis.strategies._internal.strategies import SearchStrategy
 from shutterbug.data.star import Star, StarTimeseries
-from tests.unit.data.test_star import julian_dates
 import numpy as np
+
+DAYS_IN_JULIAN_YEAR = 365.25
+UNIX_0_POINT_JD = 2440588.5
+END_POINT_JD = UNIX_0_POINT_JD + (DAYS_IN_JULIAN_YEAR * 200)
 
 
 @composite
-def star(draw, name: str = "", allow_nan=None) -> Star:
+def julian_dates(draw: DrawFn) -> float:
+    return float(
+        draw(
+            decimals(
+                min_value=UNIX_0_POINT_JD,
+                max_value=END_POINT_JD,
+                allow_nan=False,
+                allow_infinity=False,
+                places=3,
+            )
+        )
+    )
+
+
+@composite
+def star(draw, name: str = "", allow_nan=False) -> Star:
 
     if not name:
-        allowed_names = string.printable
+
+        allowed_names = string.ascii_letters + string.digits
         name = draw(text(alphabet=allowed_names, min_size=1))
-    mag = draw(lists(floats(allow_nan=allow_nan), min_size=1))
+    mag = draw(
+        lists(floats(allow_nan=allow_nan, allow_infinity=False, width=32), min_size=1)
+    )
     assume(not np.isnan(mag).all())
     error = draw(
         lists(
-            floats(allow_nan=allow_nan, min_value=0),
+            floats(allow_nan=allow_nan, allow_infinity=False, min_value=0, width=32),
             min_size=len(mag),
             max_size=len(mag),
         )

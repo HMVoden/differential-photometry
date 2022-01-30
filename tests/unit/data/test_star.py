@@ -2,25 +2,10 @@ import numpy as np
 import pandas as pd
 import pytest
 from hypothesis import given
-from hypothesis.strategies import floats, composite, lists, text, DrawFn, SearchStrategy
+from hypothesis.strategies import floats, composite, lists, DrawFn, SearchStrategy
 from shutterbug.data.star import Star, StarTimeseries
-from typing import List, Optional, Tuple, Union
-
-DAYS_IN_JULIAN_YEAR = 365.25
-UNIX_0_POINT_JD = 2440588.5
-END_POINT_JD = UNIX_0_POINT_JD + (DAYS_IN_JULIAN_YEAR * 200)
-
-
-@composite
-def julian_dates(draw: DrawFn) -> float:
-    return draw(
-        floats(
-            min_value=UNIX_0_POINT_JD,
-            max_value=END_POINT_JD,
-            allow_nan=False,
-            allow_infinity=False,
-        )
-    )
+from typing import List, Optional
+from tests.unit.data.hypothesis_stars import julian_dates
 
 
 @composite
@@ -87,3 +72,4 @@ def test_timeseries_bad_data(rows):
         ts = StarTimeseries(time=time, mag=mag, error=error)
         unique_times = np.unique(time)
         assert [True if x in ts.time else False for x in unique_times]
+        assert not np.isnan(mag).all()
