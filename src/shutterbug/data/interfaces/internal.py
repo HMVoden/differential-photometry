@@ -7,6 +7,8 @@ import pandas as pd
 
 
 class DataReaderInterface(ABC):
+    """Interface for reading data from an internal (trusted) source, such as a database or output from this program"""
+
     @property
     @abstractmethod
     def all(self) -> Generator[pd.DataFrame, None, None]:

@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Generator, Protocol, Set
-
+from typing import Generator
 from shutterbug.data.star import Star
 
 from abc import ABC, abstractmethod
