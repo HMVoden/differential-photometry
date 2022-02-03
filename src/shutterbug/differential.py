@@ -1,49 +1,53 @@
-from typing import Literal, Optional, Sequence
-
+from typing import Optional
+import pandas as pd
 import numpy as np
-import numpy.typing as npt
 
 
-class DifferentialPhotometryCalculator:
-    def calculate(
-        self,
-        method: Literal["difference", "error"],
-        target: Sequence[float],
-        reference: Sequence[Sequence[float]],
-        axis: Optional[int] = None,
-    ) -> Sequence[float]:
-        # safety checks
-        target_array = np.asarray(target)
-        reference_array = np.asarray(reference)
-        if method == "difference":
-            return self._average_difference(
-                target=target_array, reference=reference_array, axis=axis
-            )
-        elif method == "error":
-            return self._average_error(
-                target=target_array, reference=reference_array, axis=axis
-            )
-        else:
-            raise ValueError(
-                f"Passed in unknown method {method}, expected 'difference' or 'error'"
-            )
+def average_differential(
+    target: pd.DataFrame,
+    reference: pd.DataFrame,
+    data_column: str = "mag",
+    error_column: Optional[str] = None,
+) -> pd.DataFrame:
+    average_differential_magnitude = _average_difference(
+        target=target[data_column], reference=reference[data_column]
+    )
+    average_differential_magnitude = average_differential_magnitude.dropna(
+        axis=0, how="any"
+    )
+    average_differential_magnitude.rename({data_column: "adm"})  # type: ignore
+    if error_column is not None:
+        average_differential_error = _average_error(
+            target=target[error_column], reference=reference[error_column]
+        )
+        average_differential_error = average_differential_error.dropna(
+            axis=0, how="any"
+        )
+        average_differential_error = average_differential_error.rename(  # type: ignore
+            {error_column: "ade"}
+        )
+        return pd.concat(
+            {"adm": average_differential_magnitude, "ade": average_differential_error},  # type: ignore
+            axis=1,
+        )
+    else:
+        return average_differential_magnitude  # type: ignore
 
-    def _average_error(
-        self,
-        target: npt.NDArray[np.float64],
-        reference: npt.NDArray[np.float64],
-        axis: Optional[int] = None,
-    ) -> Sequence[float]:
-        N = len(target) + 1
-        sum_square = np.sum((target ** 2 + reference ** 2), axis=axis)
-        average = np.sqrt(sum_square) / N
-        return average
 
-    def _average_difference(
-        self,
-        target: npt.NDArray[np.float64],
-        reference: npt.NDArray[np.float64],
-        axis: Optional[int] = None,
-    ):
-        difference = reference - target
-        return np.mean((difference), axis=axis)
+def _average_error(
+    target: pd.Series,
+    reference: pd.Series,
+) -> pd.DataFrame:
+    N = len(reference.groupby("name")) + 1
+    new = np.sqrt((reference ** 2 + target ** 2).groupby("name").sum()) / N
+    return new
+
+
+def _average_difference(
+    target: pd.Series,
+    reference: pd.Series,
+) -> pd.DataFrame:
+    print(target - reference)
+    new = (target - reference).groupby("name").mean(numeric_only=True)
+    print(new)
+    return new

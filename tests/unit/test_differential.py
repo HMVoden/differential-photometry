@@ -1,55 +1,42 @@
-# import numpy as np
-# import pytest
-# from hypothesis import given
-# from hypothesis.extra.numpy import array_shapes, arrays
-# from hypothesis.strategies import composite, floats
-# from shutterbug.differential import DifferentialPhotometryCalculator
+from hypothesis.strategies._internal.numbers import floats
+from shutterbug.differential import (
+    average_differential,
+    _average_difference,
+    _average_error,
+)
+from hypothesis import given
+from hypothesis.strategies import text
+from hypothesis.extra.pandas import column, data_frames
+from hypothesis.extra.numpy import datetime64_dtypes
+import string
 
 
-# @composite
-# def target_and_reference(draw):
-#     target = draw(
-#         arrays(
-#             dtype=float,
-#             elements=floats(allow_nan=False, allow_infinity=False),
-#             shape=array_shapes(min_dims=1, max_dims=1),
-#         )
-#     )
-#     reference = draw(
-#         arrays(
-#             dtype=float,
-#             elements=floats(allow_nan=False, allow_infinity=False),
-#             shape=(len(target), 1),
-#         )
-#     )
-#     return target, reference
-
-
-# @given(target_and_reference())
-# def test_differential_calculation(data):
-#     calc = DifferentialPhotometryCalculator()
-#     target, reference = data
-#     expected = np.mean((reference - target), axis=0)
-#     actual = calc.calculate(
-#         method="difference", target=target, reference=reference, axis=0
-#     )
-#     assert all(np.isclose(actual, expected))
-
-
-# @given(target_and_reference())
-# def test_differential_error_calculation(data):
-#     calc = DifferentialPhotometryCalculator()
-#     target, reference = data
-#     N = reference.shape[0] + 1
-
-#     expected = np.sqrt(np.sum((target ** 2 + reference ** 2), axis=0)) / N
-#     actual = calc.calculate(method="error", target=target, reference=reference, axis=0)
-#     assert all(np.isclose(actual, expected))
-
-
-# def test_bad_method():
-#     with pytest.raises(ValueError):
-#         calc = DifferentialPhotometryCalculator()
-#         calc.calculate(
-#             method="bleg", target=[1, 2, 3, 4], reference=[1, 2, 3, 4], axis=0
-#         )
+@given(
+    data_frames(
+        columns=[
+            column(
+                name="name", elements=text(alphabet=string.ascii_letters, min_size=1)
+            ),
+            column(
+                name="mag",
+                elements=floats(
+                    min_value=-5, max_value=20, allow_nan=False, allow_infinity=False
+                ),
+            ),
+            column(
+                name="error",
+                elements=floats(
+                    min_value=0, max_value=20, allow_nan=False, allow_infinity=False
+                ),
+            ),
+            column(name="time", elements=datetime64_dtypes(), unique=False),
+        ]
+    )
+)
+def test_photometry(stars):
+    stars = stars.set_index(["name", "time"])
+    for name, star_df in stars.groupby("name"):
+        reference = stars.drop(name, level="name")
+        adm_ade = average_differential(
+            star_df, reference, data_column="mag", error_column="error"
+        )
