@@ -47,7 +47,7 @@ def _average_difference(
     target: pd.Series,
     reference: pd.Series,
 ) -> pd.DataFrame:
-    print(target - reference)
-    new = (target - reference).groupby("name").mean(numeric_only=True)
-    print(new)
+    print(reference.xs())
+    print(target.groupby("time") - reference)
+    new = (target - reference.values).groupby("name").mean()
     return new
