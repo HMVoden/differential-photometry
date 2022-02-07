@@ -64,14 +64,18 @@ def timeseries_dataframes(
     for name in stars:
         mag = draw(
             lists(
-                floats(allow_nan=False, allow_infinity=False),
+                floats(
+                    min_value=-20, max_value=20, allow_nan=False, allow_infinity=False
+                ),
                 min_size=num_timeseries,
                 max_size=num_timeseries,
             )
         )
         error = draw(
             lists(
-                floats(allow_nan=False, allow_infinity=False),
+                floats(
+                    min_value=0, max_value=20, allow_nan=False, allow_infinity=False
+                ),
                 min_size=num_timeseries,
                 max_size=num_timeseries,
             )
@@ -85,6 +89,7 @@ def timeseries_dataframes(
 
 @given(timeseries_dataframes(max_stars=3, max_entries=3))
 def test_photometry(stars):
+    stars = stars.sort_index(level="time")
     for name, star_df in stars.groupby("name"):
         reference = stars.drop(name, level="name")
         adm_ade = average_differential(

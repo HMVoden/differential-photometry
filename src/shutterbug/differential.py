@@ -15,7 +15,7 @@ def average_differential(
     average_differential_magnitude = average_differential_magnitude.dropna(
         axis=0, how="any"
     )
-    average_differential_magnitude.rename({data_column: "adm"})  # type: ignore
+    average_differential_magnitude.rename("adm")  # type: ignore
     if error_column is not None:
         average_differential_error = _average_error(
             target=target[error_column], reference=reference[error_column]
@@ -24,11 +24,10 @@ def average_differential(
             axis=0, how="any"
         )
         average_differential_error = average_differential_error.rename(  # type: ignore
-            {error_column: "ade"}
+            "ade"
         )
         return pd.concat(
             {"adm": average_differential_magnitude, "ade": average_differential_error},  # type: ignore
-            axis=1,
         )
     else:
         return average_differential_magnitude  # type: ignore
@@ -37,17 +36,18 @@ def average_differential(
 def _average_error(
     target: pd.Series,
     reference: pd.Series,
-) -> pd.DataFrame:
+) -> pd.Series:
     N = len(reference.groupby("name")) + 1
-    new = np.sqrt((reference ** 2 + target ** 2).groupby("name").sum()) / N
+    new = (
+        np.sqrt((reference ** 2 + target.droplevel("name") ** 2).groupby("time").sum())
+        / N
+    )
     return new
 
 
 def _average_difference(
     target: pd.Series,
     reference: pd.Series,
-) -> pd.DataFrame:
-    print(reference.xs())
-    print(target.groupby("time") - reference)
-    new = (target - reference.values).groupby("name").mean()
+) -> pd.Series:
+    new = reference.rsub(target.droplevel("name")).groupby("time").mean()
     return new
