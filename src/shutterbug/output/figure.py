@@ -4,26 +4,10 @@ from typing import Dict, List, Optional, Tuple
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
-import numpy as np
-import numpy.typing as npt
 import seaborn as sns
-import xarray as xr
-from matplotlib.backends.backend_agg import FigureCanvasAgg, RendererAgg
-from matplotlib.figure import Figure
-from matplotlib.transforms import BboxBase
 
 
-class Singleton:
-    _instance = None  # Keep instance reference
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = object.__new__(cls)
-        return cls._instance
-
-
-# TODO refactor this so it's not so abhorrent
-class WorkerFigure(Singleton):
+class WorkerFigure:
     nrows: int
     ncols: int
     figsize: Tuple[int, int]
@@ -174,57 +158,3 @@ class WorkerFigure(Singleton):
         if test_statistic is not None:
             title += f"\n Augmented Dickey-Fuller value: {test_statistic:.2f}, varying when p-value: >=0.05"
         self.fig.suptitle(title)
-
-
-def max_variation(
-    ds: xr.Dataset,
-    uniform_y_axis: bool = False,
-    mag_y_scale: float = None,
-    diff_y_scale: float = None,
-) -> xr.Dataset:
-    if mag_y_scale is not None or diff_y_scale is not None:
-        ds.attrs["mag_var"] = mag_y_scale
-        ds.attrs["diff_var"] = diff_y_scale
-        if mag_y_scale is None or diff_y_scale is None:
-            logging.warning(
-                "The magnitude or differential magnitude plotting scale is not set."
-            )
-            logging.warning("Continuing with defaults for unset scale.")
-
-    if uniform_y_axis is True:
-        # Calculate the largest deviation along the y-axis
-        # for the entire dataset
-
-        ds.attrs["mag_var"] = get_largest_range((ds["mag"] - ds["mag_offset"]).values)
-        ds.attrs["diff_var"] = get_largest_range(
-            (ds["average_diff_mags"] - ds["dmag_offset"]).values
-        )
-    if all(lim in ds.attrs.keys() for lim in ["mag_var", "diff_var"]):
-        logging.info("Magnitude y-axis range is: +/- %s", ds.attrs["mag_var"])
-        logging.info("Differential y-axis range is: +/- %s", ds.attrs["diff_var"])
-    return ds
-
-
-def get_largest_range(data: List[float]) -> float:
-    """Finds the largest range in one part of a timeseries dataset, for example
-    if you have three days of timeseries, this will find the largest range that
-    can be found in a single day
-
-    Returns
-    -------
-    Dict
-        Dictionary of the data name passed in and the entire dataset of values as the
-        dictionary value.
-
-    Returns
-    -------
-    Dict
-        Dictionary of the data name and the largest range for the entire dataset
-    """
-    # max_variation = np.abs(np.ptp(d))
-    ptp = np.ptp(data, axis=0)
-    max_variation = np.max(np.abs(ptp))
-    max_variation = np.round(max_variation / 2, decimals=1)
-    # Divide by 2 to keep most data in viewing range as
-    # this encompasses the entire range (half above, half below)
-    return max_variation
