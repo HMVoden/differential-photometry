@@ -1,8 +1,8 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from functools import singledispatchmethod
-from typing import Generator, Set, Protocol
+from typing import Generator
 from shutterbug.data.star import Star
-from pathlib import Path
 import pandas as pd
 
 
@@ -46,8 +46,17 @@ class LoaderInterface(ABC):
         raise NotImplementedError
 
 
-class FileLoaderFactory(Protocol):
-    READABLE_TYPES: Set[str]
+class SaverInterface(ABC):
+    """Object that saves other objects to a certain place"""
 
-    def make_loader(self, file_path: Path) -> LoaderInterface:
-        ...
+    @abstractmethod
+    def save(self, element: SaveableInterface):
+        raise NotImplementedError
+
+
+class SaveableInterface(ABC):
+    """Object that is saveable in some way"""
+
+    @abstractmethod
+    def save_to(self, saver: SaverInterface):
+        raise NotImplementedError

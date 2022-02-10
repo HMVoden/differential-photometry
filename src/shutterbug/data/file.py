@@ -1,14 +1,14 @@
 import logging
 from pathlib import Path
-from typing import Generator, Iterable, List, Type, Union
+from typing import Generator, Iterable, List, Union
 
 from attr import define, field
-from shutterbug.data.interfaces.external import InputInterface
-from shutterbug.data.interfaces.internal import FileLoaderFactory, LoaderInterface
+from shutterbug.data.interfaces.external import InputInterface, FileLoaderFactory
+from shutterbug.data.interfaces.internal import LoaderInterface
 import shutterbug.data.csv.loader_factory as CSVFactory
 from shutterbug.data.star import Star
 
-_TYPES: List[Type[FileLoaderFactory]] = [CSVFactory]
+_TYPES: List[FileLoaderFactory] = [CSVFactory]
 
 
 @define(slots=True)

@@ -59,8 +59,3 @@ class Photometer(Protocol):
         error_column: Optional[str] = None,
     ) -> pd.DataFrame:
         ...
-
-
-class Grapher(Protocol):
-    def graph(self, target: pd.DataFrame) -> None:
-        ...
