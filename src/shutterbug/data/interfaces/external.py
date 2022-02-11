@@ -24,13 +24,23 @@ class FileLoaderFactory(Protocol):
     def make_loader(self, file_path: Path) -> LoaderInterface:
         ...
 
-class GraphFactoryInterface(Protocol):
-    def make(
-        self,
-        title: str,
-        x: Iterable[str],
-        y: Iterable[str],
-        x_axis_name: str,
-        y_axis_name: str,
-    ) -> GraphInterface:
+
+class GraphBuilder(Protocol):
+    @property
+    def graph(self) -> None:
+        ...
+
+    def set_title(self) -> None:
+        ...
+
+    def set_axis_names(self) -> None:
+        ...
+
+    def set_size(self) -> None:
+        ...
+
+    def set_data(self) -> None:
+        ...
+
+    def set_type(self) -> None:
         ...
