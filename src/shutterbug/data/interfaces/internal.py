@@ -60,3 +60,8 @@ class SaveableInterface(ABC):
     @abstractmethod
     def save_to(self, saver: SaverInterface):
         raise NotImplementedError
+
+class GraphInterface(ABC):
+    @abstractmethod
+    def render(self):
+        raise NotImplementedError
