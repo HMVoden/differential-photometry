@@ -1,16 +1,16 @@
 from attr import field, define
-from shutterbug.data.graphing.graph import Graph
+from shutterbug.data.interfaces.internal import GraphInterface
 
-from shutterbug.data.interfaces.external import GraphBuilder
+from shutterbug.data.interfaces.external import GraphBuilderInterface
 
 
-@define
+@define(slots=True)
 class GraphDirector:
     """Takes a graph builder and is then used to construct all graphs via this
     builder"""
 
-    builder: GraphBuilder = field()
+    builder: GraphBuilderInterface = field()
 
-    def build_graph(self, data) -> Graph:
+    def build_graph(self, data) -> GraphInterface:
         """Builds and returns a graph from specified data"""
         pass

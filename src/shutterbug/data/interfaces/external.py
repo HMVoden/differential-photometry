@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Generator
-from shutterbug.data.interfaces.internal import LoaderInterface
+from shutterbug.data.interfaces.internal import GraphInterface, LoaderInterface
 from shutterbug.data.star import Star
 
 from abc import ABC, abstractmethod
-from typing import Generator, Iterable, Protocol
+from typing import Generator, Iterable, Protocol, Optional, Tuple
 from pathlib import Path
+import pandas as pd
 
 
 class InputInterface(ABC):
@@ -25,22 +26,35 @@ class FileLoaderFactory(Protocol):
         ...
 
 
-class GraphBuilder(Protocol):
+class GraphBuilderInterface(Protocol):
+    """Generic Graph builder wrapper, for any graph system"""
+
     @property
-    def graph(self) -> None:
+    def title(self) -> Optional[str]:
         ...
 
-    def set_title(self) -> None:
+    @property
+    def axis_names(self) -> Tuple[Optional[str], Optional[str]]:
         ...
 
-    def set_axis_names(self) -> None:
+    @property
+    def axis_limits(self) -> Tuple[Optional[float], Optional[float]]:
         ...
 
-    def set_size(self) -> None:
+    @property
+    def size(self) -> Tuple[Optional[float], Optional[float]]:
         ...
 
-    def set_data(self) -> None:
+    @property
+    def data(self) -> pd.Series:
         ...
 
-    def set_type(self) -> None:
+    @property
+    def type(self) -> str:
+        ...
+
+    def reset(self) -> None:
+        ...
+
+    def build(self) -> GraphInterface:
         ...
