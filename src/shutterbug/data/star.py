@@ -7,21 +7,22 @@ import pandas as pd
 from attr import define, field
 import sys
 
-from typing import List
+from typing import List, Sequence
 
 from shutterbug.data.header import KnownHeader
+from shutterbug.data.validate import _is_same_length, _has_data, _empty_rows
 
 
-def asfloat(value: List[str]) -> npt.NDArray[np.float64]:
-    return pd.to_numeric(value, errors="coerce")  # type: ignore
+def asfloat(value: List[str]) -> npt.NDArray[np.float32]:
+    return pd.to_numeric(value, errors="coerce", downcast="float")  # type: ignore
 
 
 def asdatetime(value) -> pd.DatetimeIndex:
     try:
         # Try julian date
-        float = asfloat(value)
+        fl = pd.to_numeric(value, errors="coerce")
         datetimes = pd.to_datetime(
-            float, errors="coerce", origin="julian", unit="D", utc=True
+            fl, errors="coerce", origin="julian", unit="D", utc=True
         )
         if all(pd.isna(datetimes)):
             raise ValueError
@@ -29,84 +30,48 @@ def asdatetime(value) -> pd.DatetimeIndex:
         # Try guessing
         datetimes = pd.to_datetime(value, errors="coerce", utc=True)
     datetimes = datetimes.round("1us")
-    return pd.DatetimeIndex(datetimes)
+    return pd.DatetimeIndex(datetimes, name="time", yearfirst=True)
 
 
 @define(slots=True)
 class StarTimeseries:
     """Timeseries information for a star"""
 
-    time: pd.DatetimeIndex = field(converter=asdatetime)
-    mag: npt.NDArray[np.float64] = field(converter=asfloat)
-    error: npt.NDArray[np.float64] = field(converter=asfloat)
+    _data: pd.DataFrame = field()
 
-    def _has_data(self, values):
-        if np.isnan(values).all():
-            raise ValueError("Timeseries must have data, does not have any")
+    @property
+    def time(self) -> pd.DatetimeIndex:
+        return self._data.index  # type: ignore
 
-    def _same_length(self):
-        """Ensure that all lists are same length"""
-        assert len(self.time) == len(self.error)
-        assert len(self.mag) == len(self.error)
+    @property
+    def magnitude(self) -> npt.NDArray[np.float_]:
+        return self._data["magnitude"].to_numpy()
 
-    def _unique_times(self):
-        _, unique_indices = np.unique(self.time, return_index=True)
-        if not len(unique_indices) == len(self.time):
-            logging.debug("Have duplicate time entries on star")
-            self.time = self.time[unique_indices]
-            self.mag = self.mag[unique_indices]
-            self.error = self.error[unique_indices]
-        try:
-            self._same_length()
-        except AssertionError:
-            raise ValueError(
-                f"Timeseries entries are incomplete, have length for time:{len(self.time)}, magnitude:{len(self.mag)}, error:{len(self.error)}. Expected equal."
-            )
+    @property
+    def error(self) -> npt.NDArray[np.float_]:
+        return self._data["error"].to_numpy()
 
-    def _no_empty_rows(self):
-        time = self.time
-        mag = self.mag
-        error = self.error
-        bad_indices = []
-        for idx, time in enumerate(time):
-            if np.isnan(mag[idx]) and np.isnan(error[idx]):
-                bad_indices.append(idx)
-        bad_indices = np.asarray(bad_indices).tolist()
-        self.time = self.time.delete(bad_indices)
-        self.mag = np.delete(self.mag, bad_indices)
-        self.error = np.delete(self.error, bad_indices)
+    @property
+    def averaged_differential_magnitude(self) -> Sequence[float]:
+        return self._data["adm"].to_numpy()
 
-    def _no_empty_time(self):
-        not_a_time = np.argwhere(pd.isna(self.time)).flatten().tolist()
-        if len(not_a_time) > 0:
-            logging.debug(f"Found {len(not_a_time)} invalid time entries")
-            if (len(self.time) - len(not_a_time)) == 0:
-                raise ValueError("All time values are invalid")
-        self.time = self.time.delete(not_a_time)
-        self.mag = np.delete(self.mag, not_a_time)
-        self.error = np.delete(self.error, not_a_time)
+    @property
+    def averaged_differential_error(self) -> Sequence[float]:
+        return self._data["ade"].to_numpy()
 
-    def __attrs_post_init__(self):
-        # Ensure that the data is good
-        self._has_data(self.mag)
-        self._no_empty_time()
-        self._no_empty_rows()
-        self._unique_times()
-        if len(self.time) == 0:
-            raise ValueError("Given insufficient information for timeseries")
+    def drop_rows(self, rows: List[int]) -> None:
+        self._data = self._data.drop(index=rows)  # type: ignore
 
-    def __eq__(self, other):
+    def __eq__(self, other: StarTimeseries):
         if other.__class__ is not self.__class__:
             return NotImplemented
-        time = self.time.equals(other.time)
-        mag = np.array_equal(self.mag, other.mag, equal_nan=True)
-        error = np.array_equal(self.error, other.error, equal_nan=True)
-        return all([time, mag, error])
+
+        return self._data == other._data
 
     @property
     def nbytes(self) -> int:
         """Number of bytes the timeseries consumes in memory"""
-        return self.time.nbytes + self.mag.nbytes + self.error.nbytes
+        return self.time.nbytes + self.magnitude.nbytes + self.error.nbytes
 
     @classmethod
     def from_rows(
@@ -117,7 +82,13 @@ class StarTimeseries:
         timeseries = list(map(getter, rows))
         # so we can get each specific column without fuss
         np_data = np.asarray(timeseries)
-        ts = cls(time=np_data[:, 0], mag=np_data[:, 1], error=np_data[:, 2])
+        df = pd.DataFrame(
+            data={"magnitude": asfloat(np_data[:, 1]), "error": asfloat(np_data[:, 2])},
+            index=asdatetime(np_data[:, 0]),
+        )
+
+        ts = cls(data=df)  # type: ignore
+        ts = validate_timeseries(ts)
         logging.debug("Finished building timeseries")
         return ts
 
@@ -127,14 +98,10 @@ class Star:
     """Dataclass describing a star's information from an image or series of image"""
 
     name: str = field()
+    # First to float and then to int to prevent odd reading errors
     x: int = field(converter=[float, int])
     y: int = field(converter=[float, int])
     timeseries: StarTimeseries = field()
-
-    # @error.validator
-    # def positive_error(self, attribute, value):
-    #     if not value >= 0:
-    #         raise ValueError("Cannot have negative error")
 
     @property
     def nbytes(self) -> int:
@@ -152,3 +119,17 @@ class Star:
         logging.debug(f"Building star object {name}, x: {x}, y: {y}")
         timeseries = StarTimeseries.from_rows(rows, row_headers)
         return cls(name=name, x=x, y=y, timeseries=timeseries)
+
+
+def validate_timeseries(ts: StarTimeseries) -> StarTimeseries:
+    ts.drop_rows(_empty_rows(ts.magnitude, ts.error))
+    try:
+        assert _is_same_length(ts.magnitude, ts.error)
+    except AssertionError:
+        raise ValueError("Magnitude and error are not the same length")
+    try:
+        assert _has_data(ts.magnitude)
+        assert _has_data(ts.error)
+    except AssertionError:
+        raise ValueError("Either magnitude or error has no values")
+    return ts
