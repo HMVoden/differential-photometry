@@ -44,20 +44,12 @@ class StarTimeseries:
         return self._data.index  # type: ignore
 
     @property
-    def magnitude(self) -> npt.NDArray[np.float_]:
-        return self._data["magnitude"].to_numpy()
+    def magnitude(self) -> pd.DataFrame:
+        return self._data["magnitude", "error"].rename({"magnitude": "data"})
 
     @property
-    def error(self) -> npt.NDArray[np.float_]:
-        return self._data["error"].to_numpy()
-
-    @property
-    def averaged_differential_magnitude(self) -> Sequence[float]:
-        return self._data["adm"].to_numpy()
-
-    @property
-    def averaged_differential_error(self) -> Sequence[float]:
-        return self._data["ade"].to_numpy()
+    def averaged_differential_magnitude(self) -> pd.DataFrame:
+        return self._data["adm", "ade"].rename({"adm": "data", "ade": "error"})
 
     def drop_rows(self, rows: List[int]) -> None:
         self._data = self._data.drop(index=rows)  # type: ignore
@@ -122,14 +114,16 @@ class Star:
 
 
 def validate_timeseries(ts: StarTimeseries) -> StarTimeseries:
-    ts.drop_rows(_empty_rows(ts.magnitude, ts.error))
+    mag = ts.magnitude["data"].to_numpy()
+    error = ts.magnitude["error"].to_numpy()
+    ts.drop_rows(_empty_rows(mag, error))
     try:
-        assert _is_same_length(ts.magnitude, ts.error)
+        assert _is_same_length(mag, error)
     except AssertionError:
         raise ValueError("Magnitude and error are not the same length")
     try:
-        assert _has_data(ts.magnitude)
-        assert _has_data(ts.error)
+        assert _has_data(mag)
+        assert _has_data(error)
     except AssertionError:
         raise ValueError("Either magnitude or error has no values")
     return ts
