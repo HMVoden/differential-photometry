@@ -87,7 +87,7 @@ class StarTimeseries:
             index=asdatetime(np_data[:, 0]),
         )
 
-        ts = cls(_data=df)
+        ts = cls(data=df)  # type: ignore
         ts = validate_timeseries(ts)
         logging.debug("Finished building timeseries")
         return ts

@@ -1,5 +1,12 @@
-from sqlalchemy import (Column, DateTime, Float, ForeignKey, Integer, Text,
-                        UniqueConstraint)
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import MetaData
@@ -57,6 +64,8 @@ class StarDBTimeseries(Base):
     time = Column("time", DateTime)
     mag = Column("magnitude", Float)
     error = Column("error", Float)
+    adm = Column("average differential magnitude", Float)
+    ade = Column("average differential error", Float)
     idref = Column(Integer, ForeignKey("stars.id"))
 
     star = relationship("StarDB", back_populates="timeseries")
