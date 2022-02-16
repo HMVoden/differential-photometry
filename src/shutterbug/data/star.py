@@ -7,10 +7,10 @@ import pandas as pd
 from attr import define, field
 import sys
 
-from typing import List
+from typing import List, Sequence
 
 from shutterbug.data.header import KnownHeader
-from shutterbug.data.validate import validate_timeseries
+from shutterbug.data.validate import _is_same_length, _has_data, _empty_rows
 
 
 def asfloat(value: List[str]) -> npt.NDArray[np.float32]:
@@ -52,11 +52,11 @@ class StarTimeseries:
         return self._data["error"].to_numpy()
 
     @property
-    def averaged_differential_magnitude(self) -> npt.NDArray[np.float_]:
+    def averaged_differential_magnitude(self) -> Sequence[float]:
         return self._data["adm"].to_numpy()
 
     @property
-    def averaged_differential_error(self) -> npt.NDArray[np.float_]:
+    def averaged_differential_error(self) -> Sequence[float]:
         return self._data["ade"].to_numpy()
 
     def drop_rows(self, rows: List[int]) -> None:
@@ -98,6 +98,7 @@ class Star:
     """Dataclass describing a star's information from an image or series of image"""
 
     name: str = field()
+    # First to float and then to int to prevent odd reading errors
     x: int = field(converter=[float, int])
     y: int = field(converter=[float, int])
     timeseries: StarTimeseries = field()
@@ -118,3 +119,17 @@ class Star:
         logging.debug(f"Building star object {name}, x: {x}, y: {y}")
         timeseries = StarTimeseries.from_rows(rows, row_headers)
         return cls(name=name, x=x, y=y, timeseries=timeseries)
+
+
+def validate_timeseries(ts: StarTimeseries) -> StarTimeseries:
+    ts.drop_rows(_empty_rows(ts.magnitude, ts.error))
+    try:
+        assert _is_same_length(ts.magnitude, ts.error)
+    except AssertionError:
+        raise ValueError("Magnitude and error are not the same length")
+    try:
+        assert _has_data(ts.magnitude)
+        assert _has_data(ts.error)
+    except AssertionError:
+        raise ValueError("Either magnitude or error has no values")
+    return ts
