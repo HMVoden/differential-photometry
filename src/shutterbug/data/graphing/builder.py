@@ -2,7 +2,7 @@ from abc import abstractmethod
 from attrs import field, define
 
 from shutterbug.data.interfaces.external import GraphBuilderInterface
-from typing import Optional, Tuple
+from typing import Literal, Optional, Tuple
 import pandas as pd
 
 from shutterbug.data.interfaces.internal import GraphInterface
@@ -19,10 +19,8 @@ class BuilderBase(GraphBuilderInterface):
     _data: pd.DataFrame = field(init=False)
     _size: Tuple[Optional[int], Optional[int]] = field(init=False)
 
-    _type: Optional[str] = field(init=False, default="scatterplot")
-    _x_data_name: Optional[str] = field(
-        init=False, default="averaged differential magnitude"
-    )
+    _type: Literal["scatter", "line"] = field(init=False, default="scatter")
+    _error_display: Literal["bar", "fill", None] = field(init=False, default="bar")
 
     @property
     def title(self) -> Optional[str]:
@@ -47,7 +45,11 @@ class BuilderBase(GraphBuilderInterface):
     @property
     def data(self) -> pd.DataFrame:
         # Don't return mutable data, only copies
-        return self._data
+        return self._data.copy(deep=True)
+
+    @property
+    def error_display(self) -> Literal["bar", "fill", None]:
+        return self._error_display
 
     def reset(self) -> None:
         self._title = None
@@ -56,7 +58,8 @@ class BuilderBase(GraphBuilderInterface):
         # float16 to keep it small
         self._data = pd.DataFrame(dtype="float16")
         self._size = (None, None)
-        self._type = None
+        self._type = "scatter"
+        self._error_display = "bar"
 
     @abstractmethod
     def build(self) -> GraphInterface:
