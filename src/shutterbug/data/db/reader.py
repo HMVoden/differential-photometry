@@ -3,15 +3,17 @@ from typing import Generator, List, Optional
 import attr
 import pandas as pd
 from attr import define, field
-from shutterbug.data.interfaces.internal import DataReaderInterface
+from shutterbug.data.interfaces.internal import Loader, Reader
 from shutterbug.data.db.model import StarDB, StarDBLabel, StarDBTimeseries
 from sqlalchemy import func, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
+from shutterbug.data.star import Star
+
 
 @define(slots=True, frozen=True)
-class DBReader(DataReaderInterface):
+class DBReader(Reader, Loader):
     dataset: str = field()
     engine: Engine = field()
     mag_limit: Optional[float] = field(
@@ -31,8 +33,10 @@ class DBReader(DataReaderInterface):
             )
             return list(map(lambda x: x[0], star_names))
 
-    @property
-    def all(self) -> Generator[pd.DataFrame, None, None]:
+    def __len__(self) -> int:
+        return len(self.names)
+
+    def __iter__(self) -> Generator[Star, None, None]:
         """Connecting to target database, returns a generator of each individual star
         in sequence
 

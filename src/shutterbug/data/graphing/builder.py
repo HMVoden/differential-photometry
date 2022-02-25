@@ -1,16 +1,16 @@
 from abc import abstractmethod
 from attrs import field, define
 
-from shutterbug.data.interfaces.external import GraphBuilderInterface
+from shutterbug.data.interfaces.external import GraphBuilder
 from typing import Literal, Optional, Tuple
 import pandas as pd
 
-from shutterbug.data.interfaces.internal import GraphInterface
+from shutterbug.data.interfaces.internal import Graph
 from shutterbug.data.star import Star, StarTimeseries
 
 
 @define
-class BuilderBase(GraphBuilderInterface):
+class BuilderBase(GraphBuilder):
     """Generic builder type, contains all fields and properties for building"""
 
     _title: Optional[str] = field(init=False)
@@ -62,5 +62,5 @@ class BuilderBase(GraphBuilderInterface):
         self._error_display = "bar"
 
     @abstractmethod
-    def build(self) -> GraphInterface:
+    def build(self) -> Graph:
         raise NotImplementedError

@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import Generator, Iterable, List, Union
 
 from attr import define, field
-from shutterbug.data.interfaces.external import InputInterface, FileLoaderFactory
-from shutterbug.data.interfaces.internal import LoaderInterface
+from shutterbug.data.interfaces.external import Input, FileLoaderFactory
+from shutterbug.data.interfaces.internal import Loader
 import shutterbug.data.csv.loader_factory as CSVFactory
 from shutterbug.data.star import Star
 
@@ -12,7 +12,7 @@ _TYPES: List[FileLoaderFactory] = [CSVFactory]
 
 
 @define(slots=True)
-class FileInput(InputInterface):
+class FileInput(Input):
     path: Path = field()
     _input_files: List[Path] = field(init=False)
 
@@ -42,7 +42,7 @@ class FileInput(InputInterface):
             result.append(path)
         return result
 
-    def _file_to_loader(self, path: Path) -> Union[None, LoaderInterface]:
+    def _file_to_loader(self, path: Path) -> Union[None, Loader]:
         """Takes a given file and if it's readable by one of the loaders, return a
         readied loader of that type
 

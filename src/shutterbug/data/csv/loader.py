@@ -8,11 +8,11 @@ from attr import define, field
 from more_itertools import consume, map_reduce
 from shutterbug.data.star import Star
 from shutterbug.data.header import KnownHeader
-from shutterbug.data.interfaces.internal import LoaderInterface
+from shutterbug.data.interfaces.internal import Loader
 
 
 @define(slots=True)
-class CSVLoader(LoaderInterface):
+class CSVLoader(Loader):
 
     input_file: Path = field()
     headers: KnownHeader = field()

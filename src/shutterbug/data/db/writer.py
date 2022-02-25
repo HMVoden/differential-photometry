@@ -4,7 +4,7 @@ import attr
 import numpy as np
 import pandas as pd
 from attr import define, field
-from shutterbug.data.interfaces.internal import DataWriterInterface
+from shutterbug.data.interfaces.internal import Writer
 from shutterbug.data.star import Star
 from shutterbug.data.db.model import StarDB, StarDBLabel, StarDBTimeseries
 from sqlalchemy.engine import Engine
@@ -13,7 +13,7 @@ from functools import singledispatchmethod
 
 
 @define
-class DBWriter(DataWriterInterface):
+class DBWriter(Writer):
     """Maintains a SQLAlchemy database engine to write star data into a database
     that's defined by the provided engine
 
@@ -23,7 +23,7 @@ class DBWriter(DataWriterInterface):
     dataset: str = field()
 
     @singledispatchmethod
-    def write(self, data: Star):
+    def write(self, data: Star, overwrite: bool):
         """Stores star in database defined by provided engine
 
         Parameter
@@ -33,18 +33,18 @@ class DBWriter(DataWriterInterface):
 
         """
         with Session(self.engine) as session:
-            self._write_star(session=session, star=data)
+            self._write_star(session=session, star=data, overwrite=overwrite)
             session.commit()
 
     @write.register
-    def _(self, data: list):
+    def _(self, data: list, overwrite: bool):
         # have to use list as type due to bug with singledispatch
         with Session(self.engine) as session:
             for star in data:
-                self._write_star(session=session, star=star)
+                self._write_star(session=session, star=star, overwrite=overwrite)
             session.commit()
 
-    def _write_star(self, session: Session, star: Star):
+    def _write_star(self, session: Session, star: Star, overwrite: bool = False):
         """Writes star with given session
 
         Parameters
@@ -55,15 +55,25 @@ class DBWriter(DataWriterInterface):
             Star to write
 
         """
-        logging.debug(f"Writing star {star.name} into database")
-        db_star = session.query(StarDBLabel.name).filter(StarDBLabel.name == star.name)
+        db_star = (
+            session.query(StarDBLabel.name)
+            .filter(StarDBLabel.name == star.name)
+            .filter(StarDBLabel.dataset == self.dataset)
+        )
         if not session.query(db_star.exists()).scalar():
+            logging.debug(f"Writing star {star.name} into database")
             model_star = self._convert_to_model(star)
             session.add(model_star)
         else:
-            logging.debug(
-                f"tried to write star {star.name}, already present in database"
-            )
+            if overwrite == False:
+                logging.debug(
+                    f"Tried to write star {star.name}, already present in database. Overwrite disabled."
+                )
+            else:
+                self._update_star(star, session)
+
+    def _update_star(self, star: Star, session: Session):
+        pass
 
     def _convert_to_model(
         self,
@@ -88,12 +98,8 @@ class DBWriter(DataWriterInterface):
         )
         db_label = StarDBLabel(name=star.name, dataset=self.dataset)
         db_timeseries = []
-        time = star.timeseries.time.to_pydatetime()
-        timeseries_data = zip(
-            time,
-            star.timeseries.mag,
-            star.timeseries.error,
-        )
+        ts = star.timeseries.magnitude
+        timeseries_data = zip(ts.index.to_pydatetime(), ts["data"], ts["error"])
         for time, mag, error in timeseries_data:
             ts = StarDBTimeseries(
                 time=time,

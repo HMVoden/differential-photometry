@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Generator
-from shutterbug.data.interfaces.internal import GraphInterface, LoaderInterface
+from shutterbug.data.interfaces.internal import Graph, Loader
 from shutterbug.data.star import Star
 
 from abc import ABC, abstractmethod
@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 
 
-class InputInterface(ABC):
+class Input(ABC):
     @abstractmethod
     def __len__(self) -> int:
         raise NotImplementedError
@@ -22,12 +22,12 @@ class InputInterface(ABC):
 class FileLoaderFactory(Protocol):
     READABLE_TYPES: Iterable[str]
 
-    def make_loader(self, file_path: Path) -> LoaderInterface:
+    def make_loader(self, file_path: Path) -> Loader:
         ...
 
 
-class GraphBuilderInterface(Protocol):
-    """Generic Graph builder wrapper, for any graph system"""
+class GraphBuilder(Protocol):
+    """Generic Graph builder wrapper protocol, for any graph system"""
 
     @property
     def title(self) -> Optional[str]:
@@ -56,5 +56,5 @@ class GraphBuilderInterface(Protocol):
     def reset(self) -> None:
         ...
 
-    def build(self) -> GraphInterface:
+    def build(self) -> Graph:
         ...
