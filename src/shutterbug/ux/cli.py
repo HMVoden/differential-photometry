@@ -34,7 +34,7 @@ def cli(context: Context, debug: bool):
     type=click.Path(
         exists=True, file_okay=True, dir_okay=True, readable=True, path_type=Path
     ),
-    help="Dataset to load",
+    help="Datasets to load",
 )
 @click.pass_context
 def cli_load(context: Context, files: List[Path]):
