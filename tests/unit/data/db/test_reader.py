@@ -53,7 +53,7 @@ def test_reads_all(stars: List[Star], other: List[Star]):
         reader = DBReader(dataset="test", engine=engine, mag_limit=0, distance_limit=0)
         read_names = []
         datasets = []
-        for star in reader.all:
+        for star in reader:
             read_names.append(star.index.levels[0][0])
             datasets.append(star["dataset"][0])
         star_set = set(star_names)

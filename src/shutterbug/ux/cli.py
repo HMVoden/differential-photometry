@@ -5,7 +5,7 @@ import logging
 from typing import List
 
 from click.core import Context
-from shutterbug.data.interfaces.internal import DataReaderInterface
+from shutterbug.data.interfaces.internal import Reader
 from shutterbug.data.file import FileInput
 from shutterbug.data.db.writer import DBWriter
 from shutterbug.data.db.reader import DBReader
@@ -70,7 +70,7 @@ def cli_load(context: Context, files: List[Path]):
 
 
 @cli.command("process")
-def cli_process(reader: DataReaderInterface):
+def cli_process(reader: Reader):
     pass
 
 

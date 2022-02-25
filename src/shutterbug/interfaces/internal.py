@@ -3,7 +3,7 @@ from typing import Optional, Protocol, Tuple
 
 from sqlalchemy.engine import Engine
 from shutterbug.config.application import ApplicationConfig
-from shutterbug.data.interfaces.internal import DataReaderInterface, DataWriterInterface
+from shutterbug.data.interfaces.internal import Reader, Writer
 import pandas as pd
 
 
@@ -38,12 +38,10 @@ class ConfigurationFactory(Protocol):
 
 
 class DataFactory(Protocol):
-    def load_file(
-        self, file: Path, into: str
-    ) -> Tuple[DataReaderInterface, DataWriterInterface]:
+    def load_file(self, file: Path, into: str) -> Tuple[Reader, Writer]:
         ...
 
-    def open_dataset(self, str) -> Tuple[DataReaderInterface, DataWriterInterface]:
+    def open_dataset(self, str) -> Tuple[Reader, Writer]:
         ...
 
     def write_file(self, file_path: Path, df: pd.DataFrame) -> None:

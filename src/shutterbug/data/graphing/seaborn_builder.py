@@ -2,7 +2,7 @@ from attrs import define, field
 from seaborn.axisgrid import FacetGrid
 from shutterbug.data.graphing.builder import BuilderBase
 from typing import Tuple, Iterable, Optional
-from shutterbug.data.interfaces.internal import GraphInterface
+from shutterbug.data.interfaces.internal import Graph
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -12,7 +12,7 @@ sns.set_theme(style="darkgrid", context="paper")
 
 
 @define(slots=True)
-class SeabornGraph(GraphInterface):
+class SeabornGraph(Graph):
     _sns_graph: FacetGrid = field()
 
     """Seaborn graph wrapper"""
