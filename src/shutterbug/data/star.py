@@ -7,7 +7,7 @@ import pandas as pd
 from attr import define, field
 import sys
 
-from typing import List, Sequence
+from typing import List
 
 from shutterbug.data.header import KnownHeader
 from shutterbug.data.validate import _is_same_length, _has_data, _empty_rows
@@ -63,7 +63,7 @@ class StarTimeseries:
     @property
     def nbytes(self) -> int:
         """Number of bytes the timeseries consumes in memory"""
-        return self.time.nbytes + self.magnitude.nbytes + self.error.nbytes
+        return self._data.nbytes
 
     @classmethod
     def from_rows(
