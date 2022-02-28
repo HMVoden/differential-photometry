@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Generator
-from shutterbug.data.interfaces.internal import Graph, Loader
+from shutterbug.data.interfaces.internal import Graph
 from shutterbug.data.star import Star
 
 from abc import ABC, abstractmethod
@@ -17,13 +17,6 @@ class Input(ABC):
     @abstractmethod
     def __iter__(self) -> Generator[Star, None, None]:
         raise NotImplementedError
-
-
-class FileLoaderFactory(Protocol):
-    READABLE_TYPES: Iterable[str]
-
-    def make_loader(self, file_path: Path) -> Loader:
-        ...
 
 
 class GraphBuilder(Protocol):
@@ -57,4 +50,22 @@ class GraphBuilder(Protocol):
         ...
 
     def build(self) -> Graph:
+        ...
+
+
+class Loader(Protocol):
+    """Generic interface for an object that loads star data from a source into
+    memory"""
+
+    def __iter__(self) -> Generator[Star, None, None]:
+        ...
+
+    def __len__(self) -> int:
+        ...
+
+
+class FileLoaderFactory(Protocol):
+    READABLE_TYPES: Iterable[str]
+
+    def make_loader(self, file_path: Path) -> Loader:
         ...

@@ -12,6 +12,10 @@ class Reader(ABC):
     def similar_to(self, star: str) -> List[Star]:
         raise NotImplementedError
 
+    @abstractmethod
+    def __iter__(self) -> Generator[Star, None, None]:
+        raise NotImplementedError
+
     @property
     @abstractmethod
     def names(self) -> List[str]:
@@ -31,19 +35,6 @@ class Writer(ABC):
     @abstractmethod
     def _(self, data: list, overwrite: bool):
         # have to use list as type due to bug with singledispatch
-        raise NotImplementedError
-
-
-class Loader(ABC):
-    """Generic interface for an object that loads star data from a source into
-    memory"""
-
-    @abstractmethod
-    def __iter__(self) -> Generator[Star, None, None]:
-        raise NotImplementedError
-
-    @abstractmethod
-    def __len__(self) -> int:
         raise NotImplementedError
 
 

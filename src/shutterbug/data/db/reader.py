@@ -13,7 +13,7 @@ from shutterbug.data.star import Star
 
 
 @define(slots=True, frozen=True)
-class DBReader(Reader, Loader):
+class DBReader(Reader):
     dataset: str = field()
     engine: Engine = field()
     mag_limit: Optional[float] = field(

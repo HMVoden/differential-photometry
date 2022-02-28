@@ -2,7 +2,6 @@ import logging
 
 import attr
 import numpy as np
-import pandas as pd
 from attr import define, field
 from shutterbug.data.interfaces.internal import Writer
 from shutterbug.data.star import Star

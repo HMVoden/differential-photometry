@@ -1,30 +1,50 @@
 from __future__ import annotations
-from pathlib import Path
-
-from sqlalchemy.engine.base import Engine
-from shutterbug.data import Star, FileInput, DBWriter, DBReader
+from abc import abstractmethod
+from shutterbug.data import Dataset
+from shutterbug.data.interfaces.internal import Graph, Writer
+from shutterbug.data.interfaces.external import GraphBuilder, Loader
 from shutterbug.interfaces.external import ControlNode
 from attr import field, define
-from typing import Iterable, Generator, List
+from typing import Generator
+from pathlib import Path
 
 
 @define
-class LoadNode(ControlNode):
-    urls: List[Path] = field()
-
-    def execute(self) -> Generator[Iterable[Star], None, None]:
-        for url in self.urls:
-            yield from FileInput(url)
+class DatasetNode(ControlNode):
+    @abstractmethod
+    def execute(self) -> Generator[Dataset, None, None]:
+        raise NotImplementedError
 
 
 @define
-class DBStoreNode(ControlNode):
-    loader: LoadNode = field()
-    engine: Engine = field()
-    dataset: str = field()
+class StoreNode(ControlNode):
+    source: Loader = field()
+    writer: Writer = field()
 
     def execute(self) -> None:
-        data = self.loader.execute()
-        writer = DBWriter(engine=self.engine, dataset=self.dataset)
-        for star in data:
-            writer.write(star)
+        for star in self.source:
+            self.writer.write(star)
+
+
+@define
+class FilesystemSave:
+    output_location: Path = field()
+
+
+@define
+class GraphSaveNode(DatasetNode, FilesystemSave):
+    datasets: DatasetNode = field()
+    graph_builder: GraphBuilder = field()
+    only_variable: bool = field()
+
+    def execute(self) -> Generator[Dataset, None, None]:
+        pass
+
+
+@define
+class CSVSaveNode(DatasetNode, FilesystemSave):
+    datasets: DatasetNode = field()
+    only_variable: bool = field()
+
+    def execute(self) -> Generator[Dataset, None, None]:
+        pass
