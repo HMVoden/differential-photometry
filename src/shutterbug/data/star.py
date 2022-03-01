@@ -7,7 +7,7 @@ import pandas as pd
 from attr import define, field
 import sys
 
-from typing import List
+from typing import Dict, List
 
 from shutterbug.data.header import KnownHeader
 from shutterbug.data.validate import _is_same_length, _has_data, _empty_rows
@@ -38,6 +38,7 @@ class StarTimeseries:
     """Timeseries information for a star"""
 
     _data: pd.DataFrame = field()
+    _features: Dict[str, float] = field(init=False, default={})
 
     @property
     def time(self) -> pd.DatetimeIndex:
@@ -59,6 +60,13 @@ class StarTimeseries:
             return NotImplemented
 
         return self._data == other._data
+
+    @property
+    def features(self) -> Dict[str, float]:
+        return self._features.copy()
+
+    def add_feature(self, name: str, value: float) -> None:
+        self._features[name] = value
 
     @property
     def nbytes(self) -> int:
@@ -94,6 +102,7 @@ class Star:
     x: int = field(converter=[float, int])
     y: int = field(converter=[float, int])
     timeseries: StarTimeseries = field()
+    variable: bool = field(default=False)
 
     @property
     def nbytes(self) -> int:
