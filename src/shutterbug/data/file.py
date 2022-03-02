@@ -4,7 +4,6 @@ from typing import Generator, Iterable, List, Union
 
 from attr import define, field
 from shutterbug.data.interfaces.external import Input, FileLoaderFactory
-from shutterbug.data.interfaces.internal import Loader
 import shutterbug.data.csv.loader_factory as CSVFactory
 from shutterbug.data.star import Star
 
@@ -21,7 +20,7 @@ class FileInput(Input):
         self._input_files = all_files
 
     def _get_files_from_path(self, path: Path) -> List[Path]:
-        """Retreives all files from a given path, including from subdirectories
+        """Retrieves all files from a given path, including from subdirectories
 
         Parameters
         ----------

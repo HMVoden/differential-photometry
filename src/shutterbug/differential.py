@@ -1,65 +1,51 @@
-from typing import Optional
 import pandas as pd
 import numpy as np
+from shutterbug.data import Star
+from typing import List
 
 
 def average_differential(
-    target: pd.DataFrame,
-    reference: pd.DataFrame,
-    data_column: str = "mag",
-    error_column: Optional[str] = None,
-) -> pd.DataFrame:
+    target: Star,
+    reference: List[Star],
+) -> Star:
 
-    """Calculates the average differential magnitude of each time point for a target star, given reference stars.
+    """Given a target star and a list of reference stars, calculates the average
+    differential magnitude and error for target
 
-    :param target: Star with data column to find differential magnitude of
-    :param reference: Reference stars with data column
-    :param data_column: Data column name
-    :param error_column: Error column name, optional
-    :returns: Dataframe of the average differential magnitude of the star with error if given
+    :param target: Target star to calculate on
+    :param reference: Reference stars to use for calculate
+    :returns: Star updated with average differential magnitude and error
 
     """
-    average_differential_magnitude = _average_difference(
-        target=target[data_column], reference=reference[data_column]
-    )
-    average_differential_magnitude = average_differential_magnitude.dropna(
-        axis=0, how="any"
-    )
-    average_differential_magnitude.rename("adm")  # type: ignore
-    if error_column is not None:
-        average_differential_error = _average_error(
-            target=target[error_column], reference=reference[error_column]
-        )
-        average_differential_error = average_differential_error.dropna(
-            axis=0, how="any"
-        )
-        average_differential_error = average_differential_error.rename(  # type: ignore
-            "ade"
-        )
-        return pd.concat(
-            {"adm": average_differential_magnitude, "ade": average_differential_error},  # type: ignore
-        )
-    else:
-        return average_differential_magnitude  # type: ignore
+    target_mag = target.timeseries.magnitude
+    target_error = target.timeseries.error
+    reference_mag = reference[0].timeseries.magnitude
+    reference_error = reference[0].timeseries.error
+    # Unpack reference list
+    for ref in reference[1:]:
+        pd.concat([ref.timeseries.magnitude, reference_mag])
+        pd.concat([ref.timeseries.error, reference_error])
+    ade = _average_error(target=target_error, reference=reference_error)
+    adm = _average_difference(target=target_mag, reference=reference_mag)
+    target.timeseries.differential_magnitude = adm
+    target.timeseries.differential_error = ade
+    return target
 
 
 def _average_error(
     target: pd.Series,
     reference: pd.Series,
 ) -> pd.Series:
-    """Calculates the average error for the target error column
 
-    :param target: Error pandas series of target star
-    :param reference: Error pandas series of reference stars
-    :returns: Average differential error timeseries
+    """Calculates the average differential error of given star's timeseries
+
+    :param target: Target star timeseries
+    :param reference: Reference stars timeseries
+    :returns: New timeseries containing the averaged differential error
 
     """
-
-    N = len(reference.groupby("name")) + 1
-    new = (
-        np.sqrt((reference ** 2 + target.droplevel("name") ** 2).groupby("time").sum())
-        / N
-    )
+    N = len(reference.groupby("time")) + 1
+    new = np.sqrt((reference ** 2 + target ** 2).groupby("time").sum()) / N
     return new
 
 
@@ -68,12 +54,13 @@ def _average_difference(
     reference: pd.Series,
 ) -> pd.Series:
 
-    """Calculates the average difference between target and reference stars
+    """Calculates the average differential magnitude of a given star's timeseries
+    compared with a set of reference star's timeseries
 
-    :param target: Magnitude pandas series of target star
-    :param reference: Magnitude pandas series of reference stars
-    :returns: Average differential magnitude timeseries
+    :param target: Target star timeseries
+    :param reference: Reference stars timeseries
+    :returns: New timeseries containing the averaged differential magnitude
 
     """
-    new = reference.rsub(target.droplevel("name")).groupby("time").mean()
+    new = reference.rsub(target).groupby("time").mean()
     return new

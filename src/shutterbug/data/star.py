@@ -45,12 +45,36 @@ class StarTimeseries:
         return self._data.index  # type: ignore
 
     @property
-    def magnitude(self) -> pd.DataFrame:
-        return self._data["magnitude", "error"].rename({"magnitude": "data"})
+    def magnitude(self) -> pd.Series:
+        return self._data["magnitude"]
+
+    @magnitude.setter
+    def magnitude(self, data: pd.Series) -> None:
+        self._data["magnitude"] = data
 
     @property
-    def averaged_differential_magnitude(self) -> pd.DataFrame:
-        return self._data["adm", "ade"].rename({"adm": "data", "ade": "error"})
+    def error(self) -> pd.Series:
+        return self._data["error"]
+
+    @error.setter
+    def error(self, data: pd.Series) -> None:
+        self._data["error"] = data
+
+    @property
+    def differential_magnitude(self) -> pd.Series:
+        return self._data["adm"]
+
+    @differential_magnitude.setter
+    def differential_magnitude(self, data: pd.Series) -> None:
+        self._data["magnitude"] = data
+
+    @property
+    def differential_error(self) -> pd.Series:
+        return self._data["ade"]
+
+    @differential_error.setter
+    def differential_error(self, data: pd.Series) -> None:
+        self._data["magnitude"] = data
 
     def drop_rows(self, rows: List[int]) -> None:
         self._data = self._data.drop(index=rows)  # type: ignore
@@ -95,7 +119,7 @@ class StarTimeseries:
 
 @define(slots=True)
 class Star:
-    """Dataclass describing a star's information from an image or series of image"""
+    """Dataclass describing a star's information"""
 
     name: str = field()
     # First to float and then to int to prevent odd reading errors
@@ -123,8 +147,8 @@ class Star:
 
 
 def validate_timeseries(ts: StarTimeseries) -> StarTimeseries:
-    mag = ts.magnitude["data"].to_numpy()
-    error = ts.magnitude["error"].to_numpy()
+    mag = ts.magnitude.to_numpy()
+    error = ts.error.to_numpy()
     ts.drop_rows(_empty_rows(mag, error))
     try:
         assert _is_same_length(mag, error)

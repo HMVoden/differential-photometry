@@ -41,8 +41,11 @@ class SeabornBuilder(BuilderBase):
             aspect = self._size[0] / self._size[1]
         else:
             aspect = None
+
+        data = self._data.rename("data")
+        data["error"] = self._error
         self._plot = sns.FacetGrid(
-            self._data,
+            data,
             col="date",
             sharey=True,
             xlim=self._axis_limits[0],

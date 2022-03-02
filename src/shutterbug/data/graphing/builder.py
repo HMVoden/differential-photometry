@@ -6,7 +6,6 @@ from typing import Literal, Optional, Tuple
 import pandas as pd
 
 from shutterbug.data.interfaces.internal import Graph
-from shutterbug.data.star import Star, StarTimeseries
 
 
 @define
@@ -16,7 +15,8 @@ class BuilderBase(GraphBuilder):
     _title: Optional[str] = field(init=False)
     _axis_names: Tuple[Optional[str], Optional[str]] = field(init=False)
     _axis_limits: Tuple[Optional[float], Optional[float]] = field(init=False)
-    _data: pd.DataFrame = field(init=False)
+    _data: pd.Series = field(init=False)
+    _error: pd.Series = field(init=False)
     _size: Tuple[Optional[int], Optional[int]] = field(init=False)
 
     _type: Literal["scatter", "line"] = field(init=False, default="scatter")

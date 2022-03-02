@@ -1,4 +1,4 @@
-from shutterbug.data.star import Star
+from shutterbug.data import Star
 from shutterbug.analysis.feature import FeatureBase
 from typing import Dict
 
@@ -6,8 +6,8 @@ from typing import Dict
 def run_test(data: Star, test: FeatureBase) -> Star:
     """Runs given statistical feature test on star's differential magnitude data
     and adds result to timeseries"""
-    adm_ade = data.timeseries.averaged_differential_magnitude
-    data.timeseries.add_feature(test.name, test(adm_ade))
+    adm = data.timeseries.differential_magnitude
+    data.timeseries.add_feature(test.name, test(adm))
     return data
 
 
