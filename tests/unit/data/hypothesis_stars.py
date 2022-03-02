@@ -2,7 +2,6 @@ from decimal import Decimal
 import string
 from typing import Sequence, Union
 from hypothesis import assume
-from hypothesis.extra.dateutil import timezones
 from hypothesis.strategies import (
     composite,
     decimals,
@@ -15,6 +14,7 @@ from hypothesis.strategies import (
 from hypothesis.strategies._internal.strategies import SearchStrategy
 from shutterbug.data.star import Star, StarTimeseries
 import numpy as np
+import pandas as pd
 
 DAYS_IN_JULIAN_YEAR = 365.25
 UNIX_0_POINT_JD = 2440588.5
@@ -58,7 +58,10 @@ def star(draw, name: str = "", allow_nan=False) -> Star:
     time = draw(
         lists(julian_dates(), min_size=len(mag), max_size=len(mag), unique=True)
     )
-    timeseries = StarTimeseries(time=time, mag=mag, error=error)
+    frame = pd.DataFrame(
+        columns={"magnitude": mag, "error": error}, index=pd.DatetimeIndex(time)
+    )
+    timeseries = StarTimeseries(data=frame)
     star = Star(
         name=name,
         x=draw(integers(min_value=0, max_value=4096)),

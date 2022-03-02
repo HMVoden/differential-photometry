@@ -52,14 +52,11 @@ def test_reads_all(stars: List[Star], other: List[Star]):
 
         reader = DBReader(dataset="test", engine=engine, mag_limit=0, distance_limit=0)
         read_names = []
-        datasets = []
         for star in reader:
             read_names.append(star.index.levels[0][0])
-            datasets.append(star["dataset"][0])
         star_set = set(star_names)
         read_set = set(read_names)
         assert star_set == read_set
-        assert len(set(datasets)) == 1
         assert len(star_set) == len(stars)
 
 
@@ -76,13 +73,15 @@ def test_similar_to(stars: List[Star], mag_limit, distance_limit):
     with sqlite_memory(future=False) as engine:
         writer = DBWriter(dataset="test", engine=engine)
         target = stars[0]
-        target_median = np.nanmedian(target.timeseries.mag)
+        target_median = np.nanmedian(target.timeseries.magnitude)
         for star in stars:
             writer.write(star)
 
         similar_stars = []
         for star in stars[1:]:
-            abs_diff_median = abs(np.nanmedian(star.timeseries.mag) - target_median)
+            abs_diff_median = abs(
+                np.nanmedian(star.timeseries.magnitude) - target_median
+            )
             distance_between = np.sqrt(
                 (star.x - target.x) ** 2 + (star.y - target.y) ** 2
             )

@@ -92,6 +92,4 @@ def test_photometry(stars):
     stars = stars.sort_index(level="time")
     for name, star_df in stars.groupby("name"):
         reference = stars.drop(name, level="name")
-        adm_ade = average_differential(
-            star_df, reference, data_column="mag", error_column="error"
-        )
+        adm_ade = average_differential(star_df, reference)

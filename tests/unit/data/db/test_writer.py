@@ -9,6 +9,7 @@ from shutterbug.data.db.writer import DBWriter
 from sqlalchemy.orm import Session
 from tests.unit.data.db.db_test_tools import sqlalchemy_db
 from tests.unit.data.hypothesis_stars import star, stars
+import pandas as pd
 
 
 def reconstruct_star_from_db(
@@ -21,7 +22,11 @@ def reconstruct_star_from_db(
         db_time.append(row.time)
         db_mag.append(row.mag)
         db_error.append(row.error)
-    rec_timeseries = StarTimeseries(time=db_time, mag=db_mag, error=db_error)
+    data = pd.DataFrame(
+        columns={"magnitude": db_mag, "error": db_error},
+        index=pd.DatetimeIndex(db_time),
+    )
+    rec_timeseries = StarTimeseries(data=data)
     rec_star = Star(
         name=label.name,
         x=star.x,

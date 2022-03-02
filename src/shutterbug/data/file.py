@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Generator, Iterable, List, Union
 
 from attr import define, field
-from shutterbug.data.interfaces.external import Input, FileLoaderFactory
+from shutterbug.data.interfaces.external import Input, FileLoaderFactory, Loader
 import shutterbug.data.csv.loader_factory as CSVFactory
 from shutterbug.data.star import Star
 

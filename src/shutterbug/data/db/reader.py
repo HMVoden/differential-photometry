@@ -3,7 +3,8 @@ from typing import Generator, List, Optional
 import attr
 import pandas as pd
 from attr import define, field
-from shutterbug.data.interfaces.internal import Loader, Reader
+from shutterbug.data.interfaces.external import Loader
+from shutterbug.data.interfaces.internal import Reader
 from shutterbug.data.db.model import StarDB, StarDBLabel, StarDBTimeseries
 from sqlalchemy import func, select
 from sqlalchemy.engine import Engine

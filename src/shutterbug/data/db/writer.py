@@ -22,7 +22,7 @@ class DBWriter(Writer):
     dataset: str = field()
 
     @singledispatchmethod
-    def write(self, data: Star, overwrite: bool):
+    def write(self, data: Star, overwrite: bool = False):
         """Stores star in database defined by provided engine
 
         Parameter
@@ -36,7 +36,7 @@ class DBWriter(Writer):
             session.commit()
 
     @write.register
-    def _(self, data: list, overwrite: bool):
+    def _(self, data: list, overwrite: bool = False):
         # have to use list as type due to bug with singledispatch
         with Session(self.engine) as session:
             for star in data:
@@ -93,12 +93,13 @@ class DBWriter(Writer):
         """
 
         db_star = StarDB(
-            x=star.x, y=star.y, magnitude_median=np.nanmedian(star.timeseries.mag)
+            x=star.x, y=star.y, magnitude_median=np.nanmedian(star.timeseries.magnitude)
         )
         db_label = StarDBLabel(name=star.name, dataset=self.dataset)
         db_timeseries = []
-        ts = star.timeseries.magnitude
-        timeseries_data = zip(ts.index.to_pydatetime(), ts["data"], ts["error"])
+        mag = star.timeseries.magnitude
+        error = star.timeseries.error
+        timeseries_data = zip(mag.index.to_pydatetime(), mag, error)
         for time, mag, error in timeseries_data:
             ts = StarDBTimeseries(
                 time=time,

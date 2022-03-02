@@ -37,53 +37,53 @@ def asdatetime(value) -> pd.DatetimeIndex:
 class StarTimeseries:
     """Timeseries information for a star"""
 
-    _data: pd.DataFrame = field()
+    data: pd.DataFrame = field()
     _features: Dict[str, float] = field(init=False, default={})
 
     @property
     def time(self) -> pd.DatetimeIndex:
-        return self._data.index  # type: ignore
+        return self.data.index  # type: ignore
 
     @property
     def magnitude(self) -> pd.Series:
-        return self._data["magnitude"]
+        return self.data["magnitude"]
 
     @magnitude.setter
     def magnitude(self, data: pd.Series) -> None:
-        self._data["magnitude"] = data
+        self.data["magnitude"] = data
 
     @property
     def error(self) -> pd.Series:
-        return self._data["error"]
+        return self.data["error"]
 
     @error.setter
     def error(self, data: pd.Series) -> None:
-        self._data["error"] = data
+        self.data["error"] = data
 
     @property
     def differential_magnitude(self) -> pd.Series:
-        return self._data["adm"]
+        return self.data["adm"]
 
     @differential_magnitude.setter
     def differential_magnitude(self, data: pd.Series) -> None:
-        self._data["magnitude"] = data
+        self.data["magnitude"] = data
 
     @property
     def differential_error(self) -> pd.Series:
-        return self._data["ade"]
+        return self.data["ade"]
 
     @differential_error.setter
     def differential_error(self, data: pd.Series) -> None:
-        self._data["magnitude"] = data
+        self.data["magnitude"] = data
 
     def drop_rows(self, rows: List[int]) -> None:
-        self._data = self._data.drop(index=rows)  # type: ignore
+        self.data = self.data.drop(index=rows)  # type: ignore
 
     def __eq__(self, other: StarTimeseries):
         if other.__class__ is not self.__class__:
             return NotImplemented
 
-        return self._data == other._data
+        return self.data == other.data
 
     @property
     def features(self) -> Dict[str, float]:
@@ -95,7 +95,7 @@ class StarTimeseries:
     @property
     def nbytes(self) -> int:
         """Number of bytes the timeseries consumes in memory"""
-        return self._data.nbytes
+        return self.data.nbytes
 
     @classmethod
     def from_rows(

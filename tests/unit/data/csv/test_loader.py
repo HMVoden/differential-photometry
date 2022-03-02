@@ -18,14 +18,14 @@ def star_to_dict(star: Star) -> Dict[str, Any]:
     names = np.repeat(star.name, size)
     xs = np.repeat(star.x, size)
     ys = np.repeat(star.y, size)
-
+    data = star.timeseries.data
     return {
         "name": names,
         "x": xs,
         "y": ys,
-        "jd": star.timeseries.time,
-        "mag": star.timeseries.mag,
-        "error": star.timeseries.error,
+        "jd": data.index.to_numpy(),
+        "mag": data["magnitude"].to_numpy(),
+        "error": data["error"].to_numpy(),
     }
 
 

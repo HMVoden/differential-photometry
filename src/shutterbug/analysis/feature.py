@@ -3,14 +3,6 @@ from abc import ABC, abstractmethod
 import pandas as pd
 import numpy as np
 
-# std dev and weighted version
-
-# MAD
-
-# IQR (for skewed distributions like an eclipsing binary)
-
-# RoMS (Robust Median Statistic)
-
 
 class FeatureBase(ABC):
     name: str = field(init=False)
