@@ -6,18 +6,11 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Union
 
 import pytest
-from hypothesis import given
-from hypothesis.strategies import (
-    DrawFn,
-    composite,
-    floats,
-    integers,
-    lists,
-    sampled_from,
-    text,
-)
-from shutterbug.data.csv.loader import CSVLoader
 import shutterbug.data.csv.loader_factory as csv_factory
+from hypothesis import given
+from hypothesis.strategies import (DrawFn, composite, floats, integers, lists,
+                                   sampled_from, text)
+from shutterbug.data.csv.loader import CSVLoader
 from shutterbug.data.header import KNOWN_HEADERS
 
 CSV_COLUMN_TYPES = [floats, integers, partial(text, alphabet=string.printable)]
@@ -86,7 +79,7 @@ def csvs(
     return csv_data
 
 
-@given(csvs())
+@given(csvs(max_rows=4, max_headers=4))
 def test_unknown_headers(csv_data: Dict):
     with tempfile.NamedTemporaryFile(suffix=".csv", mode="w", newline="") as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=list(csv_data.keys()))
@@ -98,7 +91,9 @@ def test_unknown_headers(csv_data: Dict):
             csv_factory.make_loader(file_path)
 
 
-@given(csvs(csv_headers=KNOWN_HEADERS[0].headers, min_rows=1))
+@given(
+    csvs(csv_headers=KNOWN_HEADERS[0].headers, min_rows=1, max_rows=4, max_headers=4)
+)
 def test_known_headers(csv_data: Dict):
     with tempfile.NamedTemporaryFile(suffix=".csv", mode="rt+", newline="") as csv_file:
         known_header = KNOWN_HEADERS[0]

@@ -1,16 +1,14 @@
+import string
 from typing import List
 
 import numpy as np
-import pytest
 from hypothesis import given
-from hypothesis.strategies import lists
 from hypothesis.strategies._internal.numbers import integers
-from shutterbug.data.star import Star
 from shutterbug.data.db.reader import DBReader
 from shutterbug.data.db.writer import DBWriter
-from tests.unit.data.db.db_test_tools import sqlalchemy_db, sqlite_memory
-from tests.unit.data.hypothesis_stars import star, stars
-import string
+from shutterbug.data.star import Star
+from tests.unit.data.db.db_test_tools import sqlite_memory
+from tests.unit.data.hypothesis_stars import stars
 
 
 @given(
@@ -33,7 +31,7 @@ def test_init(stars, other):
 
 
 @given(
-    stars(alphabet=string.printable, min_size=1),
+    stars(alphabet=string.printable, min_size=1, max_size=3),
     stars(alphabet=string.printable, min_size=1, max_size=1),
 )
 def test_reads_all(stars: List[Star], other: List[Star]):

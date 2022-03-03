@@ -1,16 +1,15 @@
 from __future__ import annotations
+
 import logging
+import sys
+from typing import Dict, List
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 from attr import define, field
-import sys
-
-from typing import Dict, List
-
 from shutterbug.data.header import KnownHeader
-from shutterbug.data.validate import _is_same_length, _has_data, _empty_rows
+from shutterbug.data.validate import _empty_rows, _has_data, _is_same_length
 
 
 def asfloat(value: List[str]) -> npt.NDArray[np.float32]:
@@ -77,13 +76,14 @@ class StarTimeseries:
         self.data["magnitude"] = data
 
     def drop_rows(self, rows: List[int]) -> None:
-        self.data = self.data.drop(index=rows)  # type: ignore
+        row_indices = self.data.index.to_numpy()[rows]
+        self.data = self.data.drop(index=row_indices)  # type: ignore
 
     def __eq__(self, other: StarTimeseries):
         if other.__class__ is not self.__class__:
             return NotImplemented
 
-        return self.data == other.data
+        return self.data.equals(other.data)
 
     @property
     def features(self) -> Dict[str, float]:

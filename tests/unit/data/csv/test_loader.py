@@ -3,8 +3,7 @@ from typing import Any, Dict
 from shutterbug.data.csv.loader import CSVLoader
 from shutterbug.data.header import KnownHeader
 from shutterbug.data.star import Star
-from tests.unit.data.hypothesis_stars import star, stars
-import pytest
+from tests.unit.data.hypothesis_stars import stars
 import string
 from hypothesis import given
 from hypothesis.strategies import composite, DrawFn

@@ -1,8 +1,9 @@
+import string
+
 import pytest
 from hypothesis import given
 from hypothesis.strategies import lists, text
 from shutterbug.data.header import Header, KnownHeader
-import string
 
 
 @given(lists(text(min_size=1)), lists(text(min_size=1)))
@@ -17,7 +18,7 @@ def test_header_class(l1, l2):
         assert header1 != header2
 
 
-@given(lists(text(alphabet=string.ascii_letters, min_size=1), min_size=3, unique=True))
+@given(lists(text(alphabet=string.ascii_letters, min_size=2), min_size=3, unique=True))
 def test_known_headers(data):
     kh = KnownHeader(
         header_origin="Test",

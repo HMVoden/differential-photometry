@@ -1,24 +1,16 @@
-from typing import Optional
-from shutterbug.differential import (
-    average_differential,
-    _average_difference,
-    _average_error,
-)
-from hypothesis import given
-from hypothesis.strategies import (
-    text,
-    composite,
-    floats,
-    DrawFn,
-    lists,
-    integers,
-    datetimes,
-)
-from hypothesis.extra.pandas import column, data_frames
-from hypothesis.extra.numpy import datetime64_dtypes
 import string
-import pandas as pd
 from datetime import datetime, timedelta, timezone
+from typing import Optional
+
+import pandas as pd
+from hypothesis import given
+from hypothesis.extra.numpy import datetime64_dtypes
+from hypothesis.extra.pandas import column, data_frames
+from hypothesis.strategies import (DrawFn, composite, datetimes, floats,
+                                   integers, lists, text)
+from shutterbug.data.star import Star, StarTimeseries
+from shutterbug.differential import (_average_difference, _average_error,
+                                     average_differential)
 
 
 @composite
@@ -26,7 +18,13 @@ def spaced_time(
     draw: DrawFn, space: int = 60, min_size: int = 1, max_size: Optional[int] = None
 ):
     td = timedelta(seconds=space)
-    start = draw(datetimes(allow_imaginary=False))
+    start = draw(
+        datetimes(
+            allow_imaginary=False,
+            max_value=datetime(2200, month=1, day=1),
+            min_value=datetime(1972, month=1, day=1),
+        )
+    )
     result = [start]
     if max_size is None:
         max_size = draw(integers(min_value=1, max_value=20))
@@ -36,7 +34,7 @@ def spaced_time(
 
 
 @composite
-def timeseries_dataframes(
+def timeseries_stars(
     draw: DrawFn,
     min_stars: int = 2,
     max_stars: Optional[int] = None,
@@ -45,7 +43,7 @@ def timeseries_dataframes(
     timeseries_delta: int = 60,
 ):
     # stars in dataframe
-    stars = draw(
+    names = draw(
         lists(
             text(alphabet=string.ascii_letters, min_size=1, max_size=5),
             min_size=min_stars,
@@ -60,8 +58,10 @@ def timeseries_dataframes(
             space=timeseries_delta, min_size=num_timeseries, max_size=num_timeseries
         )
     )
-    dfs = []
-    for name in stars:
+    stars = []
+    index = pd.to_datetime(ts, utc=True)
+    index.name = "time"
+    for name in names:
         mag = draw(
             lists(
                 floats(
@@ -80,16 +80,15 @@ def timeseries_dataframes(
                 max_size=num_timeseries,
             )
         )
-        index = pd.MultiIndex.from_product([[name], ts], names=["name", "time"])
-        df = pd.DataFrame(index=index, data={"mag": mag, "error": error})
-        dfs.append(df)
+        df = pd.DataFrame(index=index, data={"magnitude": mag, "error": error})
+        timeseries = StarTimeseries(data=df)
+        star = Star(name=name, x=0, y=0, timeseries=timeseries)
+        stars.append(star)
+    return stars
 
-    return pd.concat(dfs)
 
-
-@given(timeseries_dataframes(max_stars=3, max_entries=3))
+@given(timeseries_stars(min_stars=2, max_stars=3, max_entries=3))
 def test_photometry(stars):
-    stars = stars.sort_index(level="time")
-    for name, star_df in stars.groupby("name"):
-        reference = stars.drop(name, level="name")
-        adm_ade = average_differential(star_df, reference)
+    target = stars[0]
+    reference = stars[1:]
+    adm_ade = average_differential(target, reference)

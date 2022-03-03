@@ -1,9 +1,8 @@
-from shutterbug.data.validate import _is_same_length, _has_data, _empty_rows
-
-from hypothesis import given
-from hypothesis.strategies import lists, floats
-import pytest
 import numpy as np
+import pytest
+from hypothesis import given
+from hypothesis.strategies import floats, lists
+from shutterbug.data.validate import _empty_rows, _has_data, _is_same_length
 
 
 @given(lists(lists(floats())))
@@ -26,18 +25,18 @@ def test_is_same_length(lists):
         min_size=1,
     )
 )
-def test_empty_rows(lists):
-    same_length = _is_same_length(*lists)
+def test_empty_rows(columns):
+    same_length = _is_same_length(*columns)
     if not same_length:
         with pytest.raises(ValueError):
-            _empty_rows(*lists)
+            _empty_rows(*columns)
     else:
-        rows = np.asarray(lists, dtype="float32")
+        rows = np.asarray(columns, dtype="float32").T
         indexes = []
         for idx, row in enumerate(rows):
             if np.isnan(row).all():
                 indexes.append(idx)
-        test_results = _empty_rows(*lists)
+        test_results = _empty_rows(*columns)
         assert set(test_results) == set(indexes)
         assert len(test_results) == len(indexes)
 

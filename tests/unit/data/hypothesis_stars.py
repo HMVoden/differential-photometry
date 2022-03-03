@@ -1,20 +1,15 @@
-from decimal import Decimal
 import string
 from typing import Sequence, Union
-from hypothesis import assume
-from hypothesis.strategies import (
-    composite,
-    decimals,
-    floats,
-    integers,
-    lists,
-    text,
-    DrawFn,
-)
-from hypothesis.strategies._internal.strategies import SearchStrategy
-from shutterbug.data.star import Star, StarTimeseries
+
 import numpy as np
 import pandas as pd
+from hypothesis import assume
+from hypothesis.extra.numpy import datetime64_dtypes, from_dtype
+from hypothesis.extra.pandas import columns, data_frames, indexes
+from hypothesis.strategies import (DrawFn, composite, decimals, floats,
+                                   integers, lists, text)
+from hypothesis.strategies._internal.strategies import SearchStrategy
+from shutterbug.data.star import Star, StarTimeseries
 
 DAYS_IN_JULIAN_YEAR = 365.25
 UNIX_0_POINT_JD = 2440588.5
@@ -37,31 +32,32 @@ def julian_dates(draw: DrawFn) -> float:
 
 
 @composite
-def star(draw, name: str = "", allow_nan=False) -> Star:
+def date_time_indexes(draw: DrawFn, min_size=1, max_size=None):
+    return pd.to_datetime(
+        draw(lists(julian_dates(), min_size=min_size, max_size=max_size, unique=True)),
+        origin="julian",
+        unit="D",
+        utc=True,
+    ).round("1ms")
 
+
+@composite
+def star(draw, name: str = "", allow_nan=False) -> Star:
     if not name:
 
         allowed_names = string.ascii_letters + string.digits
         name = draw(text(alphabet=allowed_names, min_size=1))
-    mag = draw(
-        lists(floats(allow_nan=allow_nan, allow_infinity=False, width=32), min_size=1)
-    )
-    assume(not np.isnan(mag).all())
-    error = draw(
-        lists(
-            floats(allow_nan=allow_nan, allow_infinity=False, min_value=0, width=32),
-            min_size=len(mag),
-            max_size=len(mag),
+    data = draw(
+        data_frames(
+            columns=columns(
+                ["magnitude", "error"],
+                elements=from_dtype(np.dtype(float), allow_nan=allow_nan),
+            ),
+            index=date_time_indexes(),
         )
     )
 
-    time = draw(
-        lists(julian_dates(), min_size=len(mag), max_size=len(mag), unique=True)
-    )
-    frame = pd.DataFrame(
-        columns={"magnitude": mag, "error": error}, index=pd.DatetimeIndex(time)
-    )
-    timeseries = StarTimeseries(data=frame)
+    timeseries = StarTimeseries(data=data)
     star = Star(
         name=name,
         x=draw(integers(min_value=0, max_value=4096)),

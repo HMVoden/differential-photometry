@@ -1,5 +1,6 @@
-from typing import List, Sequence
 import logging
+from typing import List, Sequence
+
 import numpy as np
 import numpy.typing as npt
 
@@ -29,6 +30,6 @@ def _empty_rows(*values: Sequence[float]) -> List[int]:
     that are empty"""
     if not _is_same_length(*values):
         raise ValueError("Input rows not the same length")
-    stack = np.hstack(values)
-    empties = np.isnan(stack).all(axis=0)
+    stack = np.asarray(list(zip(*values)))
+    empties = np.isnan(stack).all(axis=1)
     return empties.nonzero()[0]
