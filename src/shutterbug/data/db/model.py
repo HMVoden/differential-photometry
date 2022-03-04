@@ -1,12 +1,5 @@
-from sqlalchemy import (
-    Column,
-    DateTime,
-    Float,
-    ForeignKey,
-    Integer,
-    Text,
-    UniqueConstraint,
-)
+from sqlalchemy import (Column, DateTime, Float, ForeignKey, Integer, Text,
+                        UniqueConstraint)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import MetaData
@@ -34,8 +27,7 @@ class StarDB(Base):
     magnitude_median = Column("magnitude_median", Float)
 
     timeseries = relationship(
-        "StarDBTimeseries",
-        back_populates="star",
+        "StarDBTimeseries", back_populates="star", cascade="all, delete"
     )
 
     label = relationship("StarDBLabel", back_populates="star", uselist=False)
@@ -50,7 +42,7 @@ class StarDBLabel(Base):
     dataset = Column("dataset", Text, primary_key=True)
     idref = Column(Integer, ForeignKey("stars.id"))
 
-    star = relationship("StarDB", back_populates="label")
+    star = relationship("StarDB", back_populates="label", cascade="all, delete")
 
     __table_args__ = (UniqueConstraint("name", "dataset", name="_name_dataset_unique"),)
 

@@ -1,14 +1,15 @@
 import logging
+from functools import singledispatchmethod
 
 import attr
 import numpy as np
-from attr import define, field
+from attr import asdict, define, field
+from shutterbug.data.db.model import StarDB, StarDBLabel, StarDBTimeseries
 from shutterbug.data.interfaces.internal import Writer
 from shutterbug.data.star import Star
-from shutterbug.data.db.model import StarDB, StarDBLabel, StarDBTimeseries
+from sqlalchemy import delete
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
-from functools import singledispatchmethod
 
 
 @define
@@ -69,10 +70,16 @@ class DBWriter(Writer):
                     f"Tried to write star {star.name}, already present in database. Overwrite disabled."
                 )
             else:
-                self._update_star(star, session)
+                model_star = self._convert_to_model(star)
+                star = (
+                    session.query(StarDBLabel)
+                    .filter(StarDBLabel.name == star.name)
+                    .filter(StarDBLabel.dataset == self.dataset)
+                    .first()
+                )
+                session.delete(star)
 
-    def _update_star(self, star: Star, session: Session):
-        pass
+                session.add(model_star)
 
     def _convert_to_model(
         self,
@@ -87,8 +94,8 @@ class DBWriter(Writer):
 
         Returns
         -------
-        Tuple[StarDB, List[StarDBTimeseries]]
-            Star and timeseries datatypes suitable for writing into a database
+        starDB
+            Star datatype suitable for writing into a database
 
         """
 

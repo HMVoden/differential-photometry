@@ -1,9 +1,7 @@
 import string
 from typing import List
 
-import numpy as np
 import pandas as pd
-import pytest
 from hypothesis import given
 from shutterbug.data.db.model import StarDB, StarDBLabel, StarDBTimeseries
 from shutterbug.data.db.writer import DBWriter
@@ -66,3 +64,19 @@ def test_write(stars: List[Star]):
     present = [True if x in stars else False for x in read_stars]
     assert len(present) == len(stars)
     assert all(present)
+
+
+@given(star())
+def test_update(star: Star):
+    engine = sqlalchemy_db()
+    writer = DBWriter(dataset="test", engine=engine)
+    writer.write(star)
+    star.x = 3
+    star.y = 3
+    writer.write(star, overwrite=True)
+    read_stars = []
+    with Session(engine, future=True) as session:
+        for dbstar in session.query(StarDB).all():
+            rec_star = reconstruct_star_from_db(dbstar, dbstar.timeseries, dbstar.label)
+            read_stars.append(rec_star)
+    assert star in read_stars
