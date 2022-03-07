@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from functools import singledispatchmethod
 from typing import Generator, List
+
 from shutterbug.data.star import Star
 
 

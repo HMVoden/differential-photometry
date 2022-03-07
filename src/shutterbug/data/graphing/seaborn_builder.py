@@ -1,12 +1,13 @@
+from typing import Iterable, Optional, Tuple
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
 from attrs import define, field
 from seaborn.axisgrid import FacetGrid
 from shutterbug.data.graphing.builder import BuilderBase
-from typing import Tuple, Iterable, Optional
 from shutterbug.data.interfaces.internal import Graph
-import seaborn as sns
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
 
 sns.set_theme(style="darkgrid", context="paper")
 

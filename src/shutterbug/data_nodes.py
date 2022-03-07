@@ -8,7 +8,7 @@ from attr import define, field
 
 from shutterbug.data import BuilderBase, Dataset
 from shutterbug.data.interfaces.external import Loader
-from shutterbug.data.interfaces.internal import Graph, Writer
+from shutterbug.data.interfaces.internal import Writer
 from shutterbug.interfaces.external import ControlNode
 
 
