@@ -1,9 +1,10 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Any, Dict
 
 
-class PackageConfigInterface(ABC):
+class PackageConfig(ABC):
     @property
     @abstractmethod
     def asdict(self) -> Dict[str, Any]:
@@ -11,5 +12,5 @@ class PackageConfigInterface(ABC):
 
     @classmethod
     @abstractmethod
-    def fromdict(cls, *args, **kwargs) -> PackageConfigInterface:
+    def fromdict(cls, *args, **kwargs) -> PackageConfig:
         raise NotImplementedError

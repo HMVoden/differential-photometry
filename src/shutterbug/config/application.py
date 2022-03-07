@@ -1,17 +1,16 @@
-from shutterbug.config.interfaces.internal import (
-    PackageConfigInterface,
-)
-from attr import field, define
-from pathlib import Path
-from typing import Dict, Any
 import logging
+from pathlib import Path
+from typing import Any, Dict
+
+from attr import define, field
+from shutterbug.config.interfaces.internal import PackageConfig
 from shutterbug.config.packages import DataConfig, PhotometryConfig
 
 
 @define
 class ApplicationConfig:
-    _photometry: PackageConfigInterface = field()
-    _data: PackageConfigInterface = field()
+    _photometry: PackageConfig = field()
+    _data: PackageConfig = field()
 
     @property
     def data(self) -> Dict[str, Any]:
@@ -48,6 +47,6 @@ def make_data_folder(folder: Path = Path.home() / ".shutterbug") -> Path:
 
 
 default_config = ApplicationConfig(
-    photometry=PhotometryConfig(),
-    data=DataConfig(),  # type:ignore
+    photometry=PhotometryConfig(),  # type: ignore
+    data=DataConfig(),  # type: ignore
 )

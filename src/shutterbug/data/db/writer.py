@@ -100,7 +100,10 @@ class DBWriter(Writer):
         """
 
         db_star = StarDB(
-            x=star.x, y=star.y, magnitude_median=np.nanmedian(star.timeseries.magnitude)
+            x=star.x,
+            y=star.y,
+            magnitude_median=np.nanmedian(star.timeseries.magnitude),
+            variable=star.variable,
         )
         db_label = StarDBLabel(name=star.name, dataset=self.dataset)
         db_timeseries = []

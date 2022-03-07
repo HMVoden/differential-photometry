@@ -1,5 +1,5 @@
-from sqlalchemy import (Column, DateTime, Float, ForeignKey, Integer, Text,
-                        UniqueConstraint)
+from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
+                        Text, UniqueConstraint)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import MetaData
@@ -25,6 +25,7 @@ class StarDB(Base):
     x = Column("x", Integer)
     y = Column("y", Integer)
     magnitude_median = Column("magnitude_median", Float)
+    variable = Column("variable", Boolean)
 
     timeseries = relationship(
         "StarDBTimeseries", back_populates="star", cascade="all, delete"

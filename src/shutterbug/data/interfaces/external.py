@@ -1,12 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Generator
-from shutterbug.data.interfaces.internal import Graph
-from shutterbug.data.star import Star
-
-from abc import ABC, abstractmethod
-from typing import Generator, Iterable, Protocol, Optional, Tuple
 from pathlib import Path
-import pandas as pd
+from typing import Generator, Iterable, Protocol
+
+from shutterbug.data.star import Star
 
 
 class Input(ABC):
@@ -17,40 +13,6 @@ class Input(ABC):
     @abstractmethod
     def __iter__(self) -> Generator[Star, None, None]:
         raise NotImplementedError
-
-
-class GraphBuilder(Protocol):
-    """Generic Graph builder wrapper protocol, for any graph system"""
-
-    @property
-    def title(self) -> Optional[str]:
-        ...
-
-    @property
-    def axis_names(self) -> Tuple[Optional[str], Optional[str]]:
-        ...
-
-    @property
-    def axis_limits(self) -> Tuple[Optional[float], Optional[float]]:
-        ...
-
-    @property
-    def size(self) -> Tuple[Optional[float], Optional[float]]:
-        ...
-
-    @property
-    def data(self) -> pd.Series:
-        ...
-
-    @property
-    def type(self) -> str:
-        ...
-
-    def reset(self) -> None:
-        ...
-
-    def build(self) -> Graph:
-        ...
 
 
 class Loader(Protocol):

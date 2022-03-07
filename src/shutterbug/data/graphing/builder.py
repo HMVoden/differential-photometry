@@ -1,15 +1,14 @@
 from abc import abstractmethod
-from attrs import field, define
-
-from shutterbug.data.interfaces.external import GraphBuilder
 from typing import Literal, Optional, Tuple
-import pandas as pd
 
+import pandas as pd
+from attrs import define, field
+from shutterbug.data.interfaces.external import GraphBuilder
 from shutterbug.data.interfaces.internal import Graph
 
 
 @define
-class BuilderBase(GraphBuilder):
+class BuilderBase:
     """Generic builder type, contains all fields and properties for building"""
 
     _title: Optional[str] = field(init=False)

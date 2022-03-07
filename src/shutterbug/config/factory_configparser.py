@@ -2,14 +2,12 @@
 returns the application data folder via the ConfigParser library"""
 
 import configparser
-from pathlib import Path
-from shutterbug.config.application import (
-    ApplicationConfig,
-    default_config,
-    make_data_folder,
-)
-from shutterbug.config.packages import DataConfig, PhotometryConfig
 import logging
+from pathlib import Path
+
+from shutterbug.config.application import (ApplicationConfig, default_config,
+                                           make_data_folder)
+from shutterbug.config.packages import DataConfig, PhotometryConfig
 
 
 def from_file(file: Path) -> ApplicationConfig:
@@ -28,7 +26,6 @@ def from_file(file: Path) -> ApplicationConfig:
         parser.read_file(str(file))
         return ApplicationConfig(
             photometry=PhotometryConfig.fromconfigparser(parser),
-            variability=TestConfig.fromconfigparser(parser),
             data=DataConfig.fromconfigparser(parser),
         )
     except ValueError as e:

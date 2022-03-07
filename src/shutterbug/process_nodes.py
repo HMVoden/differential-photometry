@@ -1,16 +1,16 @@
-from shutterbug.analysis.feature import FeatureBase
-from shutterbug.analysis.variable import is_variable, run_test
-from shutterbug.data_nodes import DatasetNode
 from typing import Dict, Generator, List
-from shutterbug.data import Dataset
+
 from attr import define, field
 
+from shutterbug.analysis.feature import FeatureBase
+from shutterbug.analysis.variable import is_variable, run_test
+from shutterbug.data import Dataset
+from shutterbug.data_nodes import DatasetNode
 from shutterbug.interfaces.internal import Photometer
 
 
 @define
 class VariabilityNode(DatasetNode):
-    datasets: DatasetNode = field()
     features: List[FeatureBase] = field()
     threshholds: Dict[str, float]
 
@@ -26,7 +26,6 @@ class VariabilityNode(DatasetNode):
 
 @define
 class DifferentialNode(DatasetNode):
-    datasets: DatasetNode = field()
     photometer: Photometer = field()
 
     def execute(self) -> Generator[Dataset, None, None]:

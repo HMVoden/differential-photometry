@@ -1,11 +1,12 @@
 from __future__ import annotations
-from configparser import ConfigParser
 
+from configparser import ConfigParser
 from pathlib import Path
-from typing import Dict, Any, Union
-from shutterbug.config.interfaces.internal import PackageConfigInterface
-from attr import field, define, asdict, fields
+from typing import Any, Dict, Union
+
+from attr import asdict, define, field, fields
 from attr.filters import exclude
+from shutterbug.config.interfaces.internal import PackageConfig
 
 
 def to_folder(value: Union[str, Path]) -> Path:
@@ -18,7 +19,7 @@ def to_folder(value: Union[str, Path]) -> Path:
     return new_path
 
 
-class PackageBase(PackageConfigInterface):
+class PackageBase(PackageConfig):
     # as all the Package dataclasses have utility methods as the same
     # implementation, a base class makes sense
     _name = "NOTIMPLEMENTED"
@@ -45,7 +46,7 @@ class PackageBase(PackageConfigInterface):
         return asdict(self, filter=exclude(self._name))
 
     @classmethod
-    def fromconfigparser(cls, parser: ConfigParser) -> PackageConfigInterface:
+    def fromconfigparser(cls, parser: ConfigParser) -> PackageConfig:
         """Creates package configuration from a config parser"""
         if parser.has_section(cls._name):
             return cls.fromdict(**parser[cls._name])

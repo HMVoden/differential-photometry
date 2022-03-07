@@ -1,16 +1,21 @@
 from __future__ import annotations
+
 from abc import abstractmethod
-from shutterbug.data import Dataset
-from shutterbug.data.interfaces.internal import Graph, Writer
-from shutterbug.data.interfaces.external import GraphBuilder, Loader
-from shutterbug.interfaces.external import ControlNode
-from attr import field, define
-from typing import Generator
 from pathlib import Path
+from typing import Generator
+
+from attr import define, field
+
+from shutterbug.data import BuilderBase, Dataset
+from shutterbug.data.interfaces.external import Loader
+from shutterbug.data.interfaces.internal import Graph, Writer
+from shutterbug.interfaces.external import ControlNode
 
 
 @define
 class DatasetNode(ControlNode):
+    datasets: DatasetNode = field()
+
     @abstractmethod
     def execute(self) -> Generator[Dataset, None, None]:
         raise NotImplementedError
@@ -29,13 +34,12 @@ class StoreNode(ControlNode):
 @define
 class FilesystemSave:
     output_location: Path = field()
+    only_variable: bool = field()
 
 
 @define
 class GraphSaveNode(DatasetNode, FilesystemSave):
-    datasets: DatasetNode = field()
-    graph_builder: GraphBuilder = field()
-    only_variable: bool = field()
+    graph_builder: BuilderBase = field()
 
     def execute(self) -> Generator[Dataset, None, None]:
         pass
@@ -43,8 +47,5 @@ class GraphSaveNode(DatasetNode, FilesystemSave):
 
 @define
 class CSVSaveNode(DatasetNode, FilesystemSave):
-    datasets: DatasetNode = field()
-    only_variable: bool = field()
-
     def execute(self) -> Generator[Dataset, None, None]:
         pass

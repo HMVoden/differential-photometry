@@ -1,0 +1,52 @@
+@startuml
+interface Photometer{
+        +average_differential(target: Star, reference: List[Star])
+}
+interface ControlNode {
+        +execute()
+}
+abstract class DatasetNode {
+
+        +datasets: DatasetNode
+        +execute: Generator[Dataset]
+}
+class StoreNode{
+        +source: Loader
+        +writer: Writer
+
+        +execute()
+}
+class FilesystemSave{
+        +output_location: Path
+        +only_variable: Bool
+}
+class GraphSaveNode{
+        +graph_builder: BuilderBase
+
+}
+class CSVSaveNode{
+}
+class VariabilityNode{
+        +features: List[FeatureBase]
+        +threshholds: Dictionary[String, Float]
+}
+class DifferentialNode{
+        +photometer: Photometer
+}
+class Differential{
+        {static} +average_differential(target: Star, reference: List[Star])
+        {static} -_average_error(target: Series, reference: Series)
+        {static} -_average_difference(target: Series, reference: Series)
+}
+
+DatasetNode ..|> ControlNode
+CSVSaveNode --|> DatasetNode
+CSVSaveNode --|> FilesystemSave
+StoreNode ..|> ControlNode
+GraphSaveNode --|> DatasetNode
+GraphSaveNode --|> FilesystemSave
+VariabilityNode --|> DatasetNode
+DifferentialNode --|> DatasetNode
+DifferentialNode -- Differential
+Differential ..|> Photometer
+@enduml
