@@ -1,10 +1,10 @@
-from shutterbug.data.db.model import Base, StarDB, StarDBLabel, StarDBTimeseries
-from sqlalchemy import create_engine
-from sqlalchemy.engine import Engine
 from contextlib import contextmanager
 
+from shutterbug.data.db.model import (Base, StarDB, StarDBLabel,
+                                      StarDBTimeseries)
+from sqlalchemy import create_engine, delete
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
-from sqlalchemy import delete
 
 
 def sqlalchemy_db(future: bool = True) -> Engine:
@@ -30,7 +30,7 @@ def sqlite_memory(future=True):
         yield database
     finally:
         with Session(database) as session:
-            del_star = delete(StarDB).execution_options(synchronize_sesion=False)
+            del_star = delete(StarDB).execution_options(synchronize_session=False)
             del_label = delete(StarDBLabel).execution_options(synchronize_session=False)
             del_ts = delete(StarDBTimeseries).execution_options(
                 synchronize_session=False

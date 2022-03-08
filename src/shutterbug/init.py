@@ -1,15 +1,15 @@
-from pathlib import Path
-import logging.config as lc
 import logging
-from typing import Optional, Tuple
+import logging.config as lc
+from pathlib import Path
+from typing import Optional
 
-from sqlalchemy.engine import Engine
-from sqlalchemy import create_engine
-
-from shutterbug.config.application import ApplicationConfig
-import shutterbug.config as cf
-from alembic.config import Config
 from alembic import command
+from alembic.config import Config
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
+
+import shutterbug.config as cf
+from shutterbug.config.application import ApplicationConfig
 
 
 def initialize_logging(
@@ -77,17 +77,3 @@ def _upgrade_db_to_latest(engine: Engine):
     with engine.begin() as connection:
         cfg.attributes["connection"] = connection
         command.upgrade(cfg, "head")
-
-
-def initialize_application(
-    config_file: Optional[Path] = None,
-    debug: bool = False,
-) -> Tuple[ApplicationConfig, Engine]:
-    initialize_logging(debug=debug)
-    logging.info("Initializing application")
-    config = initialize_configuration(config_file)
-    db_path = config.data["database_path"]
-    db_url = config.data["database_url"]
-    database = initialize_database(db_path, db_url)
-    logging.info("Finished initializing application")
-    return config, database

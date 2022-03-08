@@ -1,17 +1,18 @@
-from pathlib import Path
-from functools import wraps
-import click
 import logging
+from functools import wraps
+from pathlib import Path
 from typing import List
 
+import click
 from click.core import Context
-from shutterbug.data.interfaces.internal import Reader
+from shutterbug.application import (initialize_application, make_dataset,
+                                    make_file_loader, make_reader_writer)
+from shutterbug.data import Dataset, DBReader, DBWriter
 from shutterbug.data.file import FileInput
-from shutterbug.data.db.writer import DBWriter
-from shutterbug.data.db.reader import DBReader
-import pandas as pd
+from shutterbug.data.interfaces.internal import Reader
+from shutterbug.data_nodes import CSVSaveNode, GraphSaveNode, StoreNode
+from shutterbug.process_nodes import DifferentialNode, VariabilityNode
 from shutterbug.ux.progress_bars import ProgressBarManager
-from shutterbug.init import initialize_application
 
 
 @click.group(chain=True, invoke_without_command=True)
@@ -37,40 +38,12 @@ def cli(context: Context, debug: bool):
     help="Datasets to load",
 )
 @click.pass_context
-def cli_load(context: Context, files: List[Path]):
-    pbar_manager = context.obj["pbar_manager"]
-    config = context.obj["config"]
-    database = context.obj["database"]
-    for file_path in files:
-        writer = DBWriter(dataset=file_path.stem, engine=database)
-        dataset = FileInput(file_path)
-        with pbar_manager.new(
-            desc="Iterating Datasets", unit="dataset", total=len(dataset)
-        ) as pbar1:
-            for loader in dataset:
-                with pbar_manager.new(
-                    desc="Loading",
-                    unit="star",
-                    total=len(loader),
-                    stage="Loading into database",
-                ) as pbar2:
-                    for star in loader:
-                        writer.write(star)
-                        pbar2.update()
-                with pbar_manager.new(
-                    desc="Photometry",
-                    unit="star",
-                    total=len(loader),
-                    stage="Photometry",
-                ) as pbar3:
-                    reader = DBReader(dataset=file_path.stem, engine=database)
-                    for star in reader.all:
-                        pbar3.update()
-                pbar1.update()
+def load(context: Context, files: List[Path]):
+    pass
 
 
 @cli.command("process")
-def cli_process(reader: Reader):
+def process(reader: Reader):
     pass
 
 
@@ -78,5 +51,8 @@ def cli_process(reader: Reader):
 @click.option("-o", "--out-folder", type=click.Path())
 @click.option("-g" "--graph", type=click.BOOL, is_flag=True, default=True)
 @click.option("-c" "--csv", type=click.BOOL, is_flag=True, default=True)
-def cli_save(frame: pd.DataFrame, out_folder: Path, graph: bool, csv: bool):
+@click.option("-v" "--variable", type=click.BOOL, is_flag=True, default=False)
+def cli_save(
+    dataset: Dataset, out_folder: Path, graph: bool, csv: bool, variable: bool
+):
     pass
