@@ -1,21 +1,26 @@
 import logging
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 
+import shutterbug.differential as Differential
+from shutterbug.analysis.feature import IQR, FeatureBase, InverseVonNeumann
 from shutterbug.config import ApplicationConfig
 from shutterbug.data import Dataset, DBReader, DBWriter
 from shutterbug.data.file import FileInput
+from shutterbug.data.graphing.builder import BuilderBase
+from shutterbug.data.graphing.seaborn_builder import SeabornBuilder
 from shutterbug.data.interfaces.external import Input
 from shutterbug.data.interfaces.internal import Reader, Writer
 from shutterbug.init import (initialize_configuration, initialize_database,
                              initialize_logging)
+from shutterbug.interfaces.internal import Photometer
 
 
 def initialize_application(
-    config_file: Optional[Path] = None,
+    config_file: Path = Path().cwd() / "shutterbug.ini",
     debug: bool = False,
 ) -> Tuple[ApplicationConfig, Engine]:
     initialize_logging(debug=debug)
@@ -33,9 +38,8 @@ def make_file_loader(path: Path) -> Input:
 
 
 def make_reader_writer(
-    path: Path, dataset_name: str, magnitude_limit: int, distance_limit: int
+    dataset_name: str, magnitude_limit: int, distance_limit: int, engine: Engine
 ) -> Tuple[Reader, Writer]:
-    engine = create_engine(url=path)
     reader = DBReader(
         dataset=dataset_name,
         engine=engine,
@@ -48,3 +52,15 @@ def make_reader_writer(
 
 def make_dataset(dataset_name: str, reader: Reader, writer: Writer) -> Dataset:
     return Dataset(dataset_name, reader, writer)
+
+
+def get_feature_calculators() -> List[FeatureBase]:
+    return [InverseVonNeumann(), IQR()]
+
+
+def get_photometer() -> Photometer:
+    return Differential
+
+
+def get_graph_builder() -> BuilderBase:
+    return SeabornBuilder()

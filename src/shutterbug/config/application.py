@@ -4,13 +4,15 @@ from typing import Any, Dict
 
 from attr import define, field
 from shutterbug.config.interfaces.internal import PackageConfig
-from shutterbug.config.packages import DataConfig, PhotometryConfig
+from shutterbug.config.packages import (DataConfig, PhotometryConfig,
+                                        VariabilityConfig)
 
 
 @define
 class ApplicationConfig:
     _photometry: PackageConfig = field()
     _data: PackageConfig = field()
+    _variability: PackageConfig = field()
 
     @property
     def data(self) -> Dict[str, Any]:
@@ -21,10 +23,15 @@ class ApplicationConfig:
         return self._photometry.asdict
 
     @property
+    def variability(self) -> Dict[str, float]:
+        return self._variability.asdict
+
+    @property
     def all(self) -> Dict[str, Any]:
         return {
             "photometry": self.photometry,
             "data": self.data,
+            "variability": self.variability,
         }
 
 
@@ -49,4 +56,5 @@ def make_data_folder(folder: Path = Path.home() / ".shutterbug") -> Path:
 default_config = ApplicationConfig(
     photometry=PhotometryConfig(),  # type: ignore
     data=DataConfig(),  # type: ignore
+    variability=VariabilityConfig(),  # type: ignore
 )

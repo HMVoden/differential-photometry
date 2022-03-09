@@ -7,7 +7,8 @@ from pathlib import Path
 
 from shutterbug.config.application import (ApplicationConfig, default_config,
                                            make_data_folder)
-from shutterbug.config.packages import DataConfig, PhotometryConfig
+from shutterbug.config.packages import (DataConfig, PhotometryConfig,
+                                        VariabilityConfig)
 
 
 def from_file(file: Path) -> ApplicationConfig:
@@ -23,11 +24,13 @@ def from_file(file: Path) -> ApplicationConfig:
     """
     parser = configparser.ConfigParser()
     try:
-        parser.read_file(str(file))
-        return ApplicationConfig(
-            photometry=PhotometryConfig.fromconfigparser(parser),
-            data=DataConfig.fromconfigparser(parser),
-        )
+        with file.open(mode="r") as f:
+            app_config = ApplicationConfig(
+                photometry=PhotometryConfig.fromconfigparser(parser),
+                data=DataConfig.fromconfigparser(parser),
+                variability=VariabilityConfig.fromconfigparser(parser),
+            )
+        return app_config
     except ValueError as e:
         logging.error(f"Failed to create application config with error {e}")
     except IOError as e:

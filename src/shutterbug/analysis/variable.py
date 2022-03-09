@@ -1,6 +1,7 @@
-from shutterbug.data import Star
-from shutterbug.analysis.feature import FeatureBase
 from typing import Dict
+
+from shutterbug.analysis.feature import FeatureBase
+from shutterbug.data import Star
 
 
 def run_test(data: Star, test: FeatureBase) -> Star:
@@ -11,13 +12,12 @@ def run_test(data: Star, test: FeatureBase) -> Star:
     return data
 
 
-def is_variable(data: Star, thresholds: Dict[str, float]) -> Star:
+def is_variable(data: Star, threshold: float) -> Star:
     """Determines if a star is variable by iterating through all timeseries
     features and flagging if any are True"""
     features = data.timeseries.features
     variable_tests = []
-    for name, result in features.items():
-        if name in thresholds:
-            variable_tests.append(result > thresholds[name])
+    for result in features.values():
+        variable_tests.append(result > threshold)
     data.variable = any(variable_tests)
     return data

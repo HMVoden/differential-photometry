@@ -2,9 +2,10 @@ import logging
 from pathlib import Path
 from typing import Generator, Iterable, List, Union
 
-from attr import define, field
-from shutterbug.data.interfaces.external import Input, FileLoaderFactory, Loader
 import shutterbug.data.csv.loader_factory as CSVFactory
+from attr import define, field
+from shutterbug.data.interfaces.external import (FileLoaderFactory, Input,
+                                                 Loader)
 from shutterbug.data.star import Star
 
 _TYPES: List[FileLoaderFactory] = [CSVFactory]
@@ -75,6 +76,6 @@ class FileInput(Input):
         for i_file in self._input_files:
             loader = self._file_to_loader(i_file)
             if loader is not None:
-                yield loader
+                yield from loader
             else:
                 logging.warning(f"Unable to load file {i_file.name}")

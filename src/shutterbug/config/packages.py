@@ -73,3 +73,10 @@ class PhotometryConfig(PackageBase):
     _name = "photometry"
     magnitude_limit: float = field(converter=float, default=0)
     distance_limit: float = field(converter=float, default=0)
+
+
+@define(kw_only=True, slots=True, auto_attribs=True)
+class VariabilityConfig(PackageBase):
+
+    _name = "variability"
+    threshold: float = field(converter=float, default=3)
