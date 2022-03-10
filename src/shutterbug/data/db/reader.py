@@ -3,14 +3,12 @@ from typing import Generator, List, Optional
 import attr
 import pandas as pd
 from attr import define, field
-from shutterbug.data.interfaces.external import Loader
+from shutterbug.data.db.model import StarDB, StarDBLabel
 from shutterbug.data.interfaces.internal import Reader
-from shutterbug.data.db.model import StarDB, StarDBLabel, StarDBTimeseries
+from shutterbug.data.star import Star, StarTimeseries
 from sqlalchemy import func, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
-
-from shutterbug.data.star import Star
 
 
 @define(slots=True, frozen=True)
@@ -38,16 +36,6 @@ class DBReader(Reader):
         return len(self.names)
 
     def __iter__(self) -> Generator[Star, None, None]:
-        """Connecting to target database, returns a generator of each individual star
-        in sequence
-
-        Returns
-        -------
-        Generator[pd.DataFrame, None, None]
-            Dataframe with the star's name and timeseries (time, magnitude,
-            error)
-
-        """
 
         with Session(self.engine) as session:
             for name in self.names:
@@ -55,31 +43,12 @@ class DBReader(Reader):
                 statement = statement.filter(
                     StarDBLabel.dataset == self.dataset, StarDBLabel.name == name
                 )
+                for star in session.execute(statement).all():
+                    star = star[0]
+                    yield self._model_to_star(star=star)
 
-                yield pd.read_sql(
-                    sql=statement,
-                    con=session.bind,
-                    parse_dates=["time"],
-                    columns=["name", "time", "mag", "error"],
-                    index_col=["name", "time"],
-                )
-
-    def similar_to(self, star_name: str) -> pd.DataFrame:
-        """Finds all stars that are within a magnitude and distance tolerance, excluding target star
-
-        Parameters
-        ----------
-        star_name : str
-            Target star name to identify start
-
-        Returns
-        -------
-        pd.DataFrame
-            DataFrame of all qualifying stars containing time and name as
-            indexes, with timeseries information (magnitude, error) as columns
-
-        """
-
+    def similar_to(self, star_name: str) -> List[Star]:
+        """Returns all stars that are similar to target star"""
         with Session(self.engine) as session:
             target_cte = (
                 select(StarDB.x, StarDB.y, StarDB.magnitude_median, StarDBLabel.name)
@@ -92,18 +61,15 @@ class DBReader(Reader):
             statement = self._filter_on_constraints(
                 statement=self._select_star(), target=target_cte.c
             )
-            return pd.read_sql(
-                sql=statement,
-                con=session.bind,
-                parse_dates=["time"],
-                columns=["name", "time", "mag", "error"],
-                index_col=["name", "time"],
-            )
+            stars = []
+            for rec_star in session.execute(statement).all():
+                stars.append(self._model_to_star(rec_star[0]))
+            return stars
 
     def _select_star(self):
         """Creates selection statement to find all data for a star in the reader's dataset"""
         return (
-            select(StarDB, StarDBTimeseries, StarDBLabel)
+            select(StarDB)
             .join(StarDB.timeseries)
             .join(StarDB.label)
             .where(StarDBLabel.dataset == self.dataset)
@@ -135,3 +101,32 @@ class DBReader(Reader):
                 self._within_distance(target_x=target.x, target_y=target.y)
             )
         return statement
+
+    def _model_to_star(self, star: StarDB) -> Star:
+
+        """Converts a db model of a star into a full Star object, with StarTimeseries
+
+        :param star: StarDB from the database model
+        :returns: Star
+
+        """
+        db_time = []
+        db_mag = []
+        db_error = []
+        for row in star.timeseries:
+            db_time.append(row.time)
+            db_mag.append(row.mag)
+            db_error.append(row.error)
+        data = pd.DataFrame(
+            {"magnitude": db_mag, "error": db_error},
+            index=pd.to_datetime(db_time, utc=True),
+        )
+        data.index.name = "time"
+        rec_timeseries = StarTimeseries(data=data)
+        rec_star = Star(
+            name=star.label.name,
+            x=star.x,
+            y=star.y,
+            timeseries=rec_timeseries,
+        )
+        return rec_star

@@ -34,7 +34,7 @@ class StarDB(Base):
     label = relationship("StarDBLabel", back_populates="star", uselist=False)
 
     def __repr__(self):
-        return f"StarDB(id:'{self.id}',x:'{self.x}',y:'{self.y}')"
+        return f"StarDB(id:'{self.id}',x:'{self.x}',y:'{self.y}',median:'{self.magnitude_median}',variable:'{self.variable}',timeseries:'{self.timeseries}',label:'{self.label}')"
 
 
 class StarDBLabel(Base):
