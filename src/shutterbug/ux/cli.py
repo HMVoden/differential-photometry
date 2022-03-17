@@ -80,11 +80,13 @@ def load(context: Context, files: List[Path]):
     for f in files:
         logging.debug(f"Loading file: {f.name}")
         f_input = make_file_loader(f)
-        db_reader, db_writer = make_reader_writer(
-            engine=engine,
-            dataset_name=f.name,
-            magnitude_limit=mag_limit,
-            distance_limit=distance_limit,
+        db_reader, db_writer = next(
+            make_reader_writer(
+                engine=engine,
+                dataset_name=f.name,
+                magnitude_limit=mag_limit,
+                distance_limit=distance_limit,
+            )
         )
         StoreNode(f_input, db_writer).execute()
         dataset = make_dataset(dataset_name=f.name, reader=db_reader, writer=db_writer)

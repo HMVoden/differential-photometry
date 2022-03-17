@@ -65,7 +65,7 @@ class StarTimeseries:
 
     @differential_magnitude.setter
     def differential_magnitude(self, data: pd.Series) -> None:
-        self.data["magnitude"] = data
+        self.data["adm"] = data
 
     @property
     def differential_error(self) -> pd.Series:
@@ -73,7 +73,7 @@ class StarTimeseries:
 
     @differential_error.setter
     def differential_error(self, data: pd.Series) -> None:
-        self.data["magnitude"] = data
+        self.data["ade"] = data
 
     def drop_rows(self, rows: List[int]) -> None:
         row_indices = self.data.index.to_numpy()[rows]

@@ -38,8 +38,14 @@ class StoreNode(ControlNode):
 
     def execute(self) -> None:
         logging.debug("Storing dataset")
+        stars = []
         for star in self.source:
-            self.writer.write(star)
+            stars.append(star)
+            if len(stars) >= 50:
+                self.writer.write(stars)
+                stars = []
+
+        self.writer.write(stars)
 
 
 @define

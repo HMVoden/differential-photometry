@@ -66,7 +66,7 @@ def initialize_database(db_path: Path, db_url: str) -> Engine:
     if not db_path.exists():
         logging.info("Database not found, initializing")
         db_path.touch()
-    engine = create_engine(db_url)
+    engine = create_engine(db_url, future=True)
     _upgrade_db_to_latest(engine)
     return engine
 

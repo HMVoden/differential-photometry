@@ -1,14 +1,11 @@
 import logging
 from functools import singledispatchmethod
 
-import attr
 import numpy as np
-from attr import asdict, define, field
+from attr import define, field
 from shutterbug.data.db.model import StarDB, StarDBLabel, StarDBTimeseries
 from shutterbug.data.interfaces.internal import Writer
 from shutterbug.data.star import Star
-from sqlalchemy import delete
-from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 
@@ -19,7 +16,7 @@ class DBWriter(Writer):
 
     """
 
-    engine: Engine = field(validator=attr.validators.instance_of(Engine))
+    session: Session = field()
     dataset: str = field()
 
     @singledispatchmethod
@@ -32,19 +29,17 @@ class DBWriter(Writer):
             Star from dataset
 
         """
-        with Session(self.engine) as session:
-            self._write_star(session=session, star=data, overwrite=overwrite)
-            session.commit()
+        self._write_star(star=data, overwrite=overwrite)
+        self.session.commit()
 
     @write.register
     def _(self, data: list, overwrite: bool = False):
         # have to use list as type due to bug with singledispatch
-        with Session(self.engine) as session:
-            for star in data:
-                self._write_star(session=session, star=star, overwrite=overwrite)
-            session.commit()
+        for star in data:
+            self._write_star(star=star, overwrite=overwrite)
+        self.session.commit()
 
-    def _write_star(self, session: Session, star: Star, overwrite: bool = False):
+    def _write_star(self, star: Star, overwrite: bool = False):
         """Writes star with given session
 
         Parameters
@@ -55,6 +50,7 @@ class DBWriter(Writer):
             Star to write
 
         """
+        session = self.session
         db_star = (
             session.query(StarDBLabel.name)
             .filter(StarDBLabel.name == star.name)

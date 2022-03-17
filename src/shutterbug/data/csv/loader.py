@@ -1,13 +1,13 @@
 import csv
 import logging
 from pathlib import Path
-from typing import Dict, Generator, List, Tuple, Iterable
-from more_itertools.recipes import pairwise
+from typing import Dict, Generator, Iterable, List, Tuple
 
 from attr import define, field
 from more_itertools import consume, map_reduce
-from shutterbug.data.star import Star
+from more_itertools.recipes import pairwise
 from shutterbug.data.header import KnownHeader
+from shutterbug.data.star import Star
 
 
 @define(slots=True)
@@ -35,6 +35,10 @@ class CSVLoader:
     def __len__(self):
         """Number of stars in given CSV"""
         return len(self._star_count())
+
+    @property
+    def names(self):
+        return self._stars.items()
 
     def _file_rows(self) -> Generator[List[str], None, None]:
         """Skips header and returns an iterable for every row in the input file"""

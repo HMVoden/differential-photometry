@@ -1,9 +1,9 @@
 import logging
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Generator, List, Tuple
 
-from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm.session import Session
 
 import shutterbug.differential as Differential
 from shutterbug.analysis.feature import IQR, FeatureBase, InverseVonNeumann
@@ -39,15 +39,16 @@ def make_file_loader(path: Path) -> Input:
 
 def make_reader_writer(
     dataset_name: str, magnitude_limit: int, distance_limit: int, engine: Engine
-) -> Tuple[Reader, Writer]:
-    reader = DBReader(
-        dataset=dataset_name,
-        engine=engine,
-        mag_limit=magnitude_limit,
-        distance_limit=distance_limit,
-    )
-    writer = DBWriter(dataset=dataset_name, engine=engine)
-    return reader, writer
+) -> Generator[Tuple[Reader, Writer], None, None]:
+    with Session(engine) as session:
+        reader = DBReader(
+            dataset=dataset_name,
+            session=session,
+            mag_limit=magnitude_limit,
+            distance_limit=distance_limit,
+        )
+        writer = DBWriter(dataset=dataset_name, session=session)
+        yield reader, writer
 
 
 def make_dataset(dataset_name: str, reader: Reader, writer: Writer) -> Dataset:

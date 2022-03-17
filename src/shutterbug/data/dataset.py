@@ -1,7 +1,7 @@
 from functools import singledispatch
-from typing import Generator
-from attr import field, define
-from typing import List
+from typing import Generator, List
+
+from attr import define, field
 from shutterbug.data.interfaces.internal import Reader, Writer
 from shutterbug.data.star import Star
 
