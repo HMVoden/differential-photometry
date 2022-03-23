@@ -1,7 +1,9 @@
-import pandas as pd
-import numpy as np
-from shutterbug.data import Star
 from typing import List
+
+import numpy as np
+import pandas as pd
+
+from shutterbug.data import Star
 
 
 def average_differential(

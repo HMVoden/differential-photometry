@@ -1,6 +1,7 @@
-from typing import Generator, List, Optional
+from typing import Dict, Generator, List, Optional
 
 import attr
+import numpy as np
 import pandas as pd
 from attr import define, field
 from shutterbug.data.db.model import StarDB, StarDBLabel
@@ -20,6 +21,7 @@ class DBReader(Reader):
     distance_limit: Optional[float] = field(
         converter=attr.converters.optional(float), default=0
     )
+    _star_cache: Dict[str, List[str]] = field(init=False, default={})
 
     @property
     def names(self) -> List[str]:
@@ -34,54 +36,64 @@ class DBReader(Reader):
         statement = self._select_star()
         yield from map(self._model_to_star, self.session.scalars(statement))
 
-    def similar_to(self, star_name: str) -> List[Star]:
+    def similar_to(self, star: Star) -> List[Star]:
         """Returns all stars that are similar to target star"""
-        target_cte = (
-            select(StarDB.x, StarDB.y, StarDB.magnitude_median, StarDBLabel.name)
-            .join(StarDB.label)
-            .where(StarDBLabel.name == star_name, StarDBLabel.dataset == self.dataset)
-            .cte()
+        similar_star_names = self._filter_on_constraints(star)
+        statement = self._select_star().where(StarDBLabel.name.in_(similar_star_names))
+        return list(
+            map(self._model_to_star, self.session.scalars(statement).fetchmany(size=20))
         )
-        statement = self._filter_on_constraints(
-            statement=self._select_star(), target=target_cte.c
-        )
-        return list(map(self._model_to_star, self.session.scalars(statement).all()))
 
     def _select_star(self):
         """Creates selection statement to find all data for a star in the reader's dataset"""
         return (
-            select(StarDB)
-            .join(StarDB.timeseries)
-            .join(StarDB.label)
-            .where(StarDBLabel.dataset == self.dataset)
+            select(StarDB).join(StarDB.label).where(StarDBLabel.dataset == self.dataset)
         )
 
-    def _within_distance(self, target_x, target_y):
-        """Returns statement which finds if target is within distance limit, for use with filtering"""
-        return (
-            func.SQRT(
+    def _within_distance(self, star: Star) -> List[str]:
+        session = self.session
+        statement = (
+            select(StarDBLabel.name)
+            .join(StarDB)
+            .where(
                 (
-                    func.POW((StarDB.x - target_x), 2)
-                    + func.POW((StarDB.y - target_y), 2)
+                    func.SQRT(
+                        (
+                            func.POW((StarDB.x - star.x), 2)
+                            + func.POW((StarDB.y - star.y), 2)
+                        )
+                    )
+                    <= self.distance_limit
                 )
             )
-            <= self.distance_limit
+            .where(StarDBLabel.name != star.name)
         )
+        return session.scalars(statement).all()
 
-    def _within_mag(self, target_mag):
-        """Returns statement which finds if target is within magnitude limit, for use with filtering"""
-        return func.ABS(StarDB.magnitude_median - target_mag) <= self.mag_limit
-
-    def _filter_on_constraints(self, statement, target):
-        """Appends filters for target"""
-        statement = statement.where(StarDBLabel.name != target.name)
-        if self.mag_limit != 0:
-            statement = statement.where(self._within_mag(target.magnitude_median))
-        if self.distance_limit != 0:
-            statement = statement.where(
-                self._within_distance(target_x=target.x, target_y=target.y)
+    def _within_mag(self, star: Star) -> List[str]:
+        session = self.session
+        statement = (
+            select(StarDBLabel.name)
+            .join(StarDB)
+            .where(
+                (
+                    func.ABS(
+                        StarDB.magnitude_median - np.median(star.timeseries.magnitude)
+                    )
+                    <= self.mag_limit
+                )
             )
-        return statement
+            .where(StarDBLabel.name != star.name)
+        )
+        return session.scalars(statement).all()
+
+    def _filter_on_constraints(self, star: Star) -> List[str]:
+
+        if star.name not in self._star_cache.keys():
+            similar_mag = set(self._within_mag(star))
+            similar_dist = set(self._within_distance(star))
+            self._star_cache[star.name] = list(similar_mag.intersection(similar_dist))
+        return self._star_cache[star.name]
 
     def _model_to_star(self, star: StarDB) -> Star:
 

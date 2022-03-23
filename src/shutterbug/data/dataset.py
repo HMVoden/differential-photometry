@@ -27,4 +27,4 @@ class Dataset:
         self.writer.write(star, overwrite=True)
 
     def similar_to(self, star: Star) -> List[Star]:
-        return self.reader.similar_to(star.name)
+        return self.reader.similar_to(star)

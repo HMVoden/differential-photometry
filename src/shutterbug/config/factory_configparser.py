@@ -23,22 +23,22 @@ def from_file(file: Path) -> ApplicationConfig:
 
     """
     parser = configparser.ConfigParser()
-    try:
-        with file.open(mode="r") as f:
-            app_config = ApplicationConfig(
-                photometry=PhotometryConfig.fromconfigparser(parser),
-                data=DataConfig.fromconfigparser(parser),
-                variability=VariabilityConfig.fromconfigparser(parser),
-            )
-        return app_config
-    except ValueError as e:
-        logging.error(f"Failed to create application config with error {e}")
-    except IOError as e:
-        logging.error(
-            f"Unable to open file {file.name} for reading, received error {e}"
-        )
-    finally:
-        return default_config
+    parser.read(file)
+    app_config = ApplicationConfig(
+        photometry=PhotometryConfig.fromconfigparser(parser),
+        data=DataConfig.fromconfigparser(parser),
+        variability=VariabilityConfig.fromconfigparser(parser),
+    )
+    return app_config
+    # except ValueError as e:
+    #     logging.error(f"Failed to create application config with error {e}")
+    # except IOError as e:
+    #     logging.error(
+    #         f"Unable to open file {file.name} for reading, received error {e}"
+    #     )
+    # finally:
+    #     logging.error("Creating default configuration due to error")
+    #     return default_config
 
 
 def to_file(file: Path, config: ApplicationConfig) -> bool:
