@@ -23,6 +23,11 @@ class Reader(ABC):
     def names(self) -> List[str]:
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def variable(self) -> Generator[Star, None, None]:
+        raise NotImplementedError
+
 
 class Writer(ABC):
     """Interface for data storage module, takes in a star or a group of stars and
@@ -45,4 +50,8 @@ class Graph(ABC):
 
     @abstractmethod
     def render(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def save(self):
         raise NotImplementedError

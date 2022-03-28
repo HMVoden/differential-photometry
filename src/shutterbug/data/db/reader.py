@@ -29,6 +29,13 @@ class DBReader(Reader):
         star_names = self.session.scalars(stmt).all()
         return star_names
 
+    @property
+    def variable(self) -> Generator[Star, None, None]:
+        """Iterable of variable stars in source"""
+        statement = self._select_star()
+        statement = statement.where(StarDB.variable == True)
+        yield from map(self._model_to_star, self.session.scalars(statement))
+
     def __len__(self) -> int:
         return len(self.names)
 

@@ -55,7 +55,13 @@ class GraphSaveNode(DatasetNode):
     only_variable: bool = field()
 
     def execute(self) -> Generator[Dataset, None, None]:
-        pass
+        for dataset in self.datasets.execute():
+            if self.only_variable:
+                for star in dataset.variable:
+                    pass
+            else:
+                for star in dataset:
+                    pass
 
 
 @define

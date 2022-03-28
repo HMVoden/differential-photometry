@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Iterable, Optional, Tuple
 
 import matplotlib.pyplot as plt
@@ -20,6 +21,9 @@ class SeabornGraph(Graph):
 
     def render(self):
         pass
+
+    def save(self, filename: Path) -> None:
+        self._sns_graph.savefig(filename)
 
 
 @define(slots=True)

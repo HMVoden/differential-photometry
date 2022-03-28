@@ -28,3 +28,7 @@ class Dataset:
 
     def similar_to(self, star: Star) -> List[Star]:
         return self.reader.similar_to(star)
+
+    @property
+    def variable(self) -> Generator[Star, None, None]:
+        yield from self.reader.variable
