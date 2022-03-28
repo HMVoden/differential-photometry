@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -60,16 +60,22 @@ class StarTimeseries:
         self.data["error"] = data
 
     @property
-    def differential_magnitude(self) -> pd.Series:
-        return self.data["adm"]
+    def differential_magnitude(self) -> Union[pd.Series, None]:
+        if "adm" in self.data.columns:
+            return self.data["adm"]
+        else:
+            return None
 
     @differential_magnitude.setter
     def differential_magnitude(self, data: pd.Series) -> None:
         self.data["adm"] = data
 
     @property
-    def differential_error(self) -> pd.Series:
-        return self.data["ade"]
+    def differential_error(self) -> Union[pd.Series, None]:
+        if "ade" in self.data.columns:
+            return self.data["ade"]
+        else:
+            return None
 
     @differential_error.setter
     def differential_error(self, data: pd.Series) -> None:

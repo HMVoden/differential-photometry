@@ -1,16 +1,13 @@
 import string
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Optional
 
 import pandas as pd
 from hypothesis import given
-from hypothesis.extra.numpy import datetime64_dtypes
-from hypothesis.extra.pandas import column, data_frames
 from hypothesis.strategies import (DrawFn, composite, datetimes, floats,
                                    integers, lists, text)
 from shutterbug.data.star import Star, StarTimeseries
-from shutterbug.differential import (_average_difference, _average_error,
-                                     average_differential)
+from shutterbug.differential import average_differential
 
 
 @composite
@@ -91,4 +88,8 @@ def timeseries_stars(
 def test_photometry(stars):
     target = stars[0]
     reference = stars[1:]
-    adm_ade = average_differential(target, reference)
+    mod_target = average_differential(target, reference)
+    assert len(mod_target.timeseries.differential_magnitude) == len(
+        target.timeseries.magnitude
+    )
+    assert len(mod_target.timeseries.differential_error) == len(target.timeseries.error)

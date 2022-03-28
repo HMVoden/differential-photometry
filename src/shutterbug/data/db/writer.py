@@ -1,5 +1,6 @@
 import logging
 from functools import singledispatchmethod
+from itertools import repeat
 
 import numpy as np
 from attr import define, field
@@ -105,13 +106,15 @@ class DBWriter(Writer):
         db_timeseries = []
         mag = star.timeseries.magnitude
         error = star.timeseries.error
-        timeseries_data = zip(mag.index.to_pydatetime(), mag, error)
-        for time, mag, error in timeseries_data:
-            ts = StarDBTimeseries(
-                time=time,
-                mag=mag,
-                error=error,
-            )
+        if star.timeseries.differential_magnitude is None:
+            sadm = repeat(None)
+            sade = repeat(None)
+        else:
+            sadm = star.timeseries.differential_magnitude
+            sade = star.timeseries.differential_error
+        timeseries_data = zip(mag.index.to_pydatetime(), mag, error, sadm, sade)
+        for time, mag, error, adm, ade in timeseries_data:
+            ts = StarDBTimeseries(time=time, mag=mag, error=error, adm=adm, ade=ade)
             db_timeseries.append(ts)
         db_star.label = db_label
         db_star.timeseries = db_timeseries
