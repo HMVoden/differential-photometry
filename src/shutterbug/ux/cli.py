@@ -107,7 +107,7 @@ def process(nodes: List[DatasetNode], context: Context, iterations: int):
     variability_threshold = context.obj["config"].variability["threshold"]
     feature_calculators = get_feature_calculators()
     photometer = get_photometer()
-    logging.debug(f"Adding process nodes for {iterations} iterations")
+    logging.info(f"Adding process nodes for {iterations} iterations to node tree")
     for node in nodes:
         for _ in range(iterations):
             node = DifferentialNode(node, photometer)
@@ -115,25 +115,29 @@ def process(nodes: List[DatasetNode], context: Context, iterations: int):
         yield node
 
 
-@click.command("save")
+@cli.command("save")
 @click.option("-o", "--out-folder", type=click.Path())
-@click.option("-g" "--graph", type=click.BOOL, is_flag=True, default=True)
-@click.option("-c" "--csv", type=click.BOOL, is_flag=True, default=True)
+@click.option("-g", "--graph", type=click.BOOL, is_flag=True, default=False)
+@click.option("-c", "--csv", type=click.BOOL, is_flag=True, default=False)
 @click.option(
     "-v" "--variable_only", "variable", type=click.BOOL, is_flag=True, default=False
 )
+@click.pass_context
 @processor
 def save(
     nodes: List[DatasetNode],
+    context: Context,
     out_folder: Path,
     graph: bool,
     csv: bool,
     variable: bool,
 ):
+    if out_folder is None:
+        out_folder = context.obj["config"].data["output_folder"]
     graph_builder = get_graph_builder()
     for node in nodes:
         if graph:
-            logging.debug(f"Adding graph saving to node tree")
+            logging.info(f"Adding graph saving to node tree")
             node = GraphSaveNode(
                 output_location=out_folder,
                 only_variable=variable,
@@ -141,7 +145,7 @@ def save(
                 graph_builder=graph_builder,
             )
         if csv:
-            logging.debug(f"Adding csv saving to node tree")
+            logging.info(f"Adding csv saving to node tree")
             node = CSVSaveNode(
                 output_location=out_folder, only_variable=variable, datasets=node
             )

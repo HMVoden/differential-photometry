@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import singledispatchmethod
+from pathlib import Path
 from typing import Generator, List
 
 from shutterbug.data.star import Star
@@ -53,5 +54,5 @@ class Graph(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def save(self):
+    def save(self, filename: Path):
         raise NotImplementedError

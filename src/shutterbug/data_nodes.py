@@ -56,12 +56,35 @@ class GraphSaveNode(DatasetNode):
 
     def execute(self) -> Generator[Dataset, None, None]:
         for dataset in self.datasets.execute():
+            output_folder = self.output_location / dataset.name
+            variable_folder = output_folder / "variable"
+            nonvariable_folder = output_folder / "nonvariable"
+            output_folder.mkdir(exist_ok=True, parents=True)
+            variable_folder.mkdir(exist_ok=True)
+            nonvariable_folder.mkdir(exist_ok=True)
+            builder = self.graph_builder
+            logging.debug(f"Outputting graphs to folder {output_folder}")
             if self.only_variable:
-                for star in dataset.variable:
-                    pass
+                stars = dataset.variable
             else:
-                for star in dataset:
-                    pass
+                stars = dataset
+            for star in stars:
+                title = f"Differential magnitude of {star.name} \n X: {star.x} Y: {star.y} \n"
+                for feature, value in star.timeseries.features.items():
+                    title += "{feature}: {value}"
+                builder.title = title
+                builder.axis_names = ("Time (UTC)", "Differential Magnitude")
+                builder.axis_limits = (1, 1)
+                builder.data = star.timeseries.differential_magnitude
+                builder.error = star.timeseries.differential_error
+                graph = builder.build()
+                logging.debug(f"Writing graph {star.name}")
+                if star.variable:
+                    graph.save(variable_folder / f"{star.name}.png")
+                else:
+                    graph.save(nonvariable_folder / f"{star.name}.png")
+                builder.reset()
+            yield dataset
 
 
 @define

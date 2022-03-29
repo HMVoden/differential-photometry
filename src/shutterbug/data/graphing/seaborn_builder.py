@@ -15,7 +15,7 @@ sns.set_theme(style="darkgrid", context="paper")
 
 @define(slots=True)
 class SeabornGraph(Graph):
-    _sns_graph: FacetGrid = field()
+    sns_graph: FacetGrid = field()
 
     """Seaborn graph wrapper"""
 
@@ -23,7 +23,8 @@ class SeabornGraph(Graph):
         pass
 
     def save(self, filename: Path) -> None:
-        self._sns_graph.savefig(filename)
+        self.sns_graph.savefig(filename)
+        plt.close()
 
 
 @define(slots=True)
@@ -40,33 +41,40 @@ class SeabornBuilder(BuilderBase):
 
         """
 
-        if self._data.empty:
+        if self.data.empty:
             raise ValueError("Unable to build graph, no data has been given to builder")
-        if not self._size[1] == None and not self._size[0] == None:
-            aspect = self._size[0] / self._size[1]
+        if not self.size[1] == None and not self.size[0] == None:
+            aspect = self.size[0] / self.size[1]
         else:
             aspect = None
 
-        data = self._data.rename("data")
-        data["error"] = self._error
+        data = self.data.rename("data")
+        data = pd.merge(left=data, right=self.error.rename("error"), on="time")
+        data["date"] = data.index.date
+        ylims = self._calc_ylim_from_data(data["data"], y_limit=self.axis_limits[1])
         self._plot = sns.FacetGrid(
             data,
             col="date",
             sharey=True,
-            xlim=self._axis_limits[0],
-            ylim=self._axis_limits[1],
-            height=self._size[1],
-            aspect=aspect,
+            sharex=False,
+            legend_out=True,
+            ylim=ylims,
         )
-        self._plot.map(self._graph, "data", "error")
-        (
-            self._plot.map(plt.axhline)
-            .set_axis_labels(*self._axis_names)
-            .set_titles("{col_name}")
-            .tight_layout(w_pad=0.25)
-        )
-        self._plot.figure.title = self._title
-        return SeabornGraph(_sns_graph=self._plot)
+        self._plot.map(self._graph, "data", "error").set_axis_labels(
+            *self.axis_names
+        ).set_titles("{col_name}").tight_layout(w_pad=0.25)
+        self._plot.figure.suptitle = self.title
+        return SeabornGraph(sns_graph=self._plot)
+
+    @staticmethod
+    def _calc_ylim_from_data(
+        data: Iterable[float], y_limit: Optional[float] = None
+    ) -> Tuple[float, float]:
+        if y_limit is None:
+            y_limit = 1
+        data = np.asarray(data).flatten()
+        med = np.median(data)
+        return (med - y_limit, med + y_limit)
 
     @staticmethod
     def _calc_error(
@@ -81,18 +89,23 @@ class SeabornBuilder(BuilderBase):
 
     def _graph(self, data: pd.Series, error: Optional[pd.Series] = None, **kwargs):
         """Generates Seaborn graph from map function"""
-        x = data.index.array
-        y = data.to_numpy()
-        if self._type == "scatter":
-            plt.scatter(x, y, **kwargs)
-        elif self._type == "line":
-            plt.scatter(x, y, **kwargs)
+        x = data.index
+        y = data
+        if self.type == "scatter":
+            plt.scatter(
+                x=x,
+                y=y,
+                **kwargs,
+            )
+        elif self.type == "line":
+            plt.plot(x, y, **kwargs)
         if error is not None:
-            axes = plt.gca()
-            err = error.to_numpy()
-            if self._error_display == "bar":
-                axes.errorbar(y=y, x=x, yerr=err, label="Error", color="black")
-            if self._error_display == "fill":
+            err = error
+            if self.error_display == "bar":
+                plt.errorbar(
+                    y=y, x=x, yerr=error, label="Error", color="black", fmt="none"
+                )
+            if self.error_display == "fill":
                 e_pos, e_neg = self._calc_error(data=y, error=err)
-                axes.fill_between(x=x, y1=e_pos, y2=e_neg, **kwargs)
-            axes.legend()
+                plt.fill_between(x=x, y1=e_pos, y2=e_neg, **kwargs)
+        plt.legend()
