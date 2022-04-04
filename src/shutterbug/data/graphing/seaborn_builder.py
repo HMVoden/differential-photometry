@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Iterable, Optional, Tuple
 
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -46,8 +47,7 @@ class SeabornBuilder(BuilderBase):
         if not self.size[1] == None and not self.size[0] == None:
             aspect = self.size[0] / self.size[1]
         else:
-            aspect = None
-
+            aspect = 3
         data = self.data.rename("data")
         data = pd.merge(left=data, right=self.error.rename("error"), on="time")
         data["date"] = data.index.date
@@ -55,6 +55,8 @@ class SeabornBuilder(BuilderBase):
         self._plot = sns.FacetGrid(
             data,
             col="date",
+            aspect=aspect,
+            height=self.size[1],
             sharey=True,
             sharex=False,
             legend_out=True,
@@ -63,7 +65,11 @@ class SeabornBuilder(BuilderBase):
         self._plot.map(self._graph, "data", "error").set_axis_labels(
             *self.axis_names
         ).set_titles("{col_name}").tight_layout(w_pad=0.25)
-        self._plot.figure.suptitle = self.title
+        self._plot.fig.suptitle(self.title)
+        self._plot.fig.subplots_adjust(top=0.85)
+        for ax in self._plot.axes.flatten():
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
+        self._plot.fig.autofmt_xdate()
         return SeabornGraph(sns_graph=self._plot)
 
     @staticmethod

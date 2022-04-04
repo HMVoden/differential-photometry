@@ -69,12 +69,14 @@ class GraphSaveNode(DatasetNode):
             else:
                 stars = dataset
             for star in stars:
+                print(star)
                 title = f"Differential magnitude of {star.name} \n X: {star.x} Y: {star.y} \n"
                 for feature, value in star.timeseries.features.items():
-                    title += "{feature}: {value}"
+                    title += f"{feature}: {value:.2f} "
                 builder.title = title
                 builder.axis_names = ("Time (UTC)", "Differential Magnitude")
-                builder.axis_limits = (1, 1)
+                builder.axis_limits = (1.5, 1.5)
+                builder.size = (5, 5)
                 builder.data = star.timeseries.differential_magnitude
                 builder.error = star.timeseries.differential_error
                 graph = builder.build()

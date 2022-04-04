@@ -27,6 +27,7 @@ class BuilderBase:
     def reset(self) -> None:
         self.title = None
         self.axis_names = (None, None)
+        self.axis_limits = (None, None)
         # set dtype to avoid deprecation warning
         # float16 to keep it small
         self.data = pd.Series(dtype="float16")

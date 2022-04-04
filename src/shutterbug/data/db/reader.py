@@ -94,13 +94,25 @@ class DBReader(Reader):
         )
         return session.scalars(statement).all()
 
+    def _non_variable(self, star: Star) -> List[str]:
+        session = self.session
+        statement = (
+            select(StarDBLabel.name)
+            .join(StarDB)
+            .where(StarDB.variable == False)
+            .where(StarDBLabel.name != star.name)
+        )
+        return session.scalars(statement).all()
+
     def _filter_on_constraints(self, star: Star) -> List[str]:
 
         if star.name not in self._star_cache.keys():
             similar_mag = set(self._within_mag(star))
             similar_dist = set(self._within_distance(star))
             self._star_cache[star.name] = list(similar_mag.intersection(similar_dist))
-        return self._star_cache[star.name]
+        return list(
+            set(self._non_variable(star)).intersection(self._star_cache[star.name])
+        )
 
     def _model_to_star(self, star: StarDB) -> Star:
 

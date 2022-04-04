@@ -23,7 +23,7 @@ class VariabilityNode(DatasetNode):
             for star in dataset:
                 logging.debug(f"Testing star {star.name}")
                 for feature in self.features:
-                    star = run_test(data=star, test=feature)
+                    star = run_test(star=star, test=feature)
                 star = is_variable(star, threshold=self.threshhold)
                 dataset.update(star)
             yield dataset
