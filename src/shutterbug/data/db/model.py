@@ -3,6 +3,7 @@ from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import MetaData
+from sqlalchemy.sql.schema import UniqueConstraint
 
 # Recommended naming convention used by Alembic, as various different database
 # providers will autogenerate vastly different names making migrations more
@@ -30,7 +31,7 @@ class StarDBDataset(Base):
 class StarDB(Base):
     __tablename__ = "stars"
     id = Column(Integer, autoincrement=True, primary_key=True)
-    name = Column("name", Text, unique=True)
+    name = Column("name", Text)
     dsid_ref = Column("dsid", Integer, ForeignKey("dataset.id"))
     x = Column("x", Integer)
     y = Column("y", Integer)
@@ -45,6 +46,8 @@ class StarDB(Base):
     features = relationship(
         "StarDBFeatures", cascade="all, delete", back_populates="star"
     )
+
+    UniqueConstraint("name", "dsid", name="name_per_dataset")
 
     def __repr__(self):
         return f"StarDB(id:'{self.id}',dataset:'{self.dataset}',name:'{self.name}')"

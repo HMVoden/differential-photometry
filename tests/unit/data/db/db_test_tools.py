@@ -1,7 +1,8 @@
 from contextlib import contextmanager
+from typing import Generator
 
-from shutterbug.data.db.model import (Base, StarDB, StarDBLabel,
-                                      StarDBTimeseries)
+from shutterbug.data.db.model import (Base, StarDB, StarDBDataset,
+                                      StarDBFeatures, StarDBTimeseries)
 from sqlalchemy import create_engine, delete
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
@@ -19,24 +20,18 @@ _db = sqlalchemy_db(future=False)
 
 
 @contextmanager
-def sqlite_memory(future=True):
+def sqlite_memory(future=True) -> Generator[Session, None, None]:
     global _future_db
     global _db
     if future == True:
         database = _future_db
     else:
         database = _db
+    session = Session(database)
     try:
-        yield database
+        yield session
     finally:
-        with Session(database) as session:
-            del_star = delete(StarDB).execution_options(synchronize_session=False)
-            del_label = delete(StarDBLabel).execution_options(synchronize_session=False)
-            del_ts = delete(StarDBTimeseries).execution_options(
-                synchronize_session=False
-            )
-            session.execute(del_star)
-            session.execute(del_label)
-            session.execute(del_ts)
-            session.commit()
-            session.expire_all()
+        del_stars = delete(StarDB)
+        session.execute(del_stars)
+        session.commit()
+        session.close()

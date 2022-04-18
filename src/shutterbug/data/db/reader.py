@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 
-@define(slots=True, frozen=True)
+@define(slots=True)
 class DBReader(Reader):
     dataset: str = field()
     session: Session = field()
@@ -23,9 +23,19 @@ class DBReader(Reader):
     )
     _star_cache: Dict[str, List[str]] = field(init=False, default={})
 
+    def __attrs_post_init__(self):
+        if len(self._star_cache) > 0:
+            # hard reset cache to deal with
+            # persistence bug
+            self._star_cache = {}
+
     @property
     def names(self) -> List[str]:
-        stmt = select(StarDB.name).where(StarDBDataset.name == self.dataset)
+        stmt = (
+            select(StarDB.name)
+            .join(StarDBDataset)
+            .where(StarDBDataset.name == self.dataset)
+        )
         star_names = self.session.scalars(stmt).all()
         return star_names
 
@@ -86,7 +96,7 @@ class DBReader(Reader):
             .where(
                 (
                     func.ABS(
-                        StarDB.magnitude_median - np.median(star.timeseries.magnitude)
+                        StarDB.magnitude_median - star.timeseries.magnitude.median()
                     )
                     <= self.mag_limit
                 )

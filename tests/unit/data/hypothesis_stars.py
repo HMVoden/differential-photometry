@@ -6,8 +6,8 @@ import pandas as pd
 from hypothesis import assume
 from hypothesis.extra.numpy import datetime64_dtypes, from_dtype
 from hypothesis.extra.pandas import columns, data_frames, indexes
-from hypothesis.strategies import (DrawFn, composite, decimals, floats,
-                                   integers, lists, text)
+from hypothesis.strategies import (DrawFn, booleans, composite, decimals,
+                                   floats, integers, lists, text)
 from hypothesis.strategies._internal.strategies import SearchStrategy
 from shutterbug.data.star import Star, StarTimeseries
 
@@ -51,7 +51,13 @@ def star(draw, name: str = "", allow_nan=False) -> Star:
         data_frames(
             columns=columns(
                 ["magnitude", "error"],
-                elements=from_dtype(np.dtype(float), allow_nan=allow_nan),
+                elements=from_dtype(
+                    np.dtype(float),
+                    allow_nan=allow_nan,
+                    allow_infinity=False,
+                    min_value=-20,
+                    max_value=20,
+                ),
             ),
             index=date_time_indexes(),
         )
@@ -73,7 +79,7 @@ def stars(
     alphabet: Union[Sequence[str], SearchStrategy[str]],
     min_size=0,
     max_size=None,
-    allow_nan=None,
+    allow_nan=False,
 ):
     names = draw(
         lists(
