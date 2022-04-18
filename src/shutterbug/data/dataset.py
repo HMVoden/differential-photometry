@@ -20,11 +20,11 @@ class Dataset:
 
     @singledispatch
     def update(self, star: Star):
-        self.writer.write(star, overwrite=True)
+        self.writer.update(star)
 
     @update.register
     def _(self, star: list):
-        self.writer.write(star, overwrite=True)
+        self.writer.update(star)
 
     def similar_to(self, star: Star) -> List[Star]:
         return self.reader.similar_to(star)

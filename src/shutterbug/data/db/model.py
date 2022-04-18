@@ -1,5 +1,5 @@
 from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
-                        Text, UniqueConstraint)
+                        Text)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import MetaData
@@ -19,47 +19,54 @@ metadata = MetaData(naming_convention=NAMING_CONVENTION)
 Base = declarative_base(metadata=metadata)
 
 
+class StarDBDataset(Base):
+    __tablename__ = "dataset"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column("dataset", Text, unique=True)
+
+    stars = relationship("StarDB", cascade="all, delete")
+
+
 class StarDB(Base):
     __tablename__ = "stars"
-    id = Column("id", Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, autoincrement=True, primary_key=True)
+    name = Column("name", Text, unique=True)
+    dsid_ref = Column("dsid", Integer, ForeignKey("dataset.id"))
     x = Column("x", Integer)
     y = Column("y", Integer)
     magnitude_median = Column("magnitude_median", Float)
     variable = Column("variable", Boolean)
 
+    dataset = relationship("StarDBDataset", back_populates="stars")
+
     timeseries = relationship(
-        "StarDBTimeseries", back_populates="star", cascade="all, delete"
+        "StarDBTimeseries", cascade="all, delete", back_populates="star"
+    )
+    features = relationship(
+        "StarDBFeatures", cascade="all, delete", back_populates="star"
     )
 
-    label = relationship("StarDBLabel", back_populates="star", uselist=False)
-
     def __repr__(self):
-        return f"StarDB(id:'{self.id}',x:'{self.x}',y:'{self.y}',median:'{self.magnitude_median}',variable:'{self.variable}',timeseries:'{self.timeseries}',label:'{self.label}')"
+        return f"StarDB(id:'{self.id}',dataset:'{self.dataset}',name:'{self.name}')"
 
 
-class StarDBLabel(Base):
-    __tablename__ = "label"
-    name = Column("name", Text, primary_key=True)
-    dataset = Column("dataset", Text, primary_key=True)
-    idref = Column(Integer, ForeignKey("stars.id"))
-
-    star = relationship("StarDB", back_populates="label", cascade="all, delete")
-
-    __table_args__ = (UniqueConstraint("name", "dataset", name="_name_dataset_unique"),)
-
-    def __repr__(self):
-        return f"StarDBLabel(id:'{self.idref}',dataset:'{self.dataset}',name:'{self.name}')"
+class StarDBFeatures(Base):
+    __tablename__ = "features"
+    star_id = Column("id", Integer, ForeignKey("stars.id"), primary_key=True)
+    ivn = Column(Float)
+    iqr = Column(Float)
+    star = relationship("StarDB", back_populates="features")
 
 
 class StarDBTimeseries(Base):
     __tablename__ = "timeseries"
     tsid = Column("tsid", Integer, primary_key=True, autoincrement=True)
+    star_id = Column("star_id", Integer, ForeignKey("stars.id"))
     time = Column("time", DateTime)
     mag = Column("magnitude", Float)
     error = Column("error", Float)
-    adm = Column("average differential magnitude", Float)
-    ade = Column("average differential error", Float)
-    idref = Column(Integer, ForeignKey("stars.id"))
+    adm = Column("adm", Float)  # different magnitude and error
+    ade = Column("ade", Float)
 
     star = relationship("StarDB", back_populates="timeseries")
 

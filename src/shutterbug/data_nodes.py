@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import logging
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from pathlib import Path
-from typing import Generator, List, Union
+from typing import Generator, Union
 
 from attr import define, field
 
@@ -15,7 +15,7 @@ from shutterbug.interfaces.external import ControlNode
 
 @define
 class DatasetNode(ControlNode):
-    datasets: Union[DatasetNode, Dataset] = field()
+    datasets: Union[DatasetNode, DatasetLeaf] = field()
 
     @abstractmethod
     def execute(self) -> Generator[Dataset, None, None]:
@@ -37,7 +37,7 @@ class StoreNode(ControlNode):
     writer: Writer = field()
 
     def execute(self) -> None:
-        logging.debug("Storing dataset")
+        logging.info("Storing dataset")
         stars = []
         for star in self.source:
             stars.append(star)
@@ -63,19 +63,18 @@ class GraphSaveNode(DatasetNode):
             variable_folder.mkdir(exist_ok=True)
             nonvariable_folder.mkdir(exist_ok=True)
             builder = self.graph_builder
-            logging.debug(f"Outputting graphs to folder {output_folder}")
+            logging.info(f"Outputting graphs to folder {output_folder}")
             if self.only_variable:
                 stars = dataset.variable
             else:
                 stars = dataset
             for star in stars:
-                print(star)
                 title = f"Differential magnitude of {star.name} \n X: {star.x} Y: {star.y} \n"
                 for feature, value in star.timeseries.features.items():
                     title += f"{feature}: {value:.2f} "
                 builder.title = title
                 builder.axis_names = ("Time (UTC)", "Differential Magnitude")
-                builder.axis_limits = (1.5, 1.5)
+                builder.axis_limits = (1.25, 1.25)
                 builder.size = (5, 5)
                 builder.data = star.timeseries.differential_magnitude
                 builder.error = star.timeseries.differential_error

@@ -17,9 +17,7 @@ class VariabilityNode(DatasetNode):
 
     def execute(self) -> Generator[Dataset, None, None]:
         for dataset in self.datasets.execute():
-            logging.debug(
-                f"Executing Variability node on current dataset, {dataset.name}"
-            )
+            logging.info(f"Executing Variability test on current dataset")
             for star in dataset:
                 logging.debug(f"Testing star {star.name}")
                 for feature in self.features:
@@ -35,9 +33,7 @@ class DifferentialNode(DatasetNode):
 
     def execute(self) -> Generator[Dataset, None, None]:
         for dataset in self.datasets.execute():
-            logging.debug(
-                f"Executing Differential node on current dataset, {dataset.name}"
-            )
+            logging.info(f"Executing Differential calculation on current dataset")
             for star in dataset:
                 logging.debug(f"Calculating differential magnitudes on {star.name}")
                 star = self.photometer.average_differential(

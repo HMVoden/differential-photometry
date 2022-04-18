@@ -41,7 +41,7 @@ class InverseVonNeumann(FeatureBase):
         numbers = data.to_numpy()
         i_plus_1 = numbers[1:]  # Get all numbers past the first
         i = numbers[:-1]  # Get all numbers until the last
-        d = np.sum(i_plus_1 - i) ** 2 / len(i)  # type: ignore
+        d = np.sum((i_plus_1 - i) ** 2) / len(i)  # type: ignore
         if d == 0:
             d = 1  # avoid divide by zero, just return variance
         s = np.var(numbers, ddof=1)  # sample variance

@@ -45,6 +45,16 @@ class Writer(ABC):
         # have to use list as type due to bug with singledispatch
         raise NotImplementedError
 
+    @singledispatchmethod
+    @abstractmethod
+    def update(self, data: Star):
+        raise NotImplementedError
+
+    @update.register
+    @abstractmethod
+    def _(self, data: list):
+        raise NotImplementedError
+
 
 class Graph(ABC):
     """Generic graph object that serves as a wrapper for other types of graphs"""

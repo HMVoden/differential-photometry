@@ -4,7 +4,7 @@ import attr
 import numpy as np
 import pandas as pd
 from attr import define, field
-from shutterbug.data.db.model import StarDB, StarDBLabel
+from shutterbug.data.db.model import StarDB, StarDBDataset
 from shutterbug.data.interfaces.internal import Reader
 from shutterbug.data.star import Star, StarTimeseries
 from sqlalchemy import func, select
@@ -25,7 +25,7 @@ class DBReader(Reader):
 
     @property
     def names(self) -> List[str]:
-        stmt = select(StarDBLabel.name).where(StarDBLabel.dataset == self.dataset)
+        stmt = select(StarDB.name).where(StarDBDataset.name == self.dataset)
         star_names = self.session.scalars(stmt).all()
         return star_names
 
@@ -46,22 +46,22 @@ class DBReader(Reader):
     def similar_to(self, star: Star) -> List[Star]:
         """Returns all stars that are similar to target star"""
         similar_star_names = self._filter_on_constraints(star)
-        statement = self._select_star().where(StarDBLabel.name.in_(similar_star_names))
+        statement = self._select_star().where(StarDB.name.in_(similar_star_names))
         return list(
-            map(self._model_to_star, self.session.scalars(statement).fetchmany(size=20))
+            map(self._model_to_star, self.session.scalars(statement).fetchmany(size=50))
         )
 
     def _select_star(self):
         """Creates selection statement to find all data for a star in the reader's dataset"""
         return (
-            select(StarDB).join(StarDB.label).where(StarDBLabel.dataset == self.dataset)
+            select(StarDB).join(StarDBDataset).where(StarDBDataset.name == self.dataset)
         )
 
     def _within_distance(self, star: Star) -> List[str]:
         session = self.session
         statement = (
-            select(StarDBLabel.name)
-            .join(StarDB)
+            select(StarDB.name)
+            .join(StarDBDataset)
             .where(
                 (
                     func.SQRT(
@@ -73,15 +73,16 @@ class DBReader(Reader):
                     <= self.distance_limit
                 )
             )
-            .where(StarDBLabel.name != star.name)
+            .where(StarDB.name != star.name)
+            .where(StarDBDataset.name == self.dataset)
         )
         return session.scalars(statement).all()
 
     def _within_mag(self, star: Star) -> List[str]:
         session = self.session
         statement = (
-            select(StarDBLabel.name)
-            .join(StarDB)
+            select(StarDB.name)
+            .join(StarDBDataset)
             .where(
                 (
                     func.ABS(
@@ -90,17 +91,19 @@ class DBReader(Reader):
                     <= self.mag_limit
                 )
             )
-            .where(StarDBLabel.name != star.name)
+            .where(StarDB.name != star.name)
+            .where(StarDBDataset.name == self.dataset)
         )
         return session.scalars(statement).all()
 
     def _non_variable(self, star: Star) -> List[str]:
         session = self.session
         statement = (
-            select(StarDBLabel.name)
-            .join(StarDB)
+            select(StarDB.name)
+            .join(StarDBDataset)
+            .where(StarDBDataset.name == self.dataset)
             .where(StarDB.variable == False)
-            .where(StarDBLabel.name != star.name)
+            .where(StarDB.name != star.name)
         )
         return session.scalars(statement).all()
 
@@ -139,10 +142,17 @@ class DBReader(Reader):
         )
         data.index.name = "time"
         rec_timeseries = StarTimeseries(data=data)
+        if len(star.features) > 0:
+            print(star.features)
+            rec_timeseries.add_feature(
+                name="Inverse Von Neumann", value=star.features.ivn
+            )
+            rec_timeseries.add_feature(name="IQR", value=star.features.iqr)
         rec_star = Star(
-            name=star.label.name,
+            name=star.name,
             x=star.x,
             y=star.y,
             timeseries=rec_timeseries,
+            variable=star.variable,
         )
         return rec_star

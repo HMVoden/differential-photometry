@@ -25,8 +25,8 @@ def average_differential(
     reference_error = reference[0].timeseries.error
     # Unpack reference list
     for ref in reference[1:]:
-        pd.concat([ref.timeseries.magnitude, reference_mag])
-        pd.concat([ref.timeseries.error, reference_error])
+        reference_mag = pd.concat([ref.timeseries.magnitude, reference_mag])
+        reference_error = pd.concat([ref.timeseries.error, reference_error])
     ade = _average_error(target=target_error, reference=reference_error)
     adm = _average_difference(target=target_mag, reference=reference_mag)
     target.timeseries.differential_magnitude = adm

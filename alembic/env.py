@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from shutterbug.data.db.model import Base, StarDB, StarDBTimeseries, StarDBLabel
+from shutterbug.data.db.model import (Base, StarDB, StarDBDataset,
+                                      StarDBFeatures, StarDBTimeseries)
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
