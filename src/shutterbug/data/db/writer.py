@@ -3,7 +3,6 @@ from functools import singledispatchmethod
 from itertools import repeat
 from typing import Dict, Generator, Optional
 
-import numpy as np
 from attr import define, field
 from shutterbug.data.db.model import (StarDB, StarDBDataset, StarDBFeatures,
                                       StarDBTimeseries)
@@ -151,6 +150,16 @@ class DBWriter(Writer):
             db_timeseries.append(ts)
         db_star.timeseries = db_timeseries
         db_star.dataset = self._db_dataset
+        # placeholder
+        if len(star.timeseries.features.keys()) > 0:
+            db_star.features = [
+                StarDBFeatures(
+                    ivn=star.timeseries.features["Inverse Von Neumann"],
+                    iqr=star.timeseries.features["IQR"],
+                )
+            ]
+        else:
+            db_star.features = [StarDBFeatures(ivn=None, iqr=None)]
         return db_star
 
     def _update_star(self, star: Star):
@@ -173,7 +182,6 @@ class DBWriter(Writer):
                 .where(StarDBTimeseries.time == bindparam("dt", type_=DateTime()))
                 .values(adm=bindparam("adm", type_=Float()))
                 .values(ade=bindparam("ade", type_=Float()))
-                .execution_options(synchronize_session=False)
             )
             session.execute(statement, list(self._time_adm_ade_from_star(star)))
 
@@ -186,7 +194,6 @@ class DBWriter(Writer):
                 .where(StarDBFeatures.star_id == db_star.id)
                 .values(ivn=star.timeseries.features["Inverse Von Neumann"])
                 .values(iqr=star.timeseries.features["IQR"])
-                .execution_options(synchronize_session=False)
             )
             session.execute(statement)
 

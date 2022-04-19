@@ -64,6 +64,11 @@ class StarDBFeatures(Base):
     iqr = Column(Float)
     star = relationship("StarDB", back_populates="features")
 
+    def __repr__(self):
+        return (
+            f"StarDBFeatures(id:'{self.star_id}', ivn:'{self.ivn}', iqr:'{self.iqr}')"
+        )
+
 
 class StarDBTimeseries(Base):
     __tablename__ = "timeseries"
