@@ -127,13 +127,14 @@ class DBWriter(Writer):
         """
 
         if median is None:
-            median = np.nanmedian(star.timeseries.magnitude)
+            median = star.timeseries.magnitude.median()
+
         db_star = StarDB(
             name=star.name,
             x=star.x,
             y=star.y,
-            magnitude_median=median,
             variable=star.variable,
+            magnitude_median=median,
         )
         db_timeseries = []
         mag = star.timeseries.magnitude
@@ -144,7 +145,7 @@ class DBWriter(Writer):
         else:
             sadm = star.timeseries.differential_magnitude
             sade = star.timeseries.differential_error
-        timeseries_data = zip(mag.index.to_pydatetime(), mag, error, sadm, sade)
+        timeseries_data = zip(mag.index, mag, error, sadm, sade)
         for time, mag, error, adm, ade in timeseries_data:
             ts = StarDBTimeseries(time=time, mag=mag, error=error, adm=adm, ade=ade)
             db_timeseries.append(ts)

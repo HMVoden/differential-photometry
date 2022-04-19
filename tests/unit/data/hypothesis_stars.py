@@ -38,7 +38,7 @@ def date_time_indexes(draw: DrawFn, min_size=1, max_size=None):
         origin="julian",
         unit="D",
         utc=True,
-    ).round("1ms")
+    ).round("1s")
 
 
 @composite
@@ -51,16 +51,10 @@ def star(draw, name: str = "", allow_nan=False) -> Star:
         data_frames(
             columns=columns(
                 ["magnitude", "error"],
-                elements=from_dtype(
-                    np.dtype(float),
-                    allow_nan=allow_nan,
-                    allow_infinity=False,
-                    min_value=-20,
-                    max_value=20,
-                ),
+                elements=floats(min_value=-2, max_value=20, allow_nan=False, width=16),
             ),
             index=date_time_indexes(),
-        )
+        ),
     )
 
     timeseries = StarTimeseries(data=data)

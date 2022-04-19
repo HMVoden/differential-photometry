@@ -4,6 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import MetaData
 from sqlalchemy.sql.schema import UniqueConstraint
+from sqlalchemy.sql.sqltypes import DateTime
 
 # Recommended naming convention used by Alembic, as various different database
 # providers will autogenerate vastly different names making migrations more
@@ -26,6 +27,9 @@ class StarDBDataset(Base):
     name = Column("dataset", Text, unique=True)
 
     stars = relationship("StarDB", cascade="all, delete")
+
+    def __repr__(self):
+        return f"StarDBDataset(id:'{self.id}', name:'{self.name}')"
 
 
 class StarDB(Base):
@@ -50,7 +54,7 @@ class StarDB(Base):
     UniqueConstraint("name", "dsid", name="name_per_dataset")
 
     def __repr__(self):
-        return f"StarDB(id:'{self.id}',dataset:'{self.dataset}',name:'{self.name}')"
+        return f"StarDB(id:'{self.id}',name:'{self.name}',dsid:'{self.dsid_ref}',magnitude median:'{self.magnitude_median}',is variable:{self.variable})"
 
 
 class StarDBFeatures(Base):
@@ -65,7 +69,7 @@ class StarDBTimeseries(Base):
     __tablename__ = "timeseries"
     tsid = Column("tsid", Integer, primary_key=True, autoincrement=True)
     star_id = Column("star_id", Integer, ForeignKey("stars.id"))
-    time = Column("time", DateTime)
+    time = Column("time", DateTime(timezone=True))
     mag = Column("magnitude", Float)
     error = Column("error", Float)
     adm = Column("adm", Float)  # different magnitude and error
@@ -74,4 +78,4 @@ class StarDBTimeseries(Base):
     star = relationship("StarDB", back_populates="timeseries")
 
     def __repr__(self):
-        return f"StarDBTimeseries('id:{self.idref}',time:'{self.time}',mag:'{self.mag}', error:'{self.error}')"
+        return f"StarDBTimeseries('id:{self.tsid}',star_id:{self.star_id},time:'{self.time}',mag:'{self.mag}', error:'{self.error}',adm:'{self.adm}',ade:'{self.ade}')"

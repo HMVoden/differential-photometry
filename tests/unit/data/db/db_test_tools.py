@@ -31,7 +31,13 @@ def sqlite_memory(future=True) -> Generator[Session, None, None]:
     try:
         yield session
     finally:
+        del_datasets = delete(StarDBDataset)
         del_stars = delete(StarDB)
+        del_timeseries = delete(StarDBTimeseries)
+        del_features = delete(StarDBFeatures)
         session.execute(del_stars)
+        session.execute(del_datasets)
+        session.execute(del_timeseries)
+        session.execute(del_features)
         session.commit()
         session.close()
