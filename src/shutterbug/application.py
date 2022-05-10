@@ -55,7 +55,8 @@ def make_dataset(dataset_name: str, reader: Reader, writer: Writer) -> Dataset:
     return Dataset(dataset_name, reader, writer)
 
 
-def get_feature_calculators() -> List[FeatureBase]:
+def get_feature_calculators(config: ApplicationConfig) -> List[FeatureBase]:
+
     return [InverseVonNeumann(), IQR()]
 
 
