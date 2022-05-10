@@ -37,7 +37,7 @@ class StarTimeseries:
     """Timeseries information for a star"""
 
     data: pd.DataFrame = field()
-    _features: Dict[str, float] = field(init=False, default={})
+    _features: Dict[str, Dict[str, float]] = field(init=False, default={})
 
     @property
     def time(self) -> pd.DatetimeIndex:
@@ -92,11 +92,15 @@ class StarTimeseries:
         return self.data.equals(other.data)
 
     @property
-    def features(self) -> Dict[str, float]:
+    def features(self) -> Dict[str, Dict[str, float]]:
         return self._features.copy()
 
-    def add_feature(self, name: str, value: float) -> None:
-        self._features[name] = value
+    def add_feature(self, date: str, name: str, value: float) -> None:
+        features = self._features
+        if date in features:
+            features[date][name] = value
+        else:
+            features[date] = {name: value}
 
     @property
     def nbytes(self) -> int:

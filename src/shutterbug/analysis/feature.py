@@ -8,6 +8,8 @@ from attr import define, field
 class FeatureBase(ABC):
     name: str = field(init=False)
 
+    internal_name: str = field(init=False)
+
     @abstractmethod
     def __call__(self, data: pd.Series) -> float:
         raise NotImplementedError
@@ -18,6 +20,7 @@ class IQR(FeatureBase):
     """Calculates the IQR of a given dataset"""
 
     name = "IQR"
+    internal_name = "iqr"
 
     def __call__(self, data: pd.Series) -> float:
         q3 = data.quantile(q=0.75)
@@ -32,6 +35,7 @@ class InverseVonNeumann(FeatureBase):
     """Calculates the inverse Von Neumann statistic on a given dataset"""
 
     name = "Inverse Von Neumann"
+    internal_name = "ivn"
 
     def __call__(self, data: pd.Series) -> float:
         if len(data) < 2:
