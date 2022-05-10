@@ -5,9 +5,10 @@ import pandas as pd
 from attr import define, field
 
 
+@define(slots=True)
 class FeatureBase(ABC):
-    name: str = field(init=False)
     threshhold: float = field()
+    name: str = field(init=False)
 
     @abstractmethod
     def __call__(self, data: pd.Series) -> float:

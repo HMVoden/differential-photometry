@@ -79,4 +79,5 @@ class PhotometryConfig(PackageBase):
 class VariabilityConfig(PackageBase):
 
     _name = "variability"
-    threshold: float = field(converter=float, default=3)
+    ivn: float = field(converter=float, default=3)
+    iqr: float = field(converter=float, default=0.5)

@@ -60,22 +60,22 @@ class StarTimeseries:
         self.data["error"] = data
 
     @property
-    def differential_magnitude(self) -> Union[pd.Series, None]:
+    def differential_magnitude(self) -> pd.Series:
         if "adm" in self.data.columns:
             return self.data["adm"]
         else:
-            return None
+            return pd.Series()
 
     @differential_magnitude.setter
     def differential_magnitude(self, data: pd.Series) -> None:
         self.data["adm"] = data
 
     @property
-    def differential_error(self) -> Union[pd.Series, None]:
+    def differential_error(self) -> pd.Series:
         if "ade" in self.data.columns:
             return self.data["ade"]
         else:
-            return None
+            return pd.Series()
 
     @differential_error.setter
     def differential_error(self, data: pd.Series) -> None:

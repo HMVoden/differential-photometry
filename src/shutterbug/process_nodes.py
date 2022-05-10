@@ -13,7 +13,6 @@ from shutterbug.interfaces.internal import Photometer
 @define
 class VariabilityNode(DatasetNode):
     features: List[FeatureBase] = field()
-    threshhold: float
 
     def execute(self) -> Generator[Dataset, None, None]:
         for dataset in self.datasets.execute():
@@ -22,7 +21,7 @@ class VariabilityNode(DatasetNode):
                 logging.debug(f"Testing star {star.name}")
                 for feature in self.features:
                     star = run_test(star=star, test=feature)
-                star = is_variable(star, threshold=self.threshhold)
+                star = is_variable(star, self.features)
                 dataset.update(star)
             yield dataset
 

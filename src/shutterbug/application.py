@@ -56,8 +56,12 @@ def make_dataset(dataset_name: str, reader: Reader, writer: Writer) -> Dataset:
 
 
 def get_feature_calculators(config: ApplicationConfig) -> List[FeatureBase]:
+    threshholds = config.variability
 
-    return [InverseVonNeumann(), IQR()]
+    return [
+        InverseVonNeumann(threshhold=threshholds["ivn"]),
+        IQR(threshhold=threshholds["iqr"]),
+    ]
 
 
 def get_photometer() -> Photometer:

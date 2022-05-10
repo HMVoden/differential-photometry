@@ -104,14 +104,13 @@ def load(context: Context, files: List[Path]):
 @click.pass_context
 @processor
 def process(nodes: List[DatasetNode], context: Context, iterations: int):
-    variability_threshold = context.obj["config"].variability["threshold"]
-    feature_calculators = get_feature_calculators()
+    feature_calculators = get_feature_calculators(config=context.obj["config"])
     photometer = get_photometer()
     logging.info(f"Adding process nodes for {iterations} iterations to node tree")
     for node in nodes:
         for _ in range(iterations):
             node = DifferentialNode(node, photometer)
-            node = VariabilityNode(node, feature_calculators, variability_threshold)
+            node = VariabilityNode(node, feature_calculators)
         yield node
 
 
