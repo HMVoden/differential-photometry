@@ -1,7 +1,5 @@
-import logging
 from typing import List
 
-import pandas as pd
 from shutterbug.analysis.feature import FeatureBase
 from shutterbug.data import Star
 
@@ -19,4 +17,9 @@ def run_test(star: Star, test: FeatureBase) -> Star:
 def is_variable(star: Star, tests: List[FeatureBase]) -> Star:
     """Determines if a star is variable by iterating through all timeseries
     features and flagging if any are True"""
-    pass
+    for test in tests:
+        for date in star.timeseries.features.keys():
+            if star.timeseries.features[date][test.name] > test.threshhold:
+                star.variable = True
+                return star
+    return star

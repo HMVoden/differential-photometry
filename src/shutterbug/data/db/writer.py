@@ -3,6 +3,7 @@ from functools import singledispatchmethod
 from itertools import repeat
 from typing import Dict, Generator, Optional
 
+import pandas as pd
 from attr import define, field
 from shutterbug.data.db.model import (StarDB, StarDBDataset, StarDBFeatures,
                                       StarDBTimeseries)
@@ -210,9 +211,9 @@ class DBWriter(Writer):
 
     @staticmethod
     def _date_features_from_star(star: Star) -> Generator[Dict, None, None]:
-        for date, features in star.timeseries.features.items():
+        for dt, features in star.timeseries.features.items():
             yield {
-                "dt": date,
+                "dt": pd.to_datetime(dt, utc=True),
                 "ivn": features["Inverse Von Neumann"],
                 "iqr": features["IQR"],
             }
