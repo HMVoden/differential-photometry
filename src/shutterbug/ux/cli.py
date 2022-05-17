@@ -88,7 +88,11 @@ def load(context: Context, files: List[Path]):
                 distance_limit=distance_limit,
             )
         )
-        StoreNode(f_input, db_writer).execute()
+        for loader in f_input:
+            if not (set(loader.names).issubset(db_reader.names)):
+                StoreNode(loader, db_writer).execute()
+            else:
+                logging.info(f"All stars from source {f.stem} already in destination")
         dataset = make_dataset(dataset_name=f.name, reader=db_reader, writer=db_writer)
         yield DatasetLeaf(dataset)
 

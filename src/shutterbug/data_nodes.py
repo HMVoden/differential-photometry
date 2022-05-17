@@ -8,7 +8,7 @@ from typing import Generator, Union
 from attr import define, field
 
 from shutterbug.data import BuilderBase, Dataset
-from shutterbug.data.interfaces.external import Loader
+from shutterbug.data.interfaces.external import Input, Loader
 from shutterbug.data.interfaces.internal import Writer
 from shutterbug.interfaces.external import ControlNode
 
@@ -70,8 +70,6 @@ class GraphSaveNode(DatasetNode):
                 stars = dataset
             for star in stars:
                 title = f"Differential magnitude of {star.name} \n X: {star.x} Y: {star.y} \n"
-                for feature, value in star.timeseries.features.items():
-                    title += f"{feature}: {value:.2f} "
                 builder.title = title
                 builder.axis_names = ("Time (UTC)", "Differential Magnitude")
                 builder.axis_limits = (1.25, 1.25)

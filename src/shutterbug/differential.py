@@ -19,6 +19,10 @@ def average_differential(
     :returns: Star updated with average differential magnitude and error
 
     """
+    if len(reference) < 1:
+        raise ValueError(
+            "Need at least one reference star for differential photometry, exiting"
+        )
     target_mag = target.timeseries.magnitude
     target_error = target.timeseries.error
     reference_mag = reference[0].timeseries.magnitude

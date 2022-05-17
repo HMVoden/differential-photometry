@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Literal, Optional, Tuple
+from typing import Dict, Literal, Optional, Tuple
 
 import pandas as pd
 from attrs import define, field
@@ -23,6 +23,7 @@ class BuilderBase:
 
     type: Literal["scatter", "line"] = field(init=False, default="scatter")
     error_display: Literal["bar", "fill", None] = field(init=False, default="bar")
+    features: Dict[str, Dict[str, str]] = field(init=False, default={})
 
     def reset(self) -> None:
         self.title = None
@@ -33,6 +34,7 @@ class BuilderBase:
         self.data = pd.Series(dtype="float16")
         self.error = pd.Series(dtype="float16")
         self.size = (None, None)
+        self.features = {}
         self.type = "scatter"
         self.error_display = "bar"
 

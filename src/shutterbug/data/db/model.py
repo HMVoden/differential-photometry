@@ -36,7 +36,7 @@ class StarDB(Base):
     __tablename__ = "stars"
     id = Column(Integer, autoincrement=True, primary_key=True)
     name = Column("name", Text)
-    dsid_ref = Column("dsid", Integer, ForeignKey("dataset.id"))
+    dataset_id = Column("dsid", Integer, ForeignKey("dataset.id"))
     x = Column("x", Integer)
     y = Column("y", Integer)
     magnitude_median = Column("magnitude_median", Float)
@@ -54,12 +54,13 @@ class StarDB(Base):
     UniqueConstraint("name", "dsid", name="name_per_dataset")
 
     def __repr__(self):
-        return f"StarDB(id:'{self.id}',name:'{self.name}',dsid:'{self.dsid_ref}',magnitude median:'{self.magnitude_median}',is variable:{self.variable})"
+        return f"StarDB(id:'{self.id}',name:'{self.name}',dsid:'{self.dataset_id}',magnitude median:'{self.magnitude_median}',is variable:{self.variable})"
 
 
 class StarDBFeatures(Base):
     __tablename__ = "features"
     star_id = Column("id", Integer, ForeignKey("stars.id"), primary_key=True)
+    date = Column("date", DateTime(timezone=True))
     ivn = Column(Float)
     iqr = Column(Float)
     star = relationship("StarDB", back_populates="features")

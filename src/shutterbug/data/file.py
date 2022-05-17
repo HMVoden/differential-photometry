@@ -72,10 +72,10 @@ class FileInput(Input):
         """Number of files able to be loaded"""
         return len(self._input_files)
 
-    def __iter__(self) -> Generator[Iterable[Star], None, None]:
+    def __iter__(self) -> Generator[Loader, None, None]:
         for i_file in self._input_files:
             loader = self._file_to_loader(i_file)
             if loader is not None:
-                yield from loader
+                yield loader
             else:
                 logging.warning(f"Unable to load file {i_file.name}")

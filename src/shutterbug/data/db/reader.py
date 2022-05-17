@@ -153,10 +153,11 @@ class DBReader(Reader):
         data.index.name = "time"
         rec_timeseries = StarTimeseries(data=data)
         if len(star.features) > 0:
-            rec_timeseries.add_feature(
-                name="Inverse Von Neumann", value=star.features[0].ivn
-            )
-            rec_timeseries.add_feature(name="IQR", value=star.features[0].iqr)
+            for date, ivn, iqr in star.features:
+                rec_timeseries.add_feature(
+                    date=date, name="Inverse Von Neumann", value=ivn
+                )
+                rec_timeseries.add_feature(date=date, name="IQR", value=iqr)
         rec_star = Star(
             name=star.name,
             x=star.x,

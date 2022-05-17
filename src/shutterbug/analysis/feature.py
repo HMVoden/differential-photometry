@@ -5,7 +5,7 @@ import pandas as pd
 from attr import define, field
 
 
-@define(slots=True)
+@define(slots=True, eq=False)
 class FeatureBase(ABC):
     threshhold: float = field()
     name: str = field(init=False)
@@ -15,11 +15,11 @@ class FeatureBase(ABC):
         raise NotImplementedError
 
 
-@define(slots=True)
+@define(slots=True, eq=False)
 class IQR(FeatureBase):
     """Calculates the IQR of a given dataset"""
 
-    name = "IQR"
+    name: str = field(init=False, default="IQR")
 
     def __call__(self, data: pd.Series) -> float:
         q3 = data.quantile(q=0.75)
@@ -29,11 +29,11 @@ class IQR(FeatureBase):
         return IQR
 
 
-@define(slots=True)
+@define(slots=True, eq=False)
 class InverseVonNeumann(FeatureBase):
     """Calculates the inverse Von Neumann statistic on a given dataset"""
 
-    name = "Inverse Von Neumann"
+    name: str = field(init=False, default="Inverse Von Neumann")
 
     def __call__(self, data: pd.Series) -> float:
         if len(data) < 2:

@@ -5,16 +5,6 @@ from typing import Generator, Iterable, List, Protocol
 from shutterbug.data.star import Star
 
 
-class Input(ABC):
-    @abstractmethod
-    def __len__(self) -> int:
-        raise NotImplementedError
-
-    @abstractmethod
-    def __iter__(self) -> Generator[Star, None, None]:
-        raise NotImplementedError
-
-
 class Loader(Protocol):
     """Generic interface for an object that loads star data from a source into
     memory"""
@@ -28,6 +18,16 @@ class Loader(Protocol):
     @property
     def names(self) -> List[str]:
         ...
+
+
+class Input(ABC):
+    @abstractmethod
+    def __len__(self) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
+    def __iter__(self) -> Generator[Loader, None, None]:
+        raise NotImplementedError
 
 
 class FileLoaderFactory(Protocol):

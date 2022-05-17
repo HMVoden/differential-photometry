@@ -8,7 +8,7 @@ from shutterbug.data.db.model import (StarDB, StarDBDataset, StarDBFeatures,
                                       StarDBTimeseries)
 from shutterbug.data.interfaces.internal import Writer
 from shutterbug.data.star import Star
-from sqlalchemy import DateTime, Float, bindparam, select, update
+from sqlalchemy import Date, DateTime, Float, bindparam, select, update
 from sqlalchemy.orm import Session
 
 
@@ -135,31 +135,31 @@ class DBWriter(Writer):
             variable=star.variable,
             magnitude_median=median,
         )
-        db_timeseries = []
         mag = star.timeseries.magnitude
         error = star.timeseries.error
-        if star.timeseries.differential_magnitude is None:
+        if len(star.timeseries.differential_magnitude) != len(mag):
             sadm = repeat(None)
             sade = repeat(None)
         else:
             sadm = star.timeseries.differential_magnitude
             sade = star.timeseries.differential_error
         timeseries_data = zip(mag.index, mag, error, sadm, sade)
+        db_timeseries = []
         for time, mag, error, adm, ade in timeseries_data:
-            ts = StarDBTimeseries(time=time, mag=mag, error=error, adm=adm, ade=ade)
-            db_timeseries.append(ts)
+            db_timeseries.append(
+                StarDBTimeseries(time=time, mag=mag, error=error, adm=adm, ade=ade)
+            )
         db_star.timeseries = db_timeseries
         db_star.dataset = self._db_dataset
-        # placeholder
-        if len(star.timeseries.features.keys()) > 0:
+        for date in star.timeseries.features.keys():
+            # placeholder stuff
             db_star.features = [
                 StarDBFeatures(
-                    ivn=star.timeseries.features["Inverse Von Neumann"],
-                    iqr=star.timeseries.features["IQR"],
+                    date=date,
+                    ivn=star.timeseries.features[date]["Inverse Von Neumann"],
+                    iqr=star.timeseries.features[date]["IQR"],
                 )
             ]
-        else:
-            db_star.features = [StarDBFeatures(ivn=None, iqr=None)]
         return db_star
 
     def _update_star(self, star: Star):
@@ -167,13 +167,13 @@ class DBWriter(Writer):
         statement = (
             update(StarDB)
             .where(StarDB.name == star.name)
-            .where(StarDB.dsid_ref == self._db_dataset.id)
+            .where(StarDB.dataset_id == self._db_dataset.id)
             .values(variable=star.variable)
         )
         session.execute(statement)
 
     def _update_timeseries(self, star: Star):
-        if star.timeseries.differential_magnitude is not None:
+        if len(star.timeseries.differential_magnitude) > 0:
             session = self.session
             db_star = self._get_star(star.name)
             statement = (
@@ -192,10 +192,11 @@ class DBWriter(Writer):
             statement = (
                 update(StarDBFeatures)
                 .where(StarDBFeatures.star_id == db_star.id)
-                .values(ivn=star.timeseries.features["Inverse Von Neumann"])
-                .values(iqr=star.timeseries.features["IQR"])
+                .values(date=bindparam("dt", type_=Date()))
+                .values(ivn=bindparam("ivn", type_=Float()))
+                .values(iqr=bindparam("iqr", type_=Float()))
             )
-            session.execute(statement)
+            session.execute(statement, list(self._date_features_from_star(star)))
 
     @staticmethod
     def _time_adm_ade_from_star(star: Star) -> Generator[Dict, None, None]:
@@ -206,3 +207,12 @@ class DBWriter(Writer):
         )
         for dt, adm, ade in star_iter:
             yield {"dt": dt, "adm": adm, "ade": ade}
+
+    @staticmethod
+    def _date_features_from_star(star: Star) -> Generator[Dict, None, None]:
+        for date, features in star.timeseries.features.items():
+            yield {
+                "dt": date,
+                "ivn": features["Inverse Von Neumann"],
+                "iqr": features["IQR"],
+            }

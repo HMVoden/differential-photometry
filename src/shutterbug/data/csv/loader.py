@@ -28,7 +28,7 @@ class CSVLoader:
             # Take enumerated iterable, return header name
             keyfunc = lambda x: x[1][name_index]
             # Take enumerated iterable, return row that this entry belongs on
-            valuefunc = lambda x: x[0]
+            valuefunc = lambda x: x[0] + 1
             self._stars = map_reduce(enumerate(rows), keyfunc, valuefunc)
             return self._stars
 
@@ -38,7 +38,7 @@ class CSVLoader:
 
     @property
     def names(self):
-        return self._stars.items()
+        return list(self._star_count().keys())
 
     def _file_rows(self) -> Generator[List[str], None, None]:
         """Skips header and returns an iterable for every row in the input file"""
@@ -57,6 +57,7 @@ class CSVLoader:
         else:
             # So we can consume to just before the item we want
             yield indices[0] - 1
+        # return all other deltas
         for first, second in pairwise(indices):
             yield (second - first) - 1
 
