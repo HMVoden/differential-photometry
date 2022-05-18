@@ -68,7 +68,10 @@ class SeabornBuilder(BuilderBase):
         self._plot.fig.suptitle(self.title)
         self._plot.fig.subplots_adjust(top=0.85)
         for ax in self._plot.axes.flatten():
-            ax.set_title = f"{ax.title} \n IVN: {self.features[ax.title]['Inverse Von Neumann']}, IQR: {self.features[ax.title]['IQR']}"
+            cur_title = ax.title.get_text()
+            ax.set_title(
+                f"{cur_title} \n IVN: {self.features[cur_title]['Inverse Von Neumann']}, IQR: {self.features[cur_title]['IQR']}"
+            )
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
         self._plot.fig.autofmt_xdate()
         return SeabornGraph(sns_graph=self._plot)

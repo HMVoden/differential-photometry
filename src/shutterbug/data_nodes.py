@@ -76,6 +76,7 @@ class GraphSaveNode(DatasetNode):
                 builder.size = (5, 5)
                 builder.data = star.timeseries.differential_magnitude
                 builder.error = star.timeseries.differential_error
+                builder.features = star.timeseries.features
                 graph = builder.build()
                 logging.debug(f"Writing graph {star.name}")
                 if star.variable:

@@ -1,5 +1,5 @@
-from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
-                        Text)
+from sqlalchemy import (Boolean, Column, Date, DateTime, Float, ForeignKey,
+                        Integer, Text)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import MetaData
@@ -26,7 +26,7 @@ class StarDBDataset(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column("dataset", Text, unique=True)
 
-    stars = relationship("StarDB", cascade="all, delete")
+    stars = relationship("StarDB", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"StarDBDataset(id:'{self.id}', name:'{self.name}')"
@@ -45,10 +45,10 @@ class StarDB(Base):
     dataset = relationship("StarDBDataset", back_populates="stars")
 
     timeseries = relationship(
-        "StarDBTimeseries", cascade="all, delete", back_populates="star"
+        "StarDBTimeseries", cascade="all, delete-orphan", back_populates="star"
     )
     features = relationship(
-        "StarDBFeatures", cascade="all, delete", back_populates="star"
+        "StarDBFeatures", cascade="all, delete-orphan", back_populates="star"
     )
 
     UniqueConstraint("name", "dsid", name="name_per_dataset")
@@ -59,8 +59,9 @@ class StarDB(Base):
 
 class StarDBFeatures(Base):
     __tablename__ = "features"
-    star_id = Column("id", Integer, ForeignKey("stars.id"), primary_key=True)
-    date = Column("date", DateTime(timezone=True))
+    id = Column("id", Integer, primary_key=True, autoincrement=True)
+    star_id = Column("star_id", Integer, ForeignKey("stars.id"))
+    date = Column("date", Date())
     ivn = Column(Float)
     iqr = Column(Float)
     star = relationship("StarDB", back_populates="features")

@@ -3,7 +3,7 @@ from typing import Generator
 
 from shutterbug.data.db.model import (Base, StarDB, StarDBDataset,
                                       StarDBFeatures, StarDBTimeseries)
-from sqlalchemy import create_engine, delete
+from sqlalchemy import create_engine, delete, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -20,24 +20,21 @@ _db = sqlalchemy_db(future=False)
 
 
 @contextmanager
-def sqlite_memory(future=True) -> Generator[Session, None, None]:
+def sqlite_memory(
+    future: bool = True, autoflush: bool = True
+) -> Generator[Session, None, None]:
     global _future_db
     global _db
     if future == True:
         database = _future_db
     else:
         database = _db
-    session = Session(database)
+    session = Session(database, autoflush=autoflush)
     try:
         yield session
     finally:
-        del_datasets = delete(StarDBDataset)
-        del_stars = delete(StarDB)
-        del_timeseries = delete(StarDBTimeseries)
-        del_features = delete(StarDBFeatures)
-        session.execute(del_stars)
-        session.execute(del_datasets)
-        session.execute(del_timeseries)
-        session.execute(del_features)
+        datasets = session.scalars(select(StarDBDataset)).all()
+        list(map(session.delete, datasets))
+        session.flush()
         session.commit()
         session.close()

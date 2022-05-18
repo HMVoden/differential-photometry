@@ -2,12 +2,13 @@ import string
 from math import isclose
 from typing import List
 
+import numpy as np
 from hypothesis import given
-from shutterbug.data.db.model import StarDB, StarDBDataset
+from hypothesis.control import assume, note
+from shutterbug.data.db.model import StarDB, StarDBDataset, StarDBFeatures
 from shutterbug.data.db.writer import DBWriter
 from shutterbug.data.star import Star
 from sqlalchemy import bindparam, select
-from sqlalchemy.orm import Session
 from tests.unit.data.db.db_test_tools import sqlite_memory
 from tests.unit.data.hypothesis_stars import star, stars
 
@@ -63,14 +64,63 @@ def test_write(stars: List[Star]):
 
 
 @given(star())
-def test_update(star: Star):
-    writer = DBWriter(dataset="test", engine=engine)
-    writer.write(star)
-    star.x = 3
-    star.y = 3
-    writer.write(star, overwrite=True)
-    read_stars = []
-    with Session(engine, future=True) as session:
-        for dbstar in session.query(StarDB).all():
-            read_stars.append(rec_star)
-    assert star in read_stars
+def test_update_star(star: Star):
+    with sqlite_memory() as session:
+        writer = DBWriter(dataset="test", session=session)
+        writer.write(star)
+        star.variable = True
+        writer.update(star)
+        db_star = session.scalar(
+            select(StarDB)
+            .join(StarDBDataset)
+            .where(StarDB.name == star.name)
+            .where(StarDBDataset.name == "test")
+        )
+        assert db_star.variable == True
+
+
+@given(star())
+def test_update_timeseries(star: Star):
+    with sqlite_memory() as session:
+        writer = DBWriter(dataset="test", session=session)
+        writer.write(star)
+        mag = star.timeseries.magnitude
+        error = star.timeseries.error
+        mag[0] = 2
+        error[0] = 13
+        star.timeseries.differential_magnitude = mag
+        star.timeseries.differential_error = error
+        writer.update(star)
+        db_star = session.scalar(
+            select(StarDB)
+            .join(StarDBDataset)
+            .where(StarDB.name == star.name)
+            .where(StarDBDataset.name == "test")
+        )
+        for row in db_star.timeseries:
+            row.time = row.time.replace(tzinfo=star.timeseries.data.index.tzinfo)
+
+            assert isclose(mag[row.time], row.adm)
+            assert isclose(error[row.time], row.ade)
+
+
+@given(star())
+def test_update_features(star: Star):
+    with sqlite_memory() as session:
+        writer = DBWriter(dataset="test", session=session)
+        writer.write(star)
+        features = star.timeseries.features
+        first_date = list(features.keys())[0]
+        features[first_date]["Inverse Von Neumann"] = 789
+        features[first_date]["IQR"] = 123
+        writer.update(star)
+        db_star = session.scalar(
+            select(StarDB)
+            .join(StarDBDataset)
+            .where(StarDB.name == star.name)
+            .where(StarDBDataset.name == "test")
+        )
+        for row in db_star.features:
+            if row.date == first_date:
+                assert row.ivn == 789
+                assert row.iqr == 123

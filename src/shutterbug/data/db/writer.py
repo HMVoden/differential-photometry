@@ -152,15 +152,17 @@ class DBWriter(Writer):
             )
         db_star.timeseries = db_timeseries
         db_star.dataset = self._db_dataset
-        for date in star.timeseries.features.keys():
+        db_features = []
+        for date, features in star.timeseries.features.items():
             # placeholder stuff
-            db_star.features = [
+            db_features.append(
                 StarDBFeatures(
                     date=date,
-                    ivn=star.timeseries.features[date]["Inverse Von Neumann"],
-                    iqr=star.timeseries.features[date]["IQR"],
+                    ivn=features["Inverse Von Neumann"],
+                    iqr=features["IQR"],
                 )
-            ]
+            )
+        db_star.features = db_features
         return db_star
 
     def _update_star(self, star: Star):

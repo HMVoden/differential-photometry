@@ -42,27 +42,46 @@ def date_time_indexes(draw: DrawFn, min_size=1, max_size=None):
 
 
 @composite
+def timeseries(draw: DrawFn, min_size=1, max_size=None):
+    data = draw(
+        data_frames(
+            columns=columns(
+                ["magnitude", "error"],
+                elements=floats(min_value=-20, max_value=20, allow_nan=False, width=16),
+            ),
+            index=date_time_indexes(min_size=min_size, max_size=max_size),
+        ),
+    )
+    ts = StarTimeseries(data=data)
+    # Issue with hypothesis caching old features
+    # Hard set to empty to fix
+    ts._features = {}
+    for date in data.index.date:
+        ts.add_feature(
+            dt=date,
+            name="Inverse Von Neumann",
+            value=draw(integers(min_value=1, max_value=5)),
+        )
+        ts.add_feature(
+            dt=date,
+            name="IQR",
+            value=draw(integers(min_value=1, max_value=5)),
+        )
+    return ts
+
+
+@composite
 def star(draw, name: str = "", allow_nan=False) -> Star:
     if not name:
 
         allowed_names = string.ascii_letters + string.digits
         name = draw(text(alphabet=allowed_names, min_size=1))
-    data = draw(
-        data_frames(
-            columns=columns(
-                ["magnitude", "error"],
-                elements=floats(min_value=-2, max_value=20, allow_nan=False, width=16),
-            ),
-            index=date_time_indexes(),
-        ),
-    )
-
-    timeseries = StarTimeseries(data=data)
+    ts = draw(timeseries(max_size=10))
     star = Star(
         name=name,
         x=draw(integers(min_value=0, max_value=4096)),
         y=draw(integers(min_value=0, max_value=4096)),
-        timeseries=timeseries,
+        timeseries=ts,
     )
     return star
 

@@ -1,8 +1,8 @@
-"""timezones
+"""init
 
-Revision ID: a4fd7959c202
+Revision ID: dd26d21e4ab9
 Revises: 
-Create Date: 2022-04-19 13:03:06.555828
+Create Date: 2022-05-18 12:52:54.712312
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'a4fd7959c202'
+revision = 'dd26d21e4ab9'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -36,16 +36,18 @@ def upgrade():
     sa.PrimaryKeyConstraint('id', name=op.f('pk_stars'))
     )
     op.create_table('features',
-    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('star_id', sa.Integer(), nullable=True),
+    sa.Column('date', sa.Date(), nullable=True),
     sa.Column('ivn', sa.Float(), nullable=True),
     sa.Column('iqr', sa.Float(), nullable=True),
-    sa.ForeignKeyConstraint(['id'], ['stars.id'], name=op.f('fk_features_id_stars')),
+    sa.ForeignKeyConstraint(['star_id'], ['stars.id'], name=op.f('fk_features_star_id_stars')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_features'))
     )
     op.create_table('timeseries',
     sa.Column('tsid', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('star_id', sa.Integer(), nullable=True),
-    sa.Column('time', sa.TIMESTAMP(timezone=True), nullable=True),
+    sa.Column('time', sa.DateTime(timezone=True), nullable=True),
     sa.Column('magnitude', sa.Float(), nullable=True),
     sa.Column('error', sa.Float(), nullable=True),
     sa.Column('adm', sa.Float(), nullable=True),
