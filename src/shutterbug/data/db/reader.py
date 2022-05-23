@@ -1,7 +1,6 @@
 from typing import Dict, Generator, List, Optional
 
 import attr
-import numpy as np
 import pandas as pd
 from attr import define, field
 from shutterbug.data.db.model import StarDB, StarDBDataset
@@ -127,7 +126,7 @@ class DBReader(Reader):
             set(self._non_variable(star)).intersection(self._star_cache[star.name])
         )
 
-    def _model_to_star(self, star: StarDB) -> Star:
+    def _model_to_star(self, stardb: StarDB) -> Star:
 
         """Converts a db model of a star into a full Star object, with StarTimeseries
 
@@ -135,12 +134,13 @@ class DBReader(Reader):
         :returns: Star
 
         """
+        # this assignment is highly wasteful
         db_time = []
         db_mag = []
         db_error = []
         db_adm = []
         db_ade = []
-        for row in star.timeseries:
+        for row in stardb.timeseries:
             db_time.append(row.time)
             db_mag.append(row.mag)
             db_error.append(row.error)
@@ -152,17 +152,16 @@ class DBReader(Reader):
         )
         data.index.name = "time"
         rec_timeseries = StarTimeseries(data=data)
-        if len(star.features) > 0:
-            for date, ivn, iqr in star.features:
-                rec_timeseries.add_feature(
-                    dt=date, name="Inverse Von Neumann", value=ivn
-                )
-                rec_timeseries.add_feature(dt=date, name="IQR", value=iqr)
+        for row in stardb.features:
+            rec_timeseries.add_feature(
+                dt=row.date, name="Inverse Von Neumann", value=row.ivn
+            )
+            rec_timeseries.add_feature(dt=row.date, name="IQR", value=row.iqr)
         rec_star = Star(
-            name=star.name,
-            x=star.x,
-            y=star.y,
+            name=stardb.name,
+            x=stardb.x,
+            y=stardb.y,
             timeseries=rec_timeseries,
-            variable=star.variable,
+            variable=stardb.variable,
         )
         return rec_star

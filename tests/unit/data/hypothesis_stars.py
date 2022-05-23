@@ -1,13 +1,10 @@
 import string
 from typing import Sequence, Union
 
-import numpy as np
 import pandas as pd
-from hypothesis import assume
-from hypothesis.extra.numpy import datetime64_dtypes, from_dtype
-from hypothesis.extra.pandas import columns, data_frames, indexes
-from hypothesis.strategies import (DrawFn, booleans, composite, decimals,
-                                   floats, integers, lists, text)
+from hypothesis.extra.pandas import columns, data_frames
+from hypothesis.strategies import (DrawFn, composite, decimals, floats,
+                                   integers, lists, text)
 from hypothesis.strategies._internal.strategies import SearchStrategy
 from shutterbug.data.star import Star, StarTimeseries
 
@@ -60,12 +57,12 @@ def timeseries(draw: DrawFn, min_size=1, max_size=None):
         ts.add_feature(
             dt=date,
             name="Inverse Von Neumann",
-            value=draw(integers(min_value=1, max_value=5)),
+            value=draw(floats(min_value=1, max_value=5)),
         )
         ts.add_feature(
             dt=date,
             name="IQR",
-            value=draw(integers(min_value=1, max_value=5)),
+            value=draw(floats(min_value=1, max_value=5)),
         )
     return ts
 

@@ -93,11 +93,11 @@ class StarTimeseries:
         return self.data.equals(other.data)
 
     @property
-    def features(self) -> Dict[str, Dict[str, float]]:
+    def features(self) -> Dict[date, Dict[str, float]]:
         return self._features.copy()
 
     def add_feature(self, dt: date, name: str, value: float) -> None:
-        features = self._features
+        features = self._features.copy()
         if dt in features:
             features[dt][name] = value
         else:

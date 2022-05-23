@@ -70,7 +70,7 @@ class SeabornBuilder(BuilderBase):
         for ax in self._plot.axes.flatten():
             cur_title = ax.title.get_text()
             ax.set_title(
-                f"{cur_title} \n IVN: {self.features[cur_title]['Inverse Von Neumann']}, IQR: {self.features[cur_title]['IQR']}"
+                f"{cur_title} \n IVN: {self.features[cur_title]['Inverse Von Neumann']:.2f}, IQR: {self.features[cur_title]['IQR']:.2f}"
             )
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
         self._plot.fig.autofmt_xdate()

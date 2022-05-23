@@ -4,11 +4,13 @@ from typing import List
 import numpy as np
 from hypothesis import given
 from hypothesis.strategies._internal.numbers import integers
+from shutterbug.data.db.model import StarDBFeatures
 from shutterbug.data.db.reader import DBReader
 from shutterbug.data.db.writer import DBWriter
 from shutterbug.data.star import Star
+from sqlalchemy import select
 from tests.unit.data.db.db_test_tools import sqlite_memory
-from tests.unit.data.hypothesis_stars import stars
+from tests.unit.data.hypothesis_stars import star, stars
 
 
 @given(
@@ -103,3 +105,22 @@ def test_similar_to(stars: List[Star], mag_limit, distance_limit):
             ]
         )
         assert db_similar == set(similar_stars)
+
+
+@given(star())
+def test_feature_update(star: Star):
+    with sqlite_memory(future=True) as session:
+        writer = DBWriter(dataset="test", session=session)
+        reader = DBReader(dataset="test", session=session)
+
+        writer.write(star)
+        for date in star.timeseries.features:
+            star.timeseries.add_feature(dt=date, name="Inverse Von Neumann", value=123)
+            star.timeseries.add_feature(dt=date, name="IQR", value=567)
+        writer.update(star)
+        for read_star in reader:
+            if read_star.name == star.name:
+                read_features = read_star.timeseries.features
+                star_features = star.timeseries.features
+                assert len(star_features) == len(read_features)
+                assert read_features == star_features
