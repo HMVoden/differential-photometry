@@ -1,4 +1,5 @@
 import string
+from itertools import repeat
 from typing import Sequence, Union
 
 import pandas as pd
@@ -49,6 +50,8 @@ def timeseries(draw: DrawFn, min_size=1, max_size=None):
             index=date_time_indexes(min_size=min_size, max_size=max_size),
         ),
     )
+    data["adm"] = list(repeat(None, len(data)))
+    data["ade"] = list(repeat(None, len(data)))
     ts = StarTimeseries(data=data)
     # Issue with hypothesis caching old features
     # Hard set to empty to fix

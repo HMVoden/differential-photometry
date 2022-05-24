@@ -3,7 +3,7 @@ from functools import singledispatchmethod
 from itertools import repeat
 from typing import Dict, Generator, Optional
 
-import pandas as pd
+import numpy as np
 from attr import define, field
 from shutterbug.data.db.model import (StarDB, StarDBDataset, StarDBFeatures,
                                       StarDBTimeseries)
@@ -153,15 +153,19 @@ class DBWriter(Writer):
         db_star.timeseries = db_timeseries
         db_star.dataset = self._db_dataset
         db_features = []
-        for date, features in star.timeseries.features.items():
-            # placeholder stuff
-            db_features.append(
-                StarDBFeatures(
-                    date=date,
-                    ivn=features["Inverse Von Neumann"],
-                    iqr=features["IQR"],
+        if star.timeseries.features == {}:
+            for date in np.unique(star.timeseries.time.date):
+                db_features.append(StarDBFeatures(date=date, ivn=None, iqr=None))
+        else:
+            for date, features in star.timeseries.features.items():
+                # placeholder stuff
+                db_features.append(
+                    StarDBFeatures(
+                        date=date,
+                        ivn=features["Inverse Von Neumann"],
+                        iqr=features["IQR"],
+                    )
                 )
-            )
         db_star.features = db_features
         return db_star
 

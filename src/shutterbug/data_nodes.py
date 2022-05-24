@@ -67,9 +67,9 @@ class GraphSaveNode(DatasetNode):
             if self.only_variable:
                 stars = dataset.variable
             else:
-                stars = dataset
+                stars = dataset.__iter__()
             for star in stars:
-                title = f"Differential magnitude of {star.name} \n X: {star.x} Y: {star.y} \n"
+                title = f"Differential magnitude of {star.name} \n x: {star.x} y: {star.y} \n"
                 builder.title = title
                 builder.axis_names = ("Time (UTC)", "Differential Magnitude")
                 builder.axis_limits = (1.25, 1.25)

@@ -93,7 +93,13 @@ class StarTimeseries:
         if other.__class__ is not self.__class__:
             return NotImplemented
 
-        return self.data.equals(other.data)
+        return (
+            other.magnitude.equals(self.magnitude)
+            and other.error.equals(self.error)
+            and other.differential_error.equals(self.differential_error)
+            and other.differential_magnitude.equals(self.differential_magnitude)
+            and other.features == self.features
+        )
 
     @property
     def features(self) -> Dict[date, Dict[str, float]]:
@@ -159,6 +165,17 @@ class Star:
         logging.debug(f"Building star object {name}, x: {x}, y: {y}")
         timeseries = StarTimeseries.from_rows(rows, row_headers)
         return cls(name=name, x=x, y=y, timeseries=timeseries)
+
+    def __eq__(self, other: Star):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+
+        return (
+            other.x == self.x
+            and other.y == self.y
+            and other.variable == self.variable
+            and other.timeseries == self.timeseries
+        )
 
 
 def validate_timeseries(ts: StarTimeseries) -> StarTimeseries:
