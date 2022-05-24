@@ -195,7 +195,7 @@ class DBWriter(Writer):
             statement = (
                 update(StarDBFeatures)
                 .where(StarDBFeatures.star_id == db_star.id)
-                .values(date=bindparam("dt", type_=Date()))
+                .where(StarDBFeatures.date == bindparam("dt", type_=Date()))
                 .values(ivn=bindparam("ivn", type_=Float()))
                 .values(iqr=bindparam("iqr", type_=Float()))
             )
@@ -215,7 +215,7 @@ class DBWriter(Writer):
     def _date_features_from_star(star: Star) -> Generator[Dict, None, None]:
         for dt, features in star.timeseries.features.items():
             yield {
-                "dt": pd.to_datetime(dt, utc=True),
+                "dt": dt,
                 "ivn": features["Inverse Von Neumann"],
                 "iqr": features["IQR"],
             }

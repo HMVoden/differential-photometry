@@ -13,6 +13,27 @@ from tests.unit.data.db.db_test_tools import sqlite_memory
 from tests.unit.data.hypothesis_stars import star, stars
 
 
+@given(star())
+def test_convert_to_star(star: Star):
+    with sqlite_memory(future=True) as session:
+        DBWriter(session=session, dataset="test").write(star)
+        reader = DBReader(dataset="test", session=session)
+        for read_star in reader:
+            if read_star.name == star.name:
+                assert len(read_star.timeseries.magnitude) == len(
+                    star.timeseries.magnitude
+                )
+                assert len(read_star.timeseries.error) == len(star.timeseries.error)
+                assert star.x == read_star.x
+                assert star.y == read_star.y
+                assert star.variable == read_star.variable
+                for date in star.timeseries.features:
+                    assert date in read_star.timeseries.features
+                    assert len(star.timeseries.features[date]) == len(
+                        read_star.timeseries.features[date]
+                    )
+
+
 @given(
     stars(alphabet=string.printable, min_size=1),
     stars(alphabet=string.printable, min_size=1, max_size=1),
@@ -115,12 +136,14 @@ def test_feature_update(star: Star):
 
         writer.write(star)
         for date in star.timeseries.features:
-            star.timeseries.add_feature(dt=date, name="Inverse Von Neumann", value=123)
-            star.timeseries.add_feature(dt=date, name="IQR", value=567)
+            star.timeseries.add_feature(
+                dt=date, name="Inverse Von Neumann", value=123.0
+            )
+            star.timeseries.add_feature(dt=date, name="IQR", value=567.0)
         writer.update(star)
         for read_star in reader:
             if read_star.name == star.name:
-                read_features = read_star.timeseries.features
+
                 star_features = star.timeseries.features
-                assert len(star_features) == len(read_features)
-                assert read_features == star_features
+                assert len(star_features) == len(read_star.timeseries.features)
+                assert read_star.timeseries.features == star_features

@@ -10,7 +10,7 @@ def run_test(star: Star, test: FeatureBase) -> Star:
     data = star.timeseries.differential_magnitude
     results = data.groupby(data.index.date).agg(**{test.name: test})
     for date, value in results.itertuples(index=True):
-        star.timeseries.add_feature(dt=str(date), name=test.name, value=value)
+        star.timeseries.add_feature(dt=date, name=test.name, value=value)
     return star
 
 

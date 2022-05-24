@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from datetime import date
 from typing import Dict, Literal, Optional, Tuple
 
 import pandas as pd
@@ -6,7 +7,7 @@ from attrs import define, field
 from shutterbug.data.interfaces.internal import Graph
 
 
-@define
+@define(slots=True)
 class BuilderBase:
     """Generic builder type, contains all fields and properties for building"""
 
@@ -23,7 +24,7 @@ class BuilderBase:
 
     type: Literal["scatter", "line"] = field(init=False, default="scatter")
     error_display: Literal["bar", "fill", None] = field(init=False, default="bar")
-    features: Dict[str, Dict[str, str]] = field(init=False, default={})
+    features: Dict[date, Dict[str, float]] = field(init=False, default={})
 
     def reset(self) -> None:
         self.title = None

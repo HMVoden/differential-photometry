@@ -57,12 +57,12 @@ def timeseries(draw: DrawFn, min_size=1, max_size=None):
         ts.add_feature(
             dt=date,
             name="Inverse Von Neumann",
-            value=draw(floats(min_value=1, max_value=5)),
+            value=draw(floats(min_value=1.0, max_value=5.0)),
         )
         ts.add_feature(
             dt=date,
             name="IQR",
-            value=draw(floats(min_value=1, max_value=5)),
+            value=draw(floats(min_value=1.0, max_value=5.0)),
         )
     return ts
 

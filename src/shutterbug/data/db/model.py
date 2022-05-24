@@ -54,7 +54,7 @@ class StarDB(Base):
     UniqueConstraint("name", "dsid", name="name_per_dataset")
 
     def __repr__(self):
-        return f"StarDB(id:'{self.id}',name:'{self.name}',dsid:'{self.dataset_id}',magnitude median:'{self.magnitude_median}',is variable:{self.variable})"
+        return f"StarDB(id:'{self.id}',name:'{self.name}',dsid:'{self.dataset_id}',x:'{self.x}',y:'{self.y}'magnitude median:'{self.magnitude_median}',is variable:{self.variable})"
 
 
 class StarDBFeatures(Base):
@@ -66,10 +66,10 @@ class StarDBFeatures(Base):
     iqr = Column(Float)
     star = relationship("StarDB", back_populates="features")
 
+    UniqueConstraint("star_id", "date", name="date_per_star")
+
     def __repr__(self):
-        return (
-            f"StarDBFeatures(id:'{self.star_id}', ivn:'{self.ivn}', iqr:'{self.iqr}')"
-        )
+        return f"StarDBFeatures(id:'{self.id}', star_id:'{self.star_id}', date:'{self.date}', ivn:'{self.ivn}', iqr:'{self.iqr}')"
 
 
 class StarDBTimeseries(Base):
@@ -79,7 +79,7 @@ class StarDBTimeseries(Base):
     time = Column("time", DateTime(timezone=True))
     mag = Column("magnitude", Float)
     error = Column("error", Float)
-    adm = Column("adm", Float)  # different magnitude and error
+    adm = Column("adm", Float)  # differential magnitude and error
     ade = Column("ade", Float)
 
     star = relationship("StarDB", back_populates="timeseries")

@@ -40,6 +40,9 @@ class StarTimeseries:
     data: pd.DataFrame = field()
     _features: Dict[date, Dict[str, float]] = field(init=False, default={})
 
+    def __attrs_post_init__(self):
+        self._features = {}
+
     @property
     def time(self) -> pd.DatetimeIndex:
         return self.data.index  # type: ignore
@@ -97,11 +100,12 @@ class StarTimeseries:
         return self._features.copy()
 
     def add_feature(self, dt: date, name: str, value: float) -> None:
-        features = self._features.copy()
+        features = self._features
         if dt in features:
             features[dt][name] = value
         else:
             features[dt] = {name: value}
+        self._features = features
 
     @property
     def nbytes(self) -> int:

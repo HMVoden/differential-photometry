@@ -97,6 +97,7 @@ def test_update_timeseries(star: Star):
             .where(StarDB.name == star.name)
             .where(StarDBDataset.name == "test")
         )
+        assert len(db_star.timeseries) == len(star.timeseries.magnitude)
         for row in db_star.timeseries:
             row.time = row.time.replace(tzinfo=star.timeseries.data.index.tzinfo)
 
@@ -110,9 +111,12 @@ def test_update_features(star: Star):
         writer = DBWriter(dataset="test", session=session)
         writer.write(star)
         features = star.timeseries.features
-        first_date = list(features.keys())[0]
-        features[first_date]["Inverse Von Neumann"] = 789
-        features[first_date]["IQR"] = 123
+        for date in features:
+            star.timeseries.add_feature(
+                dt=date, name="Inverse Von Neumann", value=789.0
+            )
+
+            star.timeseries.add_feature(dt=date, name="IQR", value=123.0)
         writer.update(star)
         db_star = session.scalar(
             select(StarDB)
@@ -120,7 +124,10 @@ def test_update_features(star: Star):
             .where(StarDB.name == star.name)
             .where(StarDBDataset.name == "test")
         )
+        assert len(db_star.features) == len(features.keys())
+        all_dates = []
         for row in db_star.features:
-            if row.date == first_date:
-                assert row.ivn == 789
-                assert row.iqr == 123
+            assert row.ivn == 789.0
+            assert row.iqr == 123.0
+            all_dates.append(row.date)
+        assert len(np.unique(all_dates)) == len(features.keys())
