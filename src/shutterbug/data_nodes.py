@@ -7,8 +7,9 @@ from typing import Generator, Union
 
 from attr import define, field
 
+from shutterbug.application import make_output_folder
 from shutterbug.data import BuilderBase, Dataset
-from shutterbug.data.interfaces.external import Input, Loader
+from shutterbug.data.interfaces.external import Loader
 from shutterbug.data.interfaces.internal import Writer
 from shutterbug.interfaces.external import ControlNode
 
@@ -56,14 +57,11 @@ class GraphSaveNode(DatasetNode):
 
     def execute(self) -> Generator[Dataset, None, None]:
         for dataset in self.datasets.execute():
-            output_folder = self.output_location / dataset.name
-            variable_folder = output_folder / "variable"
-            nonvariable_folder = output_folder / "nonvariable"
-            output_folder.mkdir(exist_ok=True, parents=True)
-            variable_folder.mkdir(exist_ok=True)
-            nonvariable_folder.mkdir(exist_ok=True)
+            folder = make_output_folder(
+                dataset_name=dataset.name, output_folder=self.output_location
+            )
             builder = self.graph_builder
-            logging.info(f"Outputting graphs to folder {output_folder}")
+            logging.info(f"Outputting graphs to folder {folder}")
             if self.only_variable:
                 stars = dataset.variable
             else:
@@ -80,9 +78,9 @@ class GraphSaveNode(DatasetNode):
                 graph = builder.build()
                 logging.debug(f"Writing graph {star.name}")
                 if star.variable:
-                    graph.save(variable_folder / f"{star.name}.png")
+                    graph.save(folder / "variable" / f"{star.name}.png")
                 else:
-                    graph.save(nonvariable_folder / f"{star.name}.png")
+                    graph.save(folder / "nonvariable" / f"{star.name}.png")
                 builder.reset()
             yield dataset
 
@@ -93,4 +91,20 @@ class CSVSaveNode(DatasetNode):
     only_variable: bool = field()
 
     def execute(self) -> Generator[Dataset, None, None]:
-        pass
+        for dataset in self.datasets.execute():
+            folder = make_output_folder(
+                dataset_name=dataset.name, output_folder=self.output_location
+            )
+            filename = folder / dataset.name / "_result.csv"
+            if (filename).exists():
+                # clobber file
+                with open(filename, "w") as f:
+                    pass
+            if self.only_variable:
+                stars = dataset.variable
+            else:
+                stars = dataset.__iter__()
+            for star in stars:
+                df = star.to_dataframe()
+                df.to_csv(filename, mode="a")
+            yield dataset

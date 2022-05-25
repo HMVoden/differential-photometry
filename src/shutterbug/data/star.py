@@ -177,6 +177,14 @@ class Star:
             and other.timeseries == self.timeseries
         )
 
+    def to_dataframe(self) -> pd.DataFrame:
+        df = self.timeseries.data
+        df["x"] = self.x
+        df["y"] = self.y
+        df["name"] = self.name
+        df["variable"] = self.variable
+        return df
+
 
 def validate_timeseries(ts: StarTimeseries) -> StarTimeseries:
     mag = ts.magnitude.to_numpy()

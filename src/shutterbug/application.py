@@ -70,3 +70,14 @@ def get_photometer() -> Photometer:
 
 def get_graph_builder() -> BuilderBase:
     return SeabornBuilder()
+
+
+def make_folder(folder: Path):
+    folder = Path(folder)  # sanity check
+    folder.mkdir(exist_ok=True, parents=True)
+
+
+def make_output_folder(dataset_name: str, output_folder: Path):
+    make_folder(output_folder / dataset_name / "variable")
+    make_folder(output_folder / dataset_name / "nonvariable")
+    return output_folder / dataset_name

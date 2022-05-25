@@ -123,7 +123,7 @@ def process(nodes: List[DatasetNode], context: Context, iterations: int):
 @click.option("-g", "--graph", type=click.BOOL, is_flag=True, default=False)
 @click.option("-c", "--csv", type=click.BOOL, is_flag=True, default=False)
 @click.option(
-    "-v" "--variable_only", "variable", type=click.BOOL, is_flag=True, default=False
+    "-v", "--variable_only", "variable", type=click.BOOL, is_flag=True, default=False
 )
 @click.pass_context
 @processor
