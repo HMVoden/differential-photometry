@@ -1,39 +1,37 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Generator
+from typing import Generator, Iterable, List, Protocol
 
 from shutterbug.data.star import Star
 
-from abc import ABC, abstractmethod
-from typing import Generator
 
+class Loader(Protocol):
+    """Generic interface for an object that loads star data from a source into
+    memory"""
 
-class LoaderInterface(ABC):
-    """Generic interface for an object that loads external star data from a source into memory"""
-
-    @abstractmethod
     def __iter__(self) -> Generator[Star, None, None]:
-        raise NotImplementedError
+        ...
 
-    @abstractmethod
     def __len__(self) -> int:
-        raise NotImplementedError
+        ...
+
+    @property
+    def names(self) -> List[str]:
+        ...
 
 
-class FileLoaderInterface(LoaderInterface):
-    """Interface for a loader that loads external star data from a file source into memory"""
-
-    @abstractmethod
-    @classmethod
-    def is_readable(cls, input_file: Path) -> bool:
-        raise NotImplementedError
-
-
-class InputInterface(ABC):
+class Input(ABC):
     @abstractmethod
     def __len__(self) -> int:
         raise NotImplementedError
 
     @abstractmethod
-    def __iter__(self) -> Generator[LoaderInterface, None, None]:
+    def __iter__(self) -> Generator[Loader, None, None]:
         raise NotImplementedError
+
+
+class FileLoaderFactory(Protocol):
+    READABLE_TYPES: Iterable[str]
+
+    def make_loader(self, file_path: Path) -> Loader:
+        ...

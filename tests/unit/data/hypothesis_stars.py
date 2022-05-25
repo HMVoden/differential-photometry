@@ -1,45 +1,87 @@
 import string
+from itertools import repeat
 from typing import Sequence, Union
 
-from hypothesis.extra.dateutil import timezones
-from hypothesis.strategies import composite, datetimes, floats, integers, lists, text
+import pandas as pd
+from hypothesis.extra.pandas import columns, data_frames
+from hypothesis.strategies import (DrawFn, composite, decimals, floats,
+                                   integers, lists, text)
 from hypothesis.strategies._internal.strategies import SearchStrategy
 from shutterbug.data.star import Star, StarTimeseries
 
+DAYS_IN_JULIAN_YEAR = 365.25
+UNIX_0_POINT_JD = 2440588.5
+END_POINT_JD = UNIX_0_POINT_JD + (DAYS_IN_JULIAN_YEAR * 200)
+
 
 @composite
-def star(draw, name: str = "", dataset: str = "test", allow_nan=None) -> Star:
-
-    if not name:
-        allowed_names = string.printable
-        name = draw(text(alphabet=allowed_names, min_size=1))
-    mag = draw(lists(floats(allow_nan=allow_nan), min_size=1))
-    error = draw(
-        lists(
-            floats(allow_nan=allow_nan, min_value=0),
-            min_size=len(mag),
-            max_size=len(mag),
+def julian_dates(draw: DrawFn) -> float:
+    return float(
+        draw(
+            decimals(
+                min_value=UNIX_0_POINT_JD,
+                max_value=END_POINT_JD,
+                allow_nan=False,
+                allow_infinity=False,
+                places=3,
+            )
         )
     )
 
-    time = draw(
-        lists(
-            datetimes(
-                allow_imaginary=False,
-                timezones=timezones(),
+
+@composite
+def date_time_indexes(draw: DrawFn, min_size=1, max_size=None):
+    return pd.to_datetime(
+        draw(lists(julian_dates(), min_size=min_size, max_size=max_size, unique=True)),
+        origin="julian",
+        unit="D",
+        utc=True,
+    ).round("1s")
+
+
+@composite
+def timeseries(draw: DrawFn, min_size=1, max_size=None):
+    data = draw(
+        data_frames(
+            columns=columns(
+                ["magnitude", "error"],
+                elements=floats(min_value=-20, max_value=20, allow_nan=False, width=16),
             ),
-            min_size=len(mag),
-            max_size=len(mag),
-            unique=True,
-        )
+            index=date_time_indexes(min_size=min_size, max_size=max_size),
+        ),
     )
-    timeseries = StarTimeseries(time=time, mag=mag, error=error)
+    data["adm"] = list(repeat(None, len(data)))
+    data["ade"] = list(repeat(None, len(data)))
+    ts = StarTimeseries(data=data)
+    # Issue with hypothesis caching old features
+    # Hard set to empty to fix
+    ts._features = {}
+    for date in data.index.date:
+        ts.add_feature(
+            dt=date,
+            name="Inverse Von Neumann",
+            value=draw(floats(min_value=1.0, max_value=5.0)),
+        )
+        ts.add_feature(
+            dt=date,
+            name="IQR",
+            value=draw(floats(min_value=1.0, max_value=5.0)),
+        )
+    return ts
+
+
+@composite
+def star(draw, name: str = "", allow_nan=False) -> Star:
+    if not name:
+
+        allowed_names = string.ascii_letters + string.digits
+        name = draw(text(alphabet=allowed_names, min_size=1))
+    ts = draw(timeseries(max_size=10))
     star = Star(
-        dataset=dataset,
         name=name,
         x=draw(integers(min_value=0, max_value=4096)),
         y=draw(integers(min_value=0, max_value=4096)),
-        data=timeseries,
+        timeseries=ts,
     )
     return star
 
@@ -50,8 +92,7 @@ def stars(
     alphabet: Union[Sequence[str], SearchStrategy[str]],
     min_size=0,
     max_size=None,
-    dataset: str = "test",
-    allow_nan=None,
+    allow_nan=False,
 ):
     names = draw(
         lists(
@@ -63,5 +104,5 @@ def stars(
     )
     stars = []
     for name in names:
-        stars.append(draw(star(name=name, dataset=dataset, allow_nan=allow_nan)))
+        stars.append(draw(star(name=name, allow_nan=allow_nan)))
     return stars

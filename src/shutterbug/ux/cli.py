@@ -1,31 +1,155 @@
+import logging
+from functools import update_wrapper
 from pathlib import Path
-from functools import wraps
-import click
 from typing import List
-from shutterbug.data.interfaces.internal import DataReaderInterface
-import pandas as pd
+
+import click
+from click.core import Context
+from shutterbug.application import (get_feature_calculators, get_graph_builder,
+                                    get_photometer, initialize_application,
+                                    make_dataset, make_file_loader,
+                                    make_reader_writer)
+from shutterbug.data_nodes import (CSVSaveNode, DatasetLeaf, DatasetNode,
+                                   GraphSaveNode, StoreNode)
+from shutterbug.process_nodes import DifferentialNode, VariabilityNode
+from shutterbug.ux.progress_bars import ProgressBarManager
+
+
+def processor(func):
+    def new_func(*args, **kwargs):
+        def processor(stream):
+            return func(stream, *args, **kwargs)
+
+        return processor
+
+    return update_wrapper(new_func, func)
+
+
+def generator(func):
+    @processor
+    def new_func(stream, *args, **kwargs):
+        yield from stream
+        yield from func(*args, **kwargs)
+
+    return update_wrapper(new_func, func)
 
 
 @click.group(chain=True, invoke_without_command=True)
 @click.option("-d", "--debug", is_flag=True, default=False, type=click.BOOL)
-def cli(debug):
-    pass
+@click.pass_context
+def cli(context: Context, debug: bool):
+    config, engine = initialize_application(debug=debug)
+    context.obj = {}
+    context.obj["pbar_manager"] = ProgressBarManager()
+    context.obj["config"] = config
+    context.obj["database"] = engine
+
+
+@cli.result_callback()
+def process_commands(processors, *args, **kwargs):
+
+    stream = ()
+
+    for processor in processors:
+        stream = processor(stream)
+    logging.debug("Finished callbacks, starting execution")
+    for node in stream:
+        for _ in node.execute():
+            pass
+    logging.debug("Execution finished")
 
 
 @cli.command("load")
-@click.option("-f", "--file", multiple=True, type=click.Path(), help="Dataset to open")
-def cli_load(datasets: List[Path]):
-    pass
+@click.option(
+    "-f",
+    "--file",
+    "files",
+    multiple=True,
+    type=click.Path(
+        exists=True, file_okay=True, dir_okay=True, readable=True, path_type=Path
+    ),
+    help="Datasets to load",
+)
+@click.pass_context
+@generator
+def load(context: Context, files: List[Path]):
+    config = context.obj["config"]
+    engine = context.obj["database"]
+    mag_limit = config.photometry["magnitude_limit"]
+    distance_limit = config.photometry["distance_limit"]
+    for f in files:
+        logging.debug(f"Loading file: {f.name}")
+        f_input = make_file_loader(f)
+        db_reader, db_writer = next(
+            make_reader_writer(
+                engine=engine,
+                dataset_name=f.stem,
+                magnitude_limit=mag_limit,
+                distance_limit=distance_limit,
+            )
+        )
+        for loader in f_input:
+            if not (set(loader.names).issubset(db_reader.names)):
+                StoreNode(loader, db_writer).execute()
+            else:
+                logging.info(f"All stars from source {f.stem} already in destination")
+        dataset = make_dataset(dataset_name=f.name, reader=db_reader, writer=db_writer)
+        yield DatasetLeaf(dataset)
 
 
 @cli.command("process")
-def cli_process(reader: DataReaderInterface):
-    pass
+@click.option(
+    "-i",
+    "--iterations",
+    "iterations",
+    help="Number of differential/detection iterations",
+    type=click.IntRange(min=1, max=3, clamp=True),
+)
+@click.pass_context
+@processor
+def process(nodes: List[DatasetNode], context: Context, iterations: int):
+    feature_calculators = get_feature_calculators(config=context.obj["config"])
+    photometer = get_photometer()
+    logging.info(f"Adding process nodes for {iterations} iterations to node tree")
+    for node in nodes:
+        for _ in range(iterations):
+            node = DifferentialNode(node, photometer)
+            node = VariabilityNode(node, feature_calculators)
+        yield node
 
 
-@click.command("save")
+@cli.command("save")
 @click.option("-o", "--out-folder", type=click.Path())
-@click.option("-g" "--graph", type=click.BOOL, is_flag=True, default=True)
-@click.option("-c" "--csv", type=click.BOOL, is_flag=True, default=True)
-def cli_save(frame: pd.DataFrame, out_folder: Path, graph: bool, csv: bool):
-    pass
+@click.option("-g", "--graph", type=click.BOOL, is_flag=True, default=False)
+@click.option("-c", "--csv", type=click.BOOL, is_flag=True, default=False)
+@click.option(
+    "-v", "--variable_only", "variable", type=click.BOOL, is_flag=True, default=False
+)
+@click.pass_context
+@processor
+def save(
+    nodes: List[DatasetNode],
+    context: Context,
+    out_folder: Path,
+    graph: bool,
+    csv: bool,
+    variable: bool,
+):
+    if out_folder is None:
+        out_folder = context.obj["config"].data["output_folder"]
+    graph_builder = get_graph_builder()
+    for node in nodes:
+        if graph:
+            logging.info(f"Adding graph saving to node tree")
+            node = GraphSaveNode(
+                output_location=out_folder,
+                only_variable=variable,
+                datasets=node,
+                graph_builder=graph_builder,
+            )
+        if csv:
+            logging.info(f"Adding csv saving to node tree")
+            node = CSVSaveNode(
+                output_location=out_folder, only_variable=variable, datasets=node
+            )
+        yield node

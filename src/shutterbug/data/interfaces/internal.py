@@ -1,34 +1,68 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from functools import singledispatchmethod
-from typing import Generator
+from pathlib import Path
+from typing import Generator, List
+
 from shutterbug.data.star import Star
 
-import pandas as pd
-from typing import Iterable, overload
 
+class Reader(ABC):
+    """Interface for reading stars from a source with criteria"""
 
-class DataReaderInterface(ABC):
+    @abstractmethod
+    def similar_to(self, star: Star) -> List[Star]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def __iter__(self) -> Generator[Star, None, None]:
+        raise NotImplementedError
+
     @property
     @abstractmethod
-    def all(self) -> Generator[pd.DataFrame, None, None]:
+    def names(self) -> List[str]:
         raise NotImplementedError
 
+    @property
     @abstractmethod
-    def similar_to(self, star: str) -> pd.DataFrame:
+    def variable(self) -> Generator[Star, None, None]:
         raise NotImplementedError
 
 
-class DataWriterInterface(ABC):
-    """Interface for data storage module, takes in a star or a group of stars and writes it to a storage medium for future reference"""
+class Writer(ABC):
+    """Interface for data storage module, takes in a star or a group of stars and
+    writes it to a storage medium for future reference"""
 
     @singledispatchmethod
     @abstractmethod
-    def write(self, data: Star):
+    def write(self, data: Star, overwrite: bool):
         raise NotImplementedError
 
     @write.register
     @abstractmethod
-    def _(self, data: list):
-
+    def _(self, data: list, overwrite: bool):
         # have to use list as type due to bug with singledispatch
+        raise NotImplementedError
+
+    @singledispatchmethod
+    @abstractmethod
+    def update(self, data: Star):
+        raise NotImplementedError
+
+    @update.register
+    @abstractmethod
+    def _(self, data: list):
+        raise NotImplementedError
+
+
+class Graph(ABC):
+    """Generic graph object that serves as a wrapper for other types of graphs"""
+
+    @abstractmethod
+    def render(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def save(self, filename: Path):
         raise NotImplementedError

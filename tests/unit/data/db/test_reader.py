@@ -1,99 +1,180 @@
+import string
 from typing import List
 
 import numpy as np
-import pytest
 from hypothesis import given
-from hypothesis.strategies import lists
 from hypothesis.strategies._internal.numbers import integers
-from shutterbug.data.star import Star
 from shutterbug.data.db.reader import DBReader
 from shutterbug.data.db.writer import DBWriter
-from tests.unit.data.db.db_test_tools import sqlalchemy_db, sqlite_memory
+from shutterbug.data.star import Star
+from tests.unit.data.db.db_test_tools import sqlite_memory
 from tests.unit.data.hypothesis_stars import star, stars
-import string
+
+
+@given(star())
+def test_convert_to_star(star: Star):
+    with sqlite_memory(future=True) as session:
+        DBWriter(session=session, dataset="test").write(star)
+        reader = DBReader(dataset="test", session=session)
+        read_star = next(reader.__iter__())
+        print(read_star)
+        assert read_star == star
 
 
 @given(
-    stars(alphabet=string.printable, dataset="test", min_size=1),
-    stars(alphabet=string.printable, dataset="other", min_size=1, max_size=1),
+    stars(alphabet=string.printable, min_size=1),
+    stars(alphabet=string.printable, min_size=1, max_size=1),
 )
-def test_init(stars, other):
-    with sqlite_memory() as engine:
-        writer = DBWriter(engine)
+def test_names(stars: List[Star], other: List[Star]):
+    with sqlite_memory() as session:
+        test_writer = DBWriter(dataset="test", session=session)
+
+        other_writer = DBWriter(dataset="other", session=session)
         star_names = []
         for star in stars:
-            writer.write(star)
+            test_writer.write(star)
             star_names.append(star.name)
         for star in other:
-            writer.write(star)
-        reader = DBReader(dataset="test", engine=engine, mag_limit=0, distance_limit=0)
-
-        assert all([True if x in reader._stars else False for x in star_names])
-        assert len(reader._stars) == len(stars)
+            other_writer.write(star)
+        reader = DBReader(
+            dataset="test", session=session, mag_limit=0, distance_limit=0
+        )
+        assert all([True if x in reader.names else False for x in star_names])
+        assert len(reader.names) == len(stars)
 
 
 @given(
-    stars(alphabet=string.printable, dataset="test", min_size=1),
-    stars(alphabet=string.printable, dataset="other", min_size=1, max_size=1),
+    stars(alphabet=string.printable, min_size=1, max_size=3),
+    stars(alphabet=string.printable, min_size=1, max_size=1),
 )
-def test_reads_all(stars: List[Star], other: List[Star]):
-    with sqlite_memory(future=False) as engine:
-        writer = DBWriter(engine)
+def test_multiple_dataset(stars: List[Star], other: List[Star]):
+    with sqlite_memory() as session:
+        test_writer = DBWriter(dataset="test", session=session)
+        other_writer = DBWriter(dataset="other", session=session)
         # load DB for reading
         star_names = []
         for star in stars:
-            writer.write(star)
+            test_writer.write(star)
             # we're just going to make sure that the names are there
             star_names.append(star.name)
         for star in other:
             # so we can make sure we're only getting from our dataset
-            writer.write(star)
+            other_writer.write(star)
 
-        reader = DBReader(dataset="test", engine=engine, mag_limit=0, distance_limit=0)
+        reader = DBReader(
+            dataset="test", session=session, mag_limit=0, distance_limit=0
+        )
         read_names = []
-        datasets = []
-        for star in reader.all:
-            read_names.append(star.index.levels[0][0])
-            datasets.append(star["dataset"][0])
+        for star in reader:
+            read_names.append(star.name)
         star_set = set(star_names)
         read_set = set(read_names)
         assert star_set == read_set
-        assert len(set(datasets)) == 1
         assert len(star_set) == len(stars)
 
 
 @given(
-    stars(alphabet=string.printable, min_size=2, dataset="test"),
-    integers(min_value=0, max_value=5),
-    integers(min_value=0, max_value=400),
+    stars(alphabet=string.printable, min_size=2),
+    integers(min_value=1, max_value=5),
+    integers(min_value=1, max_value=400),
 )
 def test_similar_to(stars: List[Star], mag_limit, distance_limit):
-    if mag_limit == 0:
-        mag_limit = np.inf
-    if distance_limit == 0:
-        distance_limit = np.inf
-    with sqlite_memory(future=False) as engine:
-        writer = DBWriter(engine)
+    with sqlite_memory(future=False) as session:
+        writer = DBWriter(dataset="test", session=session)
         target = stars[0]
-        target_median = np.nanmedian(target.data.mag)
+        target_median = target.timeseries.magnitude.median()
         for star in stars:
             writer.write(star)
 
         similar_stars = []
         for star in stars[1:]:
-            abs_diff_median = abs(np.nanmedian(star.data.mag) - target_median)
+            abs_diff_median = abs(star.timeseries.magnitude.median() - target_median)
             distance_between = np.sqrt(
                 (star.x - target.x) ** 2 + (star.y - target.y) ** 2
             )
-            if abs_diff_median <= mag_limit and distance_between <= distance_limit:
+            if (
+                abs_diff_median <= mag_limit
+                and distance_between <= distance_limit
+                and star.variable == False
+            ):
                 similar_stars.append(star.name)
 
         reader = DBReader(
             dataset="test",
-            engine=engine,
+            session=session,
             mag_limit=mag_limit,
             distance_limit=distance_limit,
         )
-        similar_stars_frame = reader.similar_to(target.name)
-        db_similar = np.unique(similar_stars_frame.index.levels[0])
-        assert set(db_similar) == set(similar_stars)
+        db_similar = set(map(lambda x: x.name, reader.similar_to(target)))
+        assert all(
+            [
+                True if x in reader.names else False
+                for x in reader._star_cache[target.name]
+            ]
+        )
+        assert db_similar == set(similar_stars)
+
+
+@given(star())
+def test_feature_update(star: Star):
+    with sqlite_memory(future=True) as session:
+        writer = DBWriter(dataset="test", session=session)
+        reader = DBReader(dataset="test", session=session)
+
+        writer.write(star)
+        for date in star.timeseries.features:
+            star.timeseries.add_feature(
+                dt=date, name="Inverse Von Neumann", value=123.0
+            )
+            star.timeseries.add_feature(dt=date, name="IQR", value=567.0)
+        writer.update(star)
+        read_star = next(reader.__iter__())
+        assert read_star.variable == star.variable
+        assert len(star.timeseries.features) == len(read_star.timeseries.features)
+        for date in star.timeseries.features.keys():
+            assert date in read_star.timeseries.features.keys()
+            assert read_star.timeseries.features[date]["Inverse Von Neumann"] == 123.0
+            assert read_star.timeseries.features[date]["IQR"] == 567.0
+
+        assert (
+            read_star.timeseries.differential_error.array == star.timeseries.error.array
+        )
+
+        assert (
+            read_star.timeseries.differential_magnitude.array
+            == star.timeseries.magnitude.array
+        )
+
+
+@given(star())
+def test_variable_update_read(star: Star):
+    with sqlite_memory(future=True) as session:
+        writer = DBWriter(dataset="test", session=session)
+        reader = DBReader(dataset="test", session=session)
+
+        writer.write(star)
+        for date in star.timeseries.features:
+            star.timeseries.add_feature(
+                dt=date, name="Inverse Von Neumann", value=123.0
+            )
+            star.timeseries.add_feature(dt=date, name="IQR", value=567.0)
+        star.timeseries.differential_error = star.timeseries.error
+        star.timeseries.differential_magnitude = star.timeseries.magnitude
+        star.variable = True
+        writer.update(star)
+        read_star = next(reader.variable)
+        assert read_star.variable == star.variable
+        assert len(star.timeseries.features) == len(read_star.timeseries.features)
+        for date in star.timeseries.features.keys():
+            assert date in read_star.timeseries.features.keys()
+            assert read_star.timeseries.features[date]["Inverse Von Neumann"] == 123.0
+            assert read_star.timeseries.features[date]["IQR"] == 567.0
+
+        assert (
+            read_star.timeseries.differential_error.array == star.timeseries.error.array
+        )
+
+        assert (
+            read_star.timeseries.differential_magnitude.array
+            == star.timeseries.magnitude.array
+        )

@@ -1,0 +1,35 @@
+@startuml
+interface PackageConfig {
+        {abstract} asdict()
+        {abstract} fromdict()
+}
+
+abstract class PackageBase {
+        -name : String
+        {static} +fromconfigparser(parser: ConfigParser)
+
+}
+class DataConfig {
+        -database_path : Path
+        -output_folder : Path
+        -database_url : String
+}
+class PhotometryConfig {
+        -magnitude_limit: Float
+        -distance_limit: Float
+}
+
+class ApplicationConfig {
+        -photometry: PackageConfig
+        -data: PackageConfig
+        -all: Dictionary[String, Any]
+}
+
+
+PackageConfig <|-- PackageBase
+PackageBase <|-- DataConfig
+PackageBase <|-- PhotometryConfig
+ApplicationConfig o-- DataConfig
+ApplicationConfig o-- PhotometryConfig
+
+@enduml

@@ -1,0 +1,150 @@
+@startuml
+interface Input {
+        {abstract} +__len__(): Integer
+        {abstract} +__iter__(): Generator[Star]
+}
+
+interface Loader {
+        {abstract} +__len__(): Integer
+        {abstract} +__iter__(): Generator[Star]
+}
+interface FileLoaderFactory {
+        -READABLE_TYPES: Iterable[String]
+        {abstract} +make_loader(file_path: Path): Loader
+}
+interface Reader {
+        +names: List[String]
+        {abstract} +__iter__(): Generator[Star]
+        {abstract} +similar_to(star: Star): List[Star]
+}
+interface Writer{
+        {abstract} +write(data: Star, overwrite: Bool)
+        {abstract} +write(data: List[Star], overwrite: Bool)
+}
+interface Graph {
+        {abstract} +render()
+}
+
+class Star{
+        -name: String
+        -x: Integer
+        -y: Integer
+        -timeseries: StarTimeseries
+        -variable: Bool
+        {static} from_rows(Rows: List[List[String]], row_headers: KnownHeaders): Star
+}
+
+class StarTimeseries{
+        +data: DataFrame
+        +features: Dictionary[String, Float]
+        +time: DateTimeIndex
+        +magnitude: Series
+        +error: Series
+        +differential_magnitude: Series
+        +differential_error: Series
+        +drop_rows(rows: List[Int])
+        +__eq__(other: StarTimeseries): Bool
+        +add_feature(name: String, value: Float)
+        +nbytes: Int
+        {static} +from_rows(rows: List[List[String]], row_headers: KnownHeaders): StarTimeseries
+
+}
+
+class Dataset{
+        +name: String
+        +reader: Reader
+        +writer: Writer
+        +__iter__(): Generator[Star]
+        +__len__(): Integer
+        +update(star: Star)
+        +update(star: List[Star])
+        +similar_to(star: Star): List[Star]
+}
+
+class FileInput{
+        +path: Path
+        +input_files: List[Path]
+        +__len__(): Integer
+        +__iter__(): Generator[Iterable[Star]]
+        -_get_files_from_path(path: Path): List[Path]
+        -_file_to_loader(path:Path): List[Path]
+}
+class Header{
+        +headers: List[String]
+        +__eq__(other: Header): Bool
+}
+class KnownHeader{
+        +header_origin: String
+        +timeseries_names: List[String]
+        +star_data: List[String]
+        +star_name: String
+        +timeseries_getters: itemgetter
+        +star_getters: itemgetter
+        +name_index: Integer
+        -_get_used_indices(names: List[String]): List[Integer]
+        -_indices_getters(names: List[String]): itemgetter
+        -_all_in_headers(_: String, value: String | List[String])
+}
+class CSVLoader{
+        +input_file: Path
+        +headers: KnownHeader
+        +stars: Dictionary[String, List[Integer]]
+
+        -_star_count(): Dictionary[String, List[Integer]]
+        +__len__(): Integer
+        +__iter__(): Generator[Star]
+        -_file_rows(): Generator[List[String]]
+        {static} -_row_delta(indices: List[Integer]): Generator[Integer]
+        -_all_rows_in_index(indices: List[Integer]):Generator[List[String]]
+        -_file_stars(): Iterable[Tuple[String,, List[List[String]]]]
+
+}
+
+class DBReader{
+        +dataset: String
+        +engine: Engine
+        +mag_limit: Float | None
+        +distance_limit: Float | None
+        +names: List[String]
+        +__len__(): Integer
+        +__iter__(): Generator[Star]
+        +similar_to(star: Star): List[Star]
+        -_select_star(): Statement
+        -_within_distance(target_x: Float, target_y: Float): Statement
+        -_within_mag(target_mag: Float): Statement
+        -_filter_on_constraints(statement: Statement, target: Star)
+}
+
+class DBWriter{
+        +dataset: String
+        +engine: Engine
+        +write(data: Star, overwrite: Bool)
+        +write(data: List[Star], overwrite: Bool)
+        -_write_star(session: Session, star: Star, overwrite: Bool)
+        -_convert_to_model(star: Star): StarDB
+}
+
+abstract class BuilderBase
+class SeabornGraph{
+        +_sns_graph: FacetGrid
+        +render()
+}
+
+class SeabornBuilder{
+        +_plot: FacetGrid
+        +build(): SeabornGraph
+        +reset()
+}
+KnownHeader --|> Header
+CSVLoader ..|> Loader
+FileInput ..|> Input
+DBReader ..|> Reader
+DBWriter ..|> Writer
+SeabornGraph ..|> Graph
+SeabornBuilder --|> BuilderBase
+Reader o-- "1" Dataset
+Writer o-- "1" Dataset
+StarTimeseries *-- "1" Star
+SeabornBuilder -- SeabornGraph : Builds >
+
+@enduml

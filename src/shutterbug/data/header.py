@@ -4,11 +4,20 @@ from attr import define, field
 from attr.validators import instance_of
 
 
-@define(slots=True, frozen=True)
+def strip_and_lower(strings: List[str]) -> List[str]:
+    cleaned = []
+    for st in strings:
+        st = st.strip().lower()
+        cleaned.append(st)
+        strings = cleaned
+    return cleaned
+
+
+@define()
 class Header:
     """Headers of a given file, such as a csv or excel file"""
 
-    headers: List[str] = field()
+    headers: List[str] = field(converter=strip_and_lower)
 
     def __eq__(self, other) -> bool:
         # testing set equality as this will
@@ -18,25 +27,18 @@ class Header:
         header_set = set(self.headers)
         # self is only a subset if it contains
         # all of the other's items
-        return header_set.issubset(other_set) and other_set.issubset(header_set)
-
-    @headers.validator
-    def _all_strings(self, _, value):
-        """Ensures all headers are strings"""
-
-        if not (all(isinstance(item, str) for item in value)):
-            raise ValueError("All headers must be strings")
+        return header_set.issuperset(other_set)
 
 
-@define(slots=True, frozen=True)
+@define()
 class KnownHeader(Header):
     """Manual definition of a known header, to be used for comparison and for
     convenience functions to get necessary indices"""
 
-    name: str = field(validator=instance_of(str))
-    timeseries_names: List[str] = field()
-    star_names: List[str] = field()
-    star_name: str = field(validator=instance_of(str))
+    header_origin: str = field(validator=instance_of(str))
+    timeseries_names: List[str] = field(converter=strip_and_lower)
+    star_data: List[str] = field(converter=strip_and_lower)
+    star_name: str = field(validator=instance_of(str), converter=(lambda x: x.lower()))
 
     def _get_used_indices(self, names: List[str]) -> List[int]:
         """Given a list of names returns all the header indices that match the names
@@ -52,38 +54,41 @@ class KnownHeader(Header):
             Indices of the names provided
 
         """
-
+        headers = self.headers
         used_indices = []
         for header in names:
-            header_idx = self.headers.index(header)
+            header_idx = headers.index(header)
             used_indices.append(header_idx)
         return used_indices
 
-    def _indices_getters(self, names: List[str]) -> itemgetter[str]:
+    def _indices_getters(self, names: List[str]) -> itemgetter:
         indices = self._get_used_indices(names)
         return itemgetter(*indices)
 
     @property
-    def timeseries_getters(self) -> itemgetter[str]:
+    def timeseries_getters(self) -> itemgetter:
         """Itemgetter for all timeseries information columns in the header"""
 
         return self._indices_getters(self.timeseries_names)
 
     @property
-    def star_getters(self) -> itemgetter[str]:
+    def star_getters(self) -> itemgetter:
         """Itemgetter for all star data information columns in the header"""
 
-        return self._indices_getters(self.star_names)
+        return self._indices_getters(self.star_data)
 
     @property
     def name_index(self) -> int:
         """Index of the star names column"""
-        return self.headers.index(self.star_name)
+        headers = self.headers
+        star_name = self.star_name.lower()
+        return headers.index(star_name)
 
     @timeseries_names.validator
-    @star_names.validator
+    @star_data.validator
     @star_name.validator
-    def _all_in_headers(self, attribute, value):
+    def _all_in_headers(self, _, value):
+        """Ensure that all names are in the headers"""
         if type(value) == str:
             if value not in self.headers:
                 raise ValueError(
@@ -94,45 +99,24 @@ class KnownHeader(Header):
                 f"Headers '{', '.join(value)}' are not in given header list {self.headers}"
             )
 
-    @timeseries_names.validator
-    @star_names.validator
-    def _all_strings(self, attribute, value):
-        if not (all(isinstance(item, str) for item in value)):
-            raise ValueError("All headers must be strings")
-
 
 KNOWN_HEADERS = [
     KnownHeader(
-        name="Mira",
+        header_origin="Mira",
         headers=[
-            "#",
             "Image",
-            "Index",
             "Name",
             "Mag",
-            "Std?",
             "Error",
-            "Error(T)",
             "X",
             "Y",
-            "Column",
-            "Row",
-            "Backgr",
-            "S/N",
-            "Mag Std",
-            "Residual",
-            "Net Count",
-            "Filter",
             "Date",
             "Time",
             "JD",
-            "Airmass",
             "ExpTime",
-            "Weight",
-            "Notes",
         ],
         timeseries_names=["JD", "Mag", "Error"],
-        star_names=["Name", "X", "Y"],
+        star_data=["Name", "X", "Y"],
         star_name="Name",
     )
 ]

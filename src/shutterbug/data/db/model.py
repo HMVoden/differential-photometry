@@ -1,8 +1,10 @@
-from sqlalchemy import (Column, DateTime, Float, ForeignKey, Integer, Text,
-                        UniqueConstraint)
+from sqlalchemy import (Boolean, Column, Date, DateTime, Float, ForeignKey,
+                        Integer, Text)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import MetaData
+from sqlalchemy.sql.schema import UniqueConstraint
+from sqlalchemy.sql.sqltypes import DateTime
 
 # Recommended naming convention used by Alembic, as various different database
 # providers will autogenerate vastly different names making migrations more
@@ -19,47 +21,68 @@ metadata = MetaData(naming_convention=NAMING_CONVENTION)
 Base = declarative_base(metadata=metadata)
 
 
+class StarDBDataset(Base):
+    __tablename__ = "dataset"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column("dataset", Text, unique=True)
+
+    stars = relationship("StarDB", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"StarDBDataset(id:'{self.id}', name:'{self.name}')"
+
+
 class StarDB(Base):
     __tablename__ = "stars"
-    id = Column("id", Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, autoincrement=True, primary_key=True)
+    name = Column("name", Text)
+    dataset_id = Column("dsid", Integer, ForeignKey("dataset.id"))
     x = Column("x", Integer)
     y = Column("y", Integer)
     magnitude_median = Column("magnitude_median", Float)
+    variable = Column("variable", Boolean)
+
+    dataset = relationship("StarDBDataset", back_populates="stars")
 
     timeseries = relationship(
-        "StarDBTimeseries",
-        back_populates="star",
+        "StarDBTimeseries", cascade="all, delete-orphan", back_populates="star"
+    )
+    features = relationship(
+        "StarDBFeatures", cascade="all, delete-orphan", back_populates="star"
     )
 
-    label = relationship("StarDBLabel", back_populates="star", uselist=False)
+    UniqueConstraint("name", "dsid", name="name_per_dataset")
 
     def __repr__(self):
-        return f"StarDB(id:'{self.id}',x:'{self.x}',y:'{self.y}')"
+        return f"StarDB(id:'{self.id}',name:'{self.name}',dsid:'{self.dataset_id}',x:'{self.x}',y:'{self.y}'magnitude median:'{self.magnitude_median}',is variable:{self.variable})"
 
 
-class StarDBLabel(Base):
-    __tablename__ = "label"
-    name = Column("name", Text, primary_key=True)
-    dataset = Column("dataset", Text, primary_key=True)
-    idref = Column(Integer, ForeignKey("stars.id"))
+class StarDBFeatures(Base):
+    __tablename__ = "features"
+    id = Column("id", Integer, primary_key=True, autoincrement=True)
+    star_id = Column("star_id", Integer, ForeignKey("stars.id"))
+    date = Column("date", Date())
+    ivn = Column(Float)
+    iqr = Column(Float)
+    star = relationship("StarDB", back_populates="features")
 
-    star = relationship("StarDB", back_populates="label")
-
-    __table_args__ = (UniqueConstraint("name", "dataset", name="_name_dataset_unique"),)
+    UniqueConstraint("star_id", "date", name="date_per_star")
 
     def __repr__(self):
-        return f"StarDBLabel(id:'{self.idref}',dataset:'{self.dataset}',name:'{self.name}')"
+        return f"StarDBFeatures(id:'{self.id}', star_id:'{self.star_id}', date:'{self.date}', ivn:'{self.ivn}', iqr:'{self.iqr}')"
 
 
 class StarDBTimeseries(Base):
     __tablename__ = "timeseries"
     tsid = Column("tsid", Integer, primary_key=True, autoincrement=True)
-    time = Column("time", DateTime)
+    star_id = Column("star_id", Integer, ForeignKey("stars.id"))
+    time = Column("time", DateTime(timezone=True))
     mag = Column("magnitude", Float)
     error = Column("error", Float)
-    idref = Column(Integer, ForeignKey("stars.id"))
+    adm = Column("adm", Float)  # differential magnitude and error
+    ade = Column("ade", Float)
 
     star = relationship("StarDB", back_populates="timeseries")
 
     def __repr__(self):
-        return f"StarDBTimeseries('id:{self.idref}',time:'{self.time}',mag:'{self.mag}', error:'{self.error}')"
+        return f"StarDBTimeseries('id:{self.tsid}',star_id:{self.star_id},time:'{self.time}',mag:'{self.mag}', error:'{self.error}',adm:'{self.adm}',ade:'{self.ade}')"
