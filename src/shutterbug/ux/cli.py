@@ -83,7 +83,7 @@ def load(context: Context, files: List[Path]):
         db_reader, db_writer = next(
             make_reader_writer(
                 engine=engine,
-                dataset_name=f.name,
+                dataset_name=f.stem,
                 magnitude_limit=mag_limit,
                 distance_limit=distance_limit,
             )

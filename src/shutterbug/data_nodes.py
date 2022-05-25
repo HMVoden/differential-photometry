@@ -95,16 +95,19 @@ class CSVSaveNode(DatasetNode):
             folder = make_output_folder(
                 dataset_name=dataset.name, output_folder=self.output_location
             )
-            filename = folder / dataset.name / "_result.csv"
-            if (filename).exists():
-                # clobber file
-                with open(filename, "w") as f:
-                    pass
+            filename = folder / f"{dataset.name}_result.csv"
+            logging.info(f"Outputting data to file {filename}")
+            # clobber and create file
+            with open(filename, "w") as _:
+                pass
             if self.only_variable:
                 stars = dataset.variable
             else:
                 stars = dataset.__iter__()
+            # First instance writes the header, no more than this needed
+            next(stars).to_dataframe().to_csv(filename, mode="a", header=True)
             for star in stars:
+                logging.debug(f"Writing star {star.name} to file")
                 df = star.to_dataframe()
-                df.to_csv(filename, mode="a")
+                df.to_csv(filename, mode="a", header=False)
             yield dataset
