@@ -27,6 +27,8 @@ def initialize_logging(
     if debug:
         logger.setLevel(logging.DEBUG)
         logging.debug("Overriding logging level to debug")
+    else:
+        logger.setLevel(logging.INFO)
 
 
 def initialize_configuration(config_file: Optional[Path] = None) -> ApplicationConfig:
@@ -38,7 +40,7 @@ def initialize_configuration(config_file: Optional[Path] = None) -> ApplicationC
 
     """
     if config_file is None:
-        logging.debug("Initializing default configuration")
+        logging.info("Initializing default configuration")
         config_directory = cf.data_folder()
         config_file = config_directory / "shutterbug.ini"
         config = cf.from_file(config_file)
@@ -46,7 +48,7 @@ def initialize_configuration(config_file: Optional[Path] = None) -> ApplicationC
             cf.to_file(config_file, config)
         return config
     else:
-        logging.debug(f"Initializing configuration from file {config_file.name}")
+        logging.info(f"Initializing configuration from file {config_file.name}")
         if not config_file.exists():
             logging.error(
                 f"Given configuration file {config_file.name} does not exist, falling back on default configuration"
@@ -64,7 +66,8 @@ def initialize_database(db_path: Path, db_url: str) -> Engine:
     """
     logging.info("Initializing database")
     if not db_path.exists():
-        logging.info("Database not found, initializing")
+        logging.info("Database not found, creating")
+        db_path.parent.mkdir(exist_ok=True)
         db_path.touch()
     engine = create_engine(db_url, future=True)
     _upgrade_db_to_latest(engine)
