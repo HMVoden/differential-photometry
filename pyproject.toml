@@ -20,7 +20,6 @@ numpy = "^1.2"
 numba = "^0.53"
 matplotlib = "^3.4"
 seaborn = "^0.11"
-statsmodels = "^0.12"
 click = "^8.0"
 enlighten = "^1.10"
 openpyxl = "^3.0"
@@ -29,7 +28,7 @@ attrs = "^21.2.0"
 SQLAlchemy = "^1.4.27"
 more-itertools = "^8.12.0"
 alembic = "^1.7.5"
-Kivy = "^2.1.0"
+Kivy = { extras = ["base"], version= "^2.1.0"}
 
 
 [tool.poetry.dev-dependencies]
@@ -49,6 +48,7 @@ hypothesis-pytest = "^0.19.0"
 
 [tool.poetry.scripts]
 shutterbug = "shutterbug.ux.cli:cli"
+gui = "shutterbug.ux.gui.main:run_gui"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

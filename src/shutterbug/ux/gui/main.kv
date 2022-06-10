@@ -1,0 +1,85 @@
+#:kivy 2.1.0
+
+Root:
+    canvas.before:
+        Color:
+            hsv: (0, 0, 0.72)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    GridLayout:
+        cols: 2
+        GridLayout: # Main workspace
+            rows: 3
+            WorkBar:
+                Button:
+                    text: "Test"
+            FloatLayout:
+            WorkBar:
+                Button:
+                    text: "Test2"
+        GridLayout: # Dataset/Info column
+            rows: 3
+            WorkBar:
+            StackLayout:
+            WorkBar:
+
+<WorkBar@BoxLayout>:
+    canvas.before:
+        Color:
+            hsv: (0, 0, 0.26)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    orientation: "horizontal"
+    height: 40
+    spacing: 12
+    size_hint_x: 1
+    size_hint_y: None
+
+
+<LoadDialog>:
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+        FileChooserListView:
+            id: filechooser
+
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            Button:
+                text: "Cancel"
+                on_release: root.cancel()
+
+            Button:
+                text: "Load"
+                on_release: root.load(filechooser.path, filechooser.selection)
+<SaveDialog>:
+    text_input: text_input
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+        FileChooserListView:
+            id: filechooser
+            on_selection: text_input.text = self.selection and self.selection[0] or ''
+
+        TextInput:
+            id: text_input
+            size_hint_y:  None
+            height: 30
+            multiline: False
+
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            Button:
+                text: "Cancel"
+                on_release: root.cancel()
+
+            Button:
+                text: "Save"
+                on_release: root.save(filechooser.path, text_input.text)
