@@ -23,8 +23,8 @@ def initialize_application(
     config_file: Path = Path().cwd() / "shutterbug.ini",
     debug: bool = False,
 ) -> Tuple[ApplicationConfig, Engine]:
-    initialize_logging(debug=debug)
-    logging.info("Initializing application")
+    # initialize_logging(debug=debug)
+    # logging.info("Initializing application")
     config = initialize_configuration(config_file)
     db_path = config.data["database_path"]
     db_url = config.data["database_url"]

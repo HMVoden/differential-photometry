@@ -10,21 +10,23 @@ Root:
     GridLayout:
         cols: 2
         GridLayout: # Main workspace
-            rows: 3
+            rows: 2
             WorkBar:
+                cols: 1
                 Button:
-                    text: "Test"
+                    width: 150
+                    size_hint_x: None
+                    text: "Process"
             FloatLayout:
-            WorkBar:
-                Button:
-                    text: "Test2"
         GridLayout: # Dataset/Info column
-            rows: 3
-            WorkBar:
-            StackLayout:
-            WorkBar:
+            rows: 2
+            size_hint_x: 0.40
+            DatasetPanel:
+                size_hint_y: 0.40
+            InfoPanel:
 
-<WorkBar@BoxLayout>:
+
+<WorkBar@GridLayout>:
     canvas.before:
         Color:
             hsv: (0, 0, 0.26)
@@ -32,11 +34,67 @@ Root:
             pos: self.pos
             size: self.size
 
-    orientation: "horizontal"
     height: 40
-    spacing: 12
+    spacing: 10
     size_hint_x: 1
     size_hint_y: None
+
+<DatasetPanel>:
+    rows: 2
+    scrollview: scrollview
+    canvas.before:
+        Color:
+            hsv: (0, 0, 0.72)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    WorkBar:
+        cols: 3
+        Label:
+            text: "Datasets"
+        Button:
+            width: 15
+            size_hint_x: None
+            text: "-"
+        Button:
+            width: 15
+            size_hint_x: None
+            text: "+"
+            on_release: root.show_load()
+    ScrollView:
+        id: scrollview
+        do_scroll_x: False
+        do_scroll_y: True
+        bar_pos_y: "right"
+        scroll_wheel_distance: 40
+
+<DatasetAccordion>:
+    size_hint_x: 1
+    size_hint_y: None
+    orientation: "vertical"
+
+<DatasetItem>:
+    view: view
+    size_hint_x: 1
+    size_hint_y: None
+    BoxLayout:
+        id: view
+        size_hint_x: 1
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: "vertical"
+
+<InfoPanel@ScrollView>:
+    do_scroll_x: False
+    do_scroll_y: True
+    canvas.before:
+        Color:
+            hsv: (0, 0, 0.26)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    GridLayout:
+        rows: 1
 
 
 <LoadDialog>:
