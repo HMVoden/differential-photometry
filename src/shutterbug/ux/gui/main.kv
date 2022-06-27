@@ -42,6 +42,7 @@ Root:
 <DatasetPanel>:
     rows: 2
     scrollview: scrollview
+    treeview: treeview
     canvas.before:
         Color:
             hsv: (0, 0, 0.72)
@@ -49,13 +50,12 @@ Root:
             pos: self.pos
             size: self.size
     WorkBar:
-        cols: 3
-        Label:
-            text: "Datasets"
+        cols: 2
         Button:
             width: 15
             size_hint_x: None
             text: "-"
+            on_release: root.remove_dataset()
         Button:
             width: 15
             size_hint_x: None
@@ -67,22 +67,11 @@ Root:
         do_scroll_y: True
         bar_pos_y: "right"
         scroll_wheel_distance: 40
-
-<DatasetAccordion>:
-    size_hint_x: 1
-    size_hint_y: None
-    orientation: "vertical"
-
-<DatasetItem>:
-    view: view
-    size_hint_x: 1
-    size_hint_y: None
-    BoxLayout:
-        id: view
-        size_hint_x: 1
-        size_hint_y: None
-        height: self.minimum_height
-        orientation: "vertical"
+        TreeView:
+            id: treeview
+            root_options: dict(text="Datasets")
+            size_hint_x: 1
+            size_hint_y: None
 
 <InfoPanel@ScrollView>:
     do_scroll_x: False
@@ -115,29 +104,3 @@ Root:
             Button:
                 text: "Load"
                 on_release: root.load(filechooser.path, filechooser.selection)
-<SaveDialog>:
-    text_input: text_input
-    BoxLayout:
-        size: root.size
-        pos: root.pos
-        orientation: "vertical"
-        FileChooserListView:
-            id: filechooser
-            on_selection: text_input.text = self.selection and self.selection[0] or ''
-
-        TextInput:
-            id: text_input
-            size_hint_y:  None
-            height: 30
-            multiline: False
-
-        BoxLayout:
-            size_hint_y: None
-            height: 30
-            Button:
-                text: "Cancel"
-                on_release: root.cancel()
-
-            Button:
-                text: "Save"
-                on_release: root.save(filechooser.path, text_input.text)
