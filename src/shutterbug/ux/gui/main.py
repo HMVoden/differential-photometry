@@ -11,6 +11,7 @@ from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.uix.treeview import TreeView, TreeViewNode, TreeViewLabel
 from shutterbug.application import initialize_application, make_file_loader
+import matplotlib as plt
 
 
 class LoadDialog(FloatLayout):
@@ -56,5 +57,10 @@ class Main(App):
         config, database = initialize_application(debug=True)
 
 
-if __name__ == "__main__":
+def run_gui():
+    plt.use("module://shutterbug.ux.gui.kivy_matplotlib")
     Main().run()
+
+
+if __name__ == "__main__":
+    run_gui()

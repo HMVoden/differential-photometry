@@ -1,35 +1,38 @@
 #:kivy 2.1.0
+#:set light_gray (0, 0, 0.72)
+#:set dark_gray (0, 0, 0.26)
 
 Root:
     canvas.before:
         Color:
-            hsv: (0, 0, 0.72)
+            hsv: light_gray
         Rectangle:
             pos: self.pos
             size: self.size
     GridLayout:
-        cols: 2
-        GridLayout: # Main workspace
-            rows: 2
-            WorkBar:
-                cols: 1
-                Button:
-                    width: 150
-                    size_hint_x: None
-                    text: "Process"
-            FloatLayout:
-        GridLayout: # Dataset/Info column
-            rows: 2
-            size_hint_x: 0.40
-            DatasetPanel:
-                size_hint_y: 0.40
-            InfoPanel:
+        rows: 3
+        WorkBar: # Top Bar
+            cols: 1
+            Button:
+                width: 150
+                size_hint_x: None
+                text: "Process"
+        GridLayout: # Main
+            cols: 2
+            FloatLayout:# Main workspace
+            GridLayout: # Dataset/Info column
+                rows: 2
+                size_hint_x: 0.40
+                DatasetPanel:
+                    size_hint_y: 0.50
+                InfoPanel:
+        WorkBar: # Status Bar
 
 
 <WorkBar@GridLayout>:
     canvas.before:
         Color:
-            hsv: (0, 0, 0.26)
+            hsv: dark_gray
         Rectangle:
             pos: self.pos
             size: self.size
@@ -45,7 +48,7 @@ Root:
     treeview: treeview
     canvas.before:
         Color:
-            hsv: (0, 0, 0.72)
+            hsv: light_gray
         Rectangle:
             pos: self.pos
             size: self.size
@@ -78,7 +81,7 @@ Root:
     do_scroll_y: True
     canvas.before:
         Color:
-            hsv: (0, 0, 0.26)
+            hsv: dark_gray
         Rectangle:
             pos: self.pos
             size: self.size
