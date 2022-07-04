@@ -68,7 +68,7 @@ class StarTimeseries:
         if "adm" in self.data.columns:
             return self.data["adm"]
         else:
-            return pd.Series()
+            return pd.Series(dtype="float64")
 
     @differential_magnitude.setter
     def differential_magnitude(self, data: pd.Series) -> None:
@@ -79,7 +79,7 @@ class StarTimeseries:
         if "ade" in self.data.columns:
             return self.data["ade"]
         else:
-            return pd.Series()
+            return pd.Series(dtype="float64")
 
     @differential_error.setter
     def differential_error(self, data: pd.Series) -> None:

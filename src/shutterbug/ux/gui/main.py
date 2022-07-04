@@ -2,15 +2,22 @@ import logging
 from pathlib import Path
 
 from kivy.app import App
+from kivy.event import EventDispatcher
 from kivy.factory import Factory
-from kivy.properties import ObjectProperty, StringProperty
+from kivy.logger import Logger
+from kivy.properties import ObjectProperty, StringProperty, BooleanProperty
 from kivy.uix.accordion import Accordion, AccordionItem
+from kivy.uix.button import ButtonBehavior
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.uix.treeview import TreeView, TreeViewNode, TreeViewLabel
+from kivy.eventmanager import EventManagerBase
+from kivy.core.window import WindowBase
 from shutterbug.application import initialize_application, make_file_loader
+from shutterbug.ux.gui.selectable import Selectable
+from shutterbug.ux.gui.selection_manager import get_selection_manager
 import matplotlib as plt
 
 
@@ -35,10 +42,10 @@ class DatasetPanel(GridLayout):
     def load(self, path, filename):
         path = Path(filename[0])
         in_file = make_file_loader(path)
-        file_node = self.treeview.add_node(TreeViewLabel(text=path.stem))
+        file_node = self.treeview.add_node(TreeSelectable(text=path.stem))
         for dataset in in_file:
             for name in dataset.names:
-                self.treeview.add_node(TreeViewLabel(text=name), file_node)
+                self.treeview.add_node(TreeSelectable(text=name), file_node)
         self.dismiss_popup()
 
     def remove_dataset(self):
@@ -48,13 +55,28 @@ class DatasetPanel(GridLayout):
             self.treeview.remove_node(selected)
 
 
+class TreeSelectable(Selectable, TreeViewLabel):
+    def on_release(self):
+        manager = get_selection_manager()
+        manager.select(self)
+
+    def on_select(self):
+        manager = get_selection_manager()
+        if self == manager.active_selection:
+            return True
+
+    def on_unselect(self):
+        pass
+
+
 class Root(FloatLayout):
     pass
 
 
 class Main(App):
     def build(self):
-        config, database = initialize_application(debug=True)
+        get_selection_manager()
+        pass
 
 
 def run_gui():
