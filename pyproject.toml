@@ -29,6 +29,7 @@ attrs = "^21.2.0"
 SQLAlchemy = "^1.4.27"
 more-itertools = "^8.12.0"
 alembic = "^1.7.5"
+PySide6 = "^6.3.1"
 
 
 [tool.poetry.dev-dependencies]
