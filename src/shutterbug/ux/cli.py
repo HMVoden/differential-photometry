@@ -5,12 +5,22 @@ from typing import List
 
 import click
 from click.core import Context
-from shutterbug.application import (get_feature_calculators, get_graph_builder,
-                                    get_photometer, initialize_application,
-                                    make_dataset, make_file_loader,
-                                    make_reader_writer)
-from shutterbug.data_nodes import (CSVSaveNode, DatasetLeaf, DatasetNode,
-                                   GraphSaveNode, StoreNode)
+from shutterbug.application import (
+    get_feature_calculators,
+    get_graph_builder,
+    get_photometer,
+    initialize_application,
+    make_dataset,
+    make_file_loader,
+    make_reader_writer,
+)
+from shutterbug.data_nodes import (
+    CSVSaveNode,
+    DatasetLeaf,
+    DatasetNode,
+    GraphSaveNode,
+    StoreNode,
+)
 from shutterbug.process_nodes import DifferentialNode, VariabilityNode
 from shutterbug.ux.progress_bars import ProgressBarManager
 
@@ -75,8 +85,8 @@ def process_commands(processors, *args, **kwargs):
 def load(context: Context, files: List[Path]):
     config = context.obj["config"]
     engine = context.obj["database"]
-    mag_limit = config.photometry["magnitude_limit"]
-    distance_limit = config.photometry["distance_limit"]
+    mag_limit = config.photometry.magnitude_limit
+    distance_limit = config.photometry.distance_limit
     for f in files:
         logging.debug(f"Loading file: {f.name}")
         f_input = make_file_loader(f)
@@ -135,8 +145,8 @@ def save(
     variable: bool,
 ):
     if out_folder is None:
-        out_folder = context.obj["config"].data["output_folder"]
-    graph_builder = get_graph_builder()
+        out_folder = context.obj["config"].data.output_folder
+        graph_builder = get_graph_builder()
     for node in nodes:
         if graph:
             logging.info(f"Adding graph saving to node tree")

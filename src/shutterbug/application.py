@@ -1,10 +1,11 @@
 import logging
 from pathlib import Path
-from typing import Generator, List, Tuple
+from typing import Generator, List, Tuple, Literal, Union
+from attr import define
 
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm.session import Session
-
+from attr import define, field
 import shutterbug.differential as Differential
 from shutterbug.analysis.feature import IQR, FeatureBase, InverseVonNeumann
 from shutterbug.config import ApplicationConfig
@@ -22,6 +23,43 @@ from shutterbug.init import (
 from shutterbug.interfaces.internal import Photometer
 
 
+@define
+class Shutterbug:
+    def load_file(
+        self, file_path: Path, into: Literal["memory", "database"]
+    ) -> List[str]:
+        """Loads file into either memory or database for use, returns list of star names in dataset"""
+        pass
+
+    def graph_star(self, star: str, folder: Union[Path, None]) -> bool:
+        """Outputs star to specified directory, or default directory if none given.
+        Returns boolean on success or failure"""
+        pass
+
+    def calculate_differential_magnitude(
+        self,
+        star: str,
+    ) -> bool:
+        """Calculates differential magnitude on given star, using reference stars from dataset
+        Returns boolean on success or failure"""
+        pass
+
+    def calculate_features(self, star: str) -> bool:
+        """Calculates statistical features of given star based on configuration settings
+        Returns boolean on success or failure"""
+        pass
+
+    def _load_configuration(self, path: Union[Path, None]) -> ApplicationConfig:
+        """Loads the application's configuration from given path, or from default if none given
+        Returns ApplicationConfig object"""
+        pass
+
+    def _initialize_logging(self, debug: bool) -> bool:
+        """Initializes logging with optional debug logging,
+        Returns boolean on success or failure"""
+        pass
+
+
 def initialize_application(
     config_file: Path = Path().cwd() / "shutterbug.ini",
     debug: bool = False,
@@ -29,8 +67,8 @@ def initialize_application(
     initialize_logging(debug=debug)
     logging.info("Initializing application")
     config = initialize_configuration(config_file)
-    db_path = config.data["database_path"]
-    db_url = config.data["database_url"]
+    db_path = config.data.database_path
+    db_url = config.data.database_url
     database = initialize_database(db_path, db_url)
     logging.info("Finished initializing application")
     return config, database
@@ -62,8 +100,8 @@ def get_feature_calculators(config: ApplicationConfig) -> List[FeatureBase]:
     threshholds = config.variability
 
     return [
-        InverseVonNeumann(threshhold=threshholds["ivn"]),
-        IQR(threshhold=threshholds["iqr"]),
+        InverseVonNeumann(threshhold=threshholds.ivn),
+        IQR(threshhold=threshholds.iqr),
     ]
 
 

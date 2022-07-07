@@ -4,27 +4,26 @@ from typing import Any, Dict
 
 from attr import define, field
 from shutterbug.config.interfaces.internal import PackageConfig
-from shutterbug.config.packages import (DataConfig, PhotometryConfig,
-                                        VariabilityConfig)
+from shutterbug.config.packages import DataConfig, PhotometryConfig, VariabilityConfig
 
 
 @define
 class ApplicationConfig:
-    _photometry: PackageConfig = field()
-    _data: PackageConfig = field()
-    _variability: PackageConfig = field()
+    _photometry: PhotometryConfig = field()
+    _data: DataConfig = field()
+    _variability: VariabilityConfig = field()
 
     @property
-    def data(self) -> Dict[str, Any]:
-        return self._data.asdict
+    def data(self) -> DataConfig:
+        return self._data
 
     @property
-    def photometry(self) -> Dict[str, float]:
-        return self._photometry.asdict
+    def photometry(self) -> PhotometryConfig:
+        return self._photometry
 
     @property
-    def variability(self) -> Dict[str, float]:
-        return self._variability.asdict
+    def variability(self) -> VariabilityConfig:
+        return self._variability
 
     @property
     def all(self) -> Dict[str, Any]:
