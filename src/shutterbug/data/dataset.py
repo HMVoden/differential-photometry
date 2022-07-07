@@ -15,6 +15,7 @@ class Dataset:
     writer: Writer = field()
     store_in_memory: bool = field()
     _star_cache: Dict[str, Union[Star, None]] = field(init=False, default={})
+    _write_cache: List[Star] = field(init=False, default=[])
 
     def __attrs_post_init__(self):
         if self.store_in_memory is True:
@@ -35,10 +36,19 @@ class Dataset:
     def __len__(self) -> int:
         return len(self.reader.names)
 
+    def flush_write(self):
+        logging.debug(f"Flushing all write cached stars")
+        self.writer.update(self._write_cache)
+
     @singledispatch
     def update(self, star: Star):
-        logging.debug(f"Updating star {star.name} in reader")
-        self.writer.update(star)
+        if len(self._write_cache) < 50:
+            self._write_cache.append(star)
+        else:
+            logging.debug(f"Updating stars in reader")
+            self._write_cache.append(star)
+            self.writer.update(self._write_cache)
+            self._write_cache = []
 
     @update.register
     def _(self, star: list):
@@ -54,7 +64,9 @@ class Dataset:
                     to_get.append(name)
                 else:
                     stars.append(self._star_cache[name])
-            logging.debug(f"Stars {to_get} are not in cache, fetching from reader")
+            if len(to_get) > 0:
+                logging.debug(f"Stars {to_get} are not in cache, fetching from reader")
+
             from_reader = self.reader.get_many(to_get)
             for star in from_reader:
                 self._star_cache[star.name] = star

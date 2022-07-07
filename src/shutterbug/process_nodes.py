@@ -40,4 +40,5 @@ class DifferentialNode(DatasetNode):
                     target=star, reference=dataset.similar_to(star)
                 )
                 dataset.update(star)
+            dataset.flush_write()
             yield dataset
