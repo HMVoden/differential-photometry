@@ -3,7 +3,7 @@ from typing import Dict, Generator, List, Optional
 import attr
 import pandas as pd
 from attr import define, field
-from shutterbug.data.db.model import (StarDB, StarDBDataset)
+from shutterbug.data.db.model import StarDB, StarDBDataset
 from shutterbug.data.interfaces.internal import Reader
 from shutterbug.data.star import Star, StarTimeseries
 from sqlalchemy import func, select
@@ -52,13 +52,18 @@ class DBReader(Reader):
         statement = self._select_star()
         yield from map(self._model_to_star, self.session.scalars(statement))
 
-    def similar_to(self, star: Star) -> List[Star]:
-        """Returns all stars that are similar to target star"""
+    def get(self, name: str) -> Star:
+        statement = self._select_star().where(StarDB.name == name)
+        return self._model_to_star(self.session.scalar(statement))
+
+    def get_many(self, names: List[str]) -> List[Star]:
+        statement = self._select_star().where(StarDB.name.in_(names))
+        return list(map(self._model_to_star, self.session.scalars(statement)))
+
+    def similar_to(self, star: Star) -> List[str]:
+        """Returns all names that are similar to target star"""
         similar_star_names = self._filter_on_constraints(star)
-        statement = self._select_star().where(StarDB.name.in_(similar_star_names))
-        return list(
-            map(self._model_to_star, self.session.scalars(statement).fetchmany(size=50))
-        )
+        return similar_star_names
 
     def _select_star(self):
         """Creates selection statement to find all data for a star in the reader's dataset"""

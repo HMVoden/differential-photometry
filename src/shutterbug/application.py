@@ -93,7 +93,7 @@ def make_reader_writer(
 
 
 def make_dataset(dataset_name: str, reader: Reader, writer: Writer) -> Dataset:
-    return Dataset(dataset_name, reader, writer)
+    return Dataset(dataset_name, reader, writer, store_in_memory=True)
 
 
 def get_feature_calculators(config: ApplicationConfig) -> List[FeatureBase]:

@@ -160,9 +160,11 @@ class Star:
         )
 
     @classmethod
-    def from_rows(cls, rows: List[List[str]], row_headers: KnownHeader) -> Union[Star, None]:
+    def from_rows(
+        cls, rows: List[List[str]], row_headers: KnownHeader
+    ) -> Union[Star, None]:
         name, x, y = row_headers.star_getters(rows[0])
-        logging.debug(f"Building star object {name}, x: {x}, y: {y}")
+        logging.info(f"Building star object {name}, x: {x}, y: {y}")
         try:
             timeseries = StarTimeseries.from_rows(rows, row_headers)
         except ValueError as e:
