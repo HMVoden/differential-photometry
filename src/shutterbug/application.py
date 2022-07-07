@@ -14,8 +14,11 @@ from shutterbug.data.graphing.builder import BuilderBase
 from shutterbug.data.graphing.seaborn_builder import SeabornBuilder
 from shutterbug.data.interfaces.external import Input
 from shutterbug.data.interfaces.internal import Reader, Writer
-from shutterbug.init import (initialize_configuration, initialize_database,
-                             initialize_logging)
+from shutterbug.init import (
+    initialize_configuration,
+    initialize_database,
+    initialize_logging,
+)
 from shutterbug.interfaces.internal import Photometer
 
 

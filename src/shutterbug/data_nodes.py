@@ -76,20 +76,24 @@ class GraphSaveNode(DatasetNode):
             else:
                 stars = dataset.__iter__()
             for star in stars:
-                title = f"Differential magnitude of {star.name} \n x: {star.x} y: {star.y} \n"
-                builder.title = title
-                builder.axis_names = ("Time (UTC)", "Differential Magnitude")
-                builder.axis_limits = (1.25, 1.25)
-                builder.size = (5, 5)
-                builder.data = star.timeseries.differential_magnitude
-                builder.error = star.timeseries.differential_error
-                builder.features = star.timeseries.features
-                graph = builder.build()
-                logging.debug(f"Writing graph {star.name}")
-                if star.variable:
-                    graph.save(folder / "variable" / f"{star.name}.png")
-                else:
-                    graph.save(folder / "nonvariable" / f"{star.name}.png")
+                logging.info(f"Creating graph for star: {star.name}")
+                try:
+                    title = f"Differential magnitude of {star.name} \n x: {star.x} y: {star.y} \n"
+                    builder.title = title
+                    builder.axis_names = ("Time (UTC)", "Differential Magnitude")
+                    builder.axis_limits = (1.25, 1.25)
+                    builder.size = (5, 5)
+                    builder.data = star.timeseries.differential_magnitude
+                    builder.error = star.timeseries.differential_error
+                    builder.features = star.timeseries.features
+                    graph = builder.build()
+                    logging.info(f"Writing graph {star.name}")
+                    if star.variable:
+                        graph.save(folder / "variable" / f"{star.name}.png")
+                    else:
+                        graph.save(folder / "nonvariable" / f"{star.name}.png")
+                except ValueError as e:
+                    logging.error(f"Unable to create graph for star {star.name}, received error: {e}")
                 builder.reset()
             yield dataset
 
