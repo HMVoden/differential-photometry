@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from abc import abstractmethod
 from pathlib import Path
-from typing import Generator, Union
+from typing import Generator, List, Union, Optional
 
 from attr import define, field
 
@@ -36,16 +36,25 @@ class DatasetLeaf(DatasetNode):
 class StoreNode(ControlNode):
     source: Loader = field()
     writer: Writer = field()
+    names: List[str]= field()
 
     def execute(self) -> None:
         logging.info("Storing dataset")
+        names = self.names
+        source = self.source
         stars = []
-        for star in self.source:
-            stars.append(star)
-            if len(stars) >= 50:
-                self.writer.write(stars)
-                stars = []
-
+        if len(names) == len(source.names):
+            for star in self.source:
+                if star is not None:
+                    stars.append(star)
+                if len(stars) >= 50:
+                    self.writer.write(stars)
+                    stars = []
+        else:
+            for name in names:
+                star = source.get(name)
+                if star is not None:
+                    stars.append(star)
         self.writer.write(stars)
 
 

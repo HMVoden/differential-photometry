@@ -53,6 +53,8 @@ class SeabornBuilder(BuilderBase):
         data = pd.merge(left=data, right=self.error.rename("error"), on="time")
         data["date"] = data.index.date
         ylims = self._calc_ylim_from_data(data["data"], y_limit=self.axis_limits[1])
+        print(ylims)
+        print(self.axis_limits[1])
         self._plot = sns.FacetGrid(
             data,
             col="date",

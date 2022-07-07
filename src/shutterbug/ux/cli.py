@@ -89,10 +89,9 @@ def load(context: Context, files: List[Path]):
             )
         )
         for loader in f_input:
-            if not (set(loader.names).issubset(db_reader.names)):
-                StoreNode(loader, db_writer).execute()
-            else:
-                logging.info(f"All stars from source {f.stem} already in destination")
+            name_delta = list(set(loader.names) - set(db_reader.names))
+            StoreNode(loader, db_writer, name_delta).execute()
+
         dataset = make_dataset(dataset_name=f.name, reader=db_reader, writer=db_writer)
         yield DatasetLeaf(dataset)
 
