@@ -17,10 +17,15 @@ class VariabilityNode(DatasetNode):
     def execute(self) -> Generator[Dataset, None, None]:
         for dataset in self.datasets.execute():
             logging.info(f"Executing Variability test on current dataset")
+            logging.info(f"Using tests: {[x.name for x in self.tests]}")
             for star in dataset:
-                logging.debug(f"Testing star {star.name}")
+                logging.info(f"Testing star {star.name}")
                 for test in self.tests:
-                    star = run_test(star=star, test=test)
+                    # Temp because bad
+                    if test.name == "Inverse Von Neumann":
+                        star = run_test(star=star, test=test, by_day=False)
+                    else:
+                        star = run_test(star=star, test=test, by_day=True)
                 star = test_variability(star, self.tests)
                 dataset.update(star)
             yield dataset
@@ -34,9 +39,10 @@ class DifferentialNode(DatasetNode):
         for dataset in self.datasets.execute():
             logging.info(f"Executing Differential calculation on current dataset")
             for star in dataset:
-                logging.debug(f"Calculating differential magnitudes on {star.name}")
+                logging.info(f"Calculating differential magnitudes on {star.name}")
                 star = self.photometer.average_differential(
                     target=star, reference=dataset.similar_to(star)
                 )
                 dataset.update(star)
+            dataset.flush_write()
             yield dataset

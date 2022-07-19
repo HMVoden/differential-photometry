@@ -2,11 +2,15 @@ import logging
 from functools import singledispatchmethod
 from itertools import repeat
 from typing import Dict, Generator, Optional
-
+import datetime
 import numpy as np
 from attr import define, field
-from shutterbug.data.db.model import (StarDB, StarDBDataset, StarDBFeatures,
-                                      StarDBTimeseries)
+from shutterbug.data.db.model import (
+    StarDB,
+    StarDBDataset,
+    StarDBFeatures,
+    StarDBTimeseries,
+)
 from shutterbug.data.interfaces.internal import Writer
 from shutterbug.data.star import Star
 from sqlalchemy import Date, DateTime, Float, bindparam, select, update
@@ -68,16 +72,12 @@ class DBWriter(Writer):
     @singledispatchmethod
     def update(self, star: Star):
         self._update_star(star)
-        self._update_timeseries(star)
-        self._update_features(star)
         self.session.commit()
 
     @update.register
     def _(self, data: list):
         for star in data:
             self._update_star(star)
-            self._update_timeseries(star)
-            self._update_features(star)
         self.session.commit()
 
     def _write_star(self, star: Star, overwrite: bool = False):
@@ -170,56 +170,21 @@ class DBWriter(Writer):
         return db_star
 
     def _update_star(self, star: Star):
-        session = self.session
-        statement = (
-            update(StarDB)
-            .where(StarDB.name == star.name)
-            .where(StarDB.dataset_id == self._db_dataset.id)
-            .values(variable=star.variable)
-        )
-        session.execute(statement)
-
-    def _update_timeseries(self, star: Star):
-        if len(star.timeseries.differential_magnitude) > 0:
-            session = self.session
-            db_star = self._get_star(star.name)
-            statement = (
-                update(StarDBTimeseries)
-                .where(StarDBTimeseries.star_id == db_star.id)
-                .where(StarDBTimeseries.time == bindparam("dt", type_=DateTime()))
-                .values(adm=bindparam("adm", type_=Float()))
-                .values(ade=bindparam("ade", type_=Float()))
-            )
-            session.execute(statement, list(self._time_adm_ade_from_star(star)))
-
-    def _update_features(self, star: Star):
-        if len(star.timeseries.features) > 0:
-            session = self.session
-            db_star = self._get_star(star.name)
-            statement = (
-                update(StarDBFeatures)
-                .where(StarDBFeatures.star_id == db_star.id)
-                .where(StarDBFeatures.date == bindparam("dt", type_=Date()))
-                .values(ivn=bindparam("ivn", type_=Float()))
-                .values(iqr=bindparam("iqr", type_=Float()))
-            )
-            session.execute(statement, list(self._date_features_from_star(star)))
-
-    @staticmethod
-    def _time_adm_ade_from_star(star: Star) -> Generator[Dict, None, None]:
-        star_iter = zip(
-            star.timeseries.time.to_pydatetime(),
-            star.timeseries.differential_magnitude,
-            star.timeseries.differential_error,
-        )
-        for dt, adm, ade in star_iter:
-            yield {"dt": dt, "adm": adm, "ade": ade}
-
-    @staticmethod
-    def _date_features_from_star(star: Star) -> Generator[Dict, None, None]:
-        for dt, features in star.timeseries.features.items():
-            yield {
-                "dt": dt,
-                "ivn": features["Inverse Von Neumann"],
-                "iqr": features["IQR"],
-            }
+        """Updates database with target star"""
+        db_star = self._get_star(star.name)
+        db_star.variable = star.variable
+        adm = star.timeseries.differential_magnitude
+        ade = star.timeseries.differential_error
+        for ts_row in db_star.timeseries:
+            # future proofing vs Pandas
+            time = ts_row.time.replace(tzinfo=datetime.timezone.utc)
+            ts_row.adm = adm.loc[time]
+            ts_row.ade = ade.loc[time]
+        for ts_row in db_star.features:
+            date = ts_row.date
+            features = star.timeseries.features[date]
+            # Don't like this, shouldn't need to hand over the
+            # full name
+            ts_row.ivn = features["Inverse Von Neumann"]
+            ts_row.iqr = features["IQR"]
+        return True

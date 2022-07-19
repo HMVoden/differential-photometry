@@ -12,7 +12,7 @@ class Reader(ABC):
     """Interface for reading stars from a source with criteria"""
 
     @abstractmethod
-    def similar_to(self, star: Star) -> List[Star]:
+    def similar_to(self, star: Star) -> List[str]:
         raise NotImplementedError
 
     @abstractmethod
@@ -23,6 +23,14 @@ class Reader(ABC):
     @abstractmethod
     def names(self) -> List[str]:
         raise NotImplementedError
+
+    @abstractmethod
+    def get(self, name: str) -> Star:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_many(self, names: List[str]) -> List[Star]:
+        raise NotImplemented
 
     @property
     @abstractmethod

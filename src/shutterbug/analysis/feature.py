@@ -40,7 +40,7 @@ class InverseVonNeumann(FeatureBase):
             raise ValueError(
                 "The Von Neumann test requires more than two numbers to operate"
             )
-        numbers = data.to_numpy()
+        numbers = data.to_numpy(dtype="float32")
         i_plus_1 = numbers[1:]  # Get all numbers past the first
         i = numbers[:-1]  # Get all numbers until the last
         d = np.sum((i_plus_1 - i) ** 2) / len(i)  # type: ignore

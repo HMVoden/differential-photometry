@@ -1,7 +1,7 @@
 import csv
 import logging
 from pathlib import Path
-from typing import Dict, Generator, Iterable, List, Tuple
+from typing import Dict, Generator, Iterable, List, Tuple, Union
 
 from attr import define, field
 from more_itertools import consume, map_reduce
@@ -78,9 +78,19 @@ class CSVLoader:
             rows = list(self._all_rows_in_index(indices))
             yield name, rows
 
+    def get(self, name: str) -> Union[Star, None]:
+        stars = self._star_count()
+        if name in self._star_count():
+            rows = list(self._all_rows_in_index(stars[name]))
+            return Star.from_rows(rows=rows, row_headers=self.headers)
+        return None
+
+
     def __iter__(self) -> Generator[Star, None, None]:
         for star_name, rows in self._file_stars():
             try:
-                yield Star.from_rows(rows=rows, row_headers=self.headers)
+                star = Star.from_rows(rows=rows, row_headers=self.headers)
+                if star is not None:
+                    yield star
             except ValueError as e:
                 logging.warning(f"Unable to load star {star_name} due to error: {e}")

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Generator, Iterable, List, Protocol
+from typing import Generator, Iterable, List, Protocol, Union
 
 from shutterbug.data.star import Star
 
@@ -17,6 +17,9 @@ class Loader(Protocol):
 
     @property
     def names(self) -> List[str]:
+        ...
+
+    def get(self,  name: str) -> Union[Star, None]:
         ...
 
 

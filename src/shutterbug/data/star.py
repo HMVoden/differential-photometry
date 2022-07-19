@@ -68,7 +68,7 @@ class StarTimeseries:
         if "adm" in self.data.columns:
             return self.data["adm"]
         else:
-            return pd.Series()
+            return pd.Series(dtype="float32")
 
     @differential_magnitude.setter
     def differential_magnitude(self, data: pd.Series) -> None:
@@ -79,7 +79,7 @@ class StarTimeseries:
         if "ade" in self.data.columns:
             return self.data["ade"]
         else:
-            return pd.Series()
+            return pd.Series(dtype="float32")
 
     @differential_error.setter
     def differential_error(self, data: pd.Series) -> None:
@@ -160,10 +160,16 @@ class Star:
         )
 
     @classmethod
-    def from_rows(cls, rows: List[List[str]], row_headers: KnownHeader) -> Star:
+    def from_rows(
+        cls, rows: List[List[str]], row_headers: KnownHeader
+    ) -> Union[Star, None]:
         name, x, y = row_headers.star_getters(rows[0])
-        logging.debug(f"Building star object {name}, x: {x}, y: {y}")
-        timeseries = StarTimeseries.from_rows(rows, row_headers)
+        logging.info(f"Building star object {name}, x: {x}, y: {y}")
+        try:
+            timeseries = StarTimeseries.from_rows(rows, row_headers)
+        except ValueError as e:
+            logging.error(f"Unable to create timeseries, received error: {e}")
+            return None
         return cls(name=name, x=x, y=y, timeseries=timeseries)
 
     def __eq__(self, other: Star):
