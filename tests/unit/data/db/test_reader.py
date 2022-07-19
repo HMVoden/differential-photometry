@@ -105,7 +105,7 @@ def test_similar_to(stars: List[Star], mag_limit, distance_limit):
             mag_limit=mag_limit,
             distance_limit=distance_limit,
         )
-        db_similar = set(map(lambda x: x.name, reader.similar_to(target)))
+        db_similar = set(map(lambda x: x, reader.similar_to(target)))
         assert all(
             [
                 True if x in reader.names else False

@@ -21,7 +21,11 @@ class VariabilityNode(DatasetNode):
             for star in dataset:
                 logging.info(f"Testing star {star.name}")
                 for test in self.tests:
-                    star = run_test(star=star, test=test)
+                    # Temp because bad
+                    if test.name == "Inverse Von Neumann":
+                        star = run_test(star=star, test=test, by_day=False)
+                    else:
+                        star = run_test(star=star, test=test, by_day=True)
                 star = test_variability(star, self.tests)
                 dataset.update(star)
             yield dataset
