@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtWidgets
+from shutterbug.ux.gui.file_browser import FileBrowser
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -12,7 +13,7 @@ class MainWindow(QtWidgets.QMainWindow):
 def run_gui():
     app = QtWidgets.QApplication([])
 
-    main = MainWindow()
+    main = FileBrowser()
     main.resize(800, 600)
     main.show()
 

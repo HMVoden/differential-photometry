@@ -50,8 +50,10 @@ def _average_error(
     :returns: New timeseries containing the averaged differential error
 
     """
-    N = len(reference.groupby("time")) + 1
-    new = np.sqrt((reference ** 2 + target ** 2).groupby("time").sum()) / N
+    # Number of reference stars
+    N = reference.groupby("time").count()[0]
+    # Propagation of average
+    new = np.sqrt((reference**2 + target**2).groupby("time").sum()) / N
     return new
 
 
@@ -68,5 +70,5 @@ def _average_difference(
     :returns: New timeseries containing the averaged differential magnitude
 
     """
-    new = reference.rsub(target).groupby("time").mean()
+    new = reference.sub(target).groupby("time").mean()
     return new

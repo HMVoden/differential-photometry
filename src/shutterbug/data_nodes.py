@@ -36,7 +36,7 @@ class DatasetLeaf(DatasetNode):
 class StoreNode(ControlNode):
     source: Loader = field()
     writer: Writer = field()
-    names: List[str]= field()
+    names: List[str] = field()
 
     def execute(self) -> None:
         logging.info("Storing dataset")
@@ -93,7 +93,9 @@ class GraphSaveNode(DatasetNode):
                     else:
                         graph.save(folder / "nonvariable" / f"{star.name}.png")
                 except ValueError as e:
-                    logging.error(f"Unable to create graph for star {star.name}, received error: {e}")
+                    logging.error(
+                        f"Unable to create graph for star {star.name}, received error: {e}"
+                    )
                 builder.reset()
             yield dataset
 
