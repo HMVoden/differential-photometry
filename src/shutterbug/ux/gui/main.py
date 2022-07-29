@@ -11,6 +11,7 @@ from shutterbug.ux.gui.outliner import Outliner
 from shutterbug.ux.gui.properties import Properties
 from shutterbug.ux.gui.status_bar import StatusBar
 from shutterbug.ux.gui.viewport import ViewPort
+from shutterbug.ux.gui.file_browser import FileBrowser
 
 
 class MainWindow(QWidget):
@@ -55,7 +56,7 @@ class SideBar(QWidget):
 def run_gui():
     app = QApplication([])
 
-    main = MainWindow()
+    main = FileBrowser()
     main.resize(800, 600)
     main.show()
 

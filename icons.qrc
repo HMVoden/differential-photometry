@@ -1,0 +1,13 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>icons/arrow-down.svg</file>
+    <file>icons/arrow-left.svg</file>
+    <file>icons/arrow-right.svg</file>
+    <file>icons/arrow-up.svg</file>
+    <file>icons/long-arrow-left-up.svg</file>
+    <file>icons/nav-arrow-right.svg</file>
+    <file>icons/nav-arrow-up.svg</file>
+    <file>icons/refresh.svg</file>
+    <file>icons/add-folder.svg</file>
+</qresource>
+</RCC>
