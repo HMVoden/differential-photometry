@@ -9,5 +9,6 @@
     <file>icons/nav-arrow-up.svg</file>
     <file>icons/refresh.svg</file>
     <file>icons/add-folder.svg</file>
+    <file>icons/filter.svg</file>
 </qresource>
 </RCC>
