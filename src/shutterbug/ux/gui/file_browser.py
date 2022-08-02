@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from typing import List, Union, Optional
+import logging
+from typing import Generator, List, Union, Optional
 from PySide6.QtWidgets import (
     QFileSystemModel,
     QListView,
@@ -10,7 +11,6 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QFrame,
     QLabel,
-    QTreeView,
 )
 from PySide6.QtCore import (
     QAbstractListModel,
@@ -18,6 +18,8 @@ from PySide6.QtCore import (
     QStandardPaths,
     QStorageInfo,
     Qt,
+    Signal,
+    Slot,
 )
 from PySide6.QtGui import QIcon, QPixmap
 from shutterbug.ux.gui import rc_icons
@@ -30,15 +32,22 @@ class FileBrowser(QWidget):
 
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
-
+        self.fast_navigation = FastNavigation()
+        self.file_view = FileView()
         # Lefthand side fast navigation placeholder
-        self.layout.addWidget(FastNavigation())
+        self.layout.addWidget(self.fast_navigation)
 
         # Righthand side main file browser view
-        self.layout.addWidget(FileView())
+        self.layout.addWidget(self.file_view)
+
+        # Signals/Slots
+        self.fast_navigation.nav_changed.connect(self.file_view.change_viewed_directory)
 
 
 class FastNavigation(QWidget):
+
+    nav_changed = Signal(str, name="navChanged")
+
     def __init__(self):
         QWidget.__init__(self)
 
@@ -46,10 +55,15 @@ class FastNavigation(QWidget):
         self.setLayout(self.layout)
         self.setMinimumWidth(200)
         self.setMaximumWidth(200)
+        self.storage = StorageVolumes()
+        self.system = SystemFolders()
+        self.bookmarks = Bookmarks()
 
-        self.layout.addWidget(StorageVolumes())
-        self.layout.addWidget(SystemFolders())
-        self.layout.addWidget(Bookmarks())
+        self.system.folder_selected.connect(self.nav_changed)
+
+        self.layout.addWidget(self.storage)
+        self.layout.addWidget(self.system)
+        self.layout.addWidget(self.bookmarks)
 
 
 class CollapsibleGroup(QFrame):
@@ -106,6 +120,10 @@ class ButtonBar(QWidget):
         filter_cluster.addWidget(IconButton(icon_filter))
         filter_cluster.addWidget(DropdownButton())
 
+    @Slot(str, name="setDirectory")
+    def set_directory(self, path: str):
+        self.directory_field.setText(path)
+
 
 class SaveBar(QWidget):
     def __init__(self):
@@ -114,29 +132,53 @@ class SaveBar(QWidget):
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
         self.layout.addWidget(QLineEdit())
-        self.layout.addWidget(QPushButton("Cancel"))
+        self.cancel = QPushButton("Cancel")
+        self.layout.addWidget(self.cancel)
         self.layout.addWidget(QPushButton("Save"))
 
 
 class FileView(QWidget):
+
+    directory_changed = Signal(str, name="directoryChanged")
+
     def __init__(self):
         QWidget.__init__(self)
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        self.layout.addWidget(ButtonBar())
-        file_model = QFileSystemModel()
-        default_place = QStandardPaths.standardLocations(QStandardPaths.HomeLocation)[0]
-        file_model.setRootPath(default_place)
-        view = QTreeView()
-        view.setItemsExpandable(False)
+        self.button_bar = ButtonBar()
 
-        view.hideColumn(1)
-        view.setModel(file_model)
-        view.setRootIndex(file_model.index(file_model.rootPath()))
-        self.layout.addWidget(view)
+        self.layout.addWidget(self.button_bar)
+        self.file_model = QFileSystemModel()
+        default_place = QStandardPaths.standardLocations(QStandardPaths.HomeLocation)[0]
+        self.view = QListView()
+
+        self.view.setModel(self.file_model)
+        self.layout.addWidget(self.view)
         self.layout.addWidget(SaveBar())
+
+        # Signals/Slots
+        self.directory_changed.connect(self.button_bar.set_directory)
+        self.view.doubleClicked.connect(self.double_click_item)
+
+        # Final init
+        self.change_viewed_directory(default_place)
+
+    @Slot(str, name="changeViewedDirectory")
+    def change_viewed_directory(self, path: str):
+        self.file_model.setRootPath(path)
+        self.view.setRootIndex(self.file_model.index(self.file_model.rootPath()))
+        self.directory_changed.emit(path)
+
+    @Slot(QModelIndex, name="DoubleClickItem")
+    def double_click_item(self, index: QModelIndex):
+        if self.file_model.isDir(index):
+            dir_name = self.file_model.data(index, role=0)
+            current_dir = self.file_model.rootDirectory()
+            current_dir.cd(dir_name)
+            logging.debug(f"Opening folder: {current_dir.absolutePath()}")
+            self.change_viewed_directory(current_dir.absolutePath())
 
 
 class StaticStringListModel(QAbstractListModel):
@@ -159,7 +201,7 @@ class StorageVolumes(CollapsibleGroup):
     def __init__(self):
         CollapsibleGroup.__init__(self, "Volumes")
 
-        volumes = list(map(lambda x: x.displayName(), QStorageInfo.mountedVolumes()))
+        volumes = list(self.readable_storage_volumes())
 
         model = StaticStringListModel(volumes)
         view = QListView()
@@ -167,18 +209,50 @@ class StorageVolumes(CollapsibleGroup):
 
         self.layout.addWidget(view)
 
+    @staticmethod
+    def readable_storage_volumes() -> Generator[str, None, None]:
+        for storage in QStorageInfo.mountedVolumes():
+            if (
+                storage.isValid()
+                and storage.isReady()
+                and not storage.isReadOnly()
+                and (storage.fileSystemType() != "tmpfs")
+                and (storage.fileSystemType() != "vfat")
+            ):
+                yield storage.displayName()
+
 
 class SystemFolders(CollapsibleGroup):
+
+    folder_selected = Signal(str, name="folderSelected")
+
+    sys_folders = {
+        "Home": QStandardPaths.HomeLocation,
+        "Desktop": QStandardPaths.DesktopLocation,
+        "Documents": QStandardPaths.DocumentsLocation,
+        "Downloads": QStandardPaths.DownloadLocation,
+        "Videos": QStandardPaths.MoviesLocation,
+        "Music": QStandardPaths.MusicLocation,
+    }
+
     def __init__(self):
         CollapsibleGroup.__init__(self, "System")
 
-        sys_folders = ["Home", "Desktop", "Documents", "Downloads", "Videos", "Music"]
+        location_titles = list(self.sys_folders.keys())
+        self.model = StaticStringListModel(location_titles)
+        self.view = QListView()
+        self.view.setModel(self.model)
+        self.view.clicked.connect(self.select_folder)
+        self.layout.addWidget(self.view)
 
-        model = StaticStringListModel(sys_folders)
-        view = QListView()
-        view.setModel(model)
-
-        self.layout.addWidget(view)
+    @Slot(int, name="selectFolder")
+    def select_folder(self, index: QModelIndex):
+        name = self.model.data(index, Qt.DisplayRole)
+        if name is not None:
+            location = self.sys_folders.get(name)
+            path = QStandardPaths.standardLocations(location)
+            if len(path) > 0:
+                self.folder_selected.emit(path[0])
 
 
 class Bookmarks(CollapsibleGroup):
