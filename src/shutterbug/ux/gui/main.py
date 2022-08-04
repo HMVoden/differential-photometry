@@ -25,6 +25,7 @@ class MainWindow(QWidget):
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
         self.layout.addWidget(MainBar())
         self.layout.addWidget(Workspace())
@@ -37,6 +38,7 @@ class Workspace(QWidget):
 
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
         self.layout.addWidget(ViewPort())
         self.layout.addWidget(SideBar())
@@ -47,6 +49,9 @@ class SideBar(QWidget):
         QWidget.__init__(self)
 
         self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.setMinimumWidth(300)
+        self.setMaximumWidth(300)
         self.setLayout(self.layout)
 
         self.layout.addWidget(Outliner())
@@ -56,7 +61,7 @@ class SideBar(QWidget):
 def run_gui():
     app = QApplication([])
 
-    main = FileBrowser()
+    main = MainWindow()
     main.resize(800, 600)
     main.show()
 

@@ -4,6 +4,8 @@ from typing import Generator, List, Union, Optional
 from PySide6.QtWidgets import (
     QFileSystemModel,
     QListView,
+    QSpacerItem,
+    QTableView,
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -23,7 +25,12 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QIcon, QPixmap
 from shutterbug.ux.gui import rc_icons
-from shutterbug.ux.gui.buttons import DropdownButton, IconButton, ButtonCluster
+from shutterbug.ux.gui.buttons import (
+    DropdownButton,
+    IconButton,
+    ButtonCluster,
+    CombinedDropdownButton,
+)
 
 
 class FileBrowser(QWidget):
@@ -60,6 +67,7 @@ class FastNavigation(QWidget):
         self.bookmarks = Bookmarks()
 
         self.system.folder_selected.connect(self.nav_changed)
+        self.storage.folder_selected.connect(self.nav_changed)
 
         self.layout.addWidget(self.storage)
         self.layout.addWidget(self.system)
@@ -85,6 +93,9 @@ class ButtonBar(QWidget):
 
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
+
+        self.layout.setSpacing(8)
+        self.setContentsMargins(0, 0, 0, 0)
 
         # Nav Group
         icon_back = QIcon(QPixmap(":/icons/arrow-left"))
@@ -119,6 +130,7 @@ class ButtonBar(QWidget):
 
         filter_cluster.addWidget(IconButton(icon_filter))
         filter_cluster.addWidget(DropdownButton())
+        self.layout.addWidget(filter_cluster)
 
     @Slot(str, name="setDirectory")
     def set_directory(self, path: str):
@@ -152,7 +164,13 @@ class FileView(QWidget):
         self.layout.addWidget(self.button_bar)
         self.file_model = QFileSystemModel()
         default_place = QStandardPaths.standardLocations(QStandardPaths.HomeLocation)[0]
-        self.view = QListView()
+        self.view = QTableView()
+        self.view.setCornerButtonEnabled(False)
+        self.view.setAlternatingRowColors(True)
+        self.view.setShowGrid(False)
+        vert_header = self.view.verticalHeader()
+        vert_header.setDisabled(True)
+        vert_header.setHidden(True)
 
         self.view.setModel(self.file_model)
         self.layout.addWidget(self.view)
@@ -198,16 +216,21 @@ class StaticStringListModel(QAbstractListModel):
 
 
 class StorageVolumes(CollapsibleGroup):
+
+    folder_selected = Signal(str, name="folderSelected")
+
     def __init__(self):
         CollapsibleGroup.__init__(self, "Volumes")
 
         volumes = list(self.readable_storage_volumes())
 
-        model = StaticStringListModel(volumes)
-        view = QListView()
-        view.setModel(model)
+        self.model = StaticStringListModel(volumes)
+        self.view = QListView()
+        self.view.setModel(self.model)
 
-        self.layout.addWidget(view)
+        self.layout.addWidget(self.view)
+
+        self.view.clicked.connect(self.select_folder)
 
     @staticmethod
     def readable_storage_volumes() -> Generator[str, None, None]:
@@ -220,6 +243,11 @@ class StorageVolumes(CollapsibleGroup):
                 and (storage.fileSystemType() != "vfat")
             ):
                 yield storage.displayName()
+
+    @Slot(int, name="selectFolder")
+    def select_folder(self, index: QModelIndex):
+        location = self.model.data(index, role=0)
+        self.folder_selected.emit(location)
 
 
 class SystemFolders(CollapsibleGroup):
